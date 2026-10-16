@@ -40,6 +40,8 @@
 
       <p class="hero-hint">Compatible con +1000 sitios web vía yt-dlp. Sin límite de velocidad.</p>
 
+      <button type="button" id="batch-toggle" class="batch-open">📚 Descargar varios enlaces en lote</button>
+
       <!-- Plataformas compatibles -->
       <div class="platforms">
         <span class="platforms-title">Plataformas y formatos compatibles</span>
@@ -180,6 +182,45 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ COLA EN LOTE ============ -->
+    <section id="batch" class="batch hidden">
+      <div class="section-head">
+        <h3>📚 Cola de descargas en lote</h3>
+        <span id="batch-count" class="batch-count"></span>
+      </div>
+
+      <div class="batch-card">
+        <div class="batch-input">
+          <textarea
+            id="batch-urls"
+            rows="4"
+            placeholder="Pega una URL por línea (puedes mezclar plataformas)…"
+          ></textarea>
+
+          <div class="batch-controls">
+            <select id="batch-mode" class="batch-select" title="Formato para toda la cola">
+              <option value="best">⭐ Máxima calidad (MP4)</option>
+              <option value="video-1080">🎬 1080p (MP4)</option>
+              <option value="video-720">🎬 720p (MP4)</option>
+              <option value="video-480">🎬 480p (MP4)</option>
+              <option value="video-360">🎬 360p (MP4)</option>
+              <option value="audio">🎵 Solo audio (MP3)</option>
+            </select>
+            <button type="button" id="batch-add" class="soft-btn">＋ Añadir a la cola</button>
+            <button type="button" id="batch-start" class="primary-btn">⬇ Descargar todo</button>
+            <button type="button" id="batch-clear" class="soft-btn">🗑 Vaciar</button>
+          </div>
+
+          <p class="batch-note">
+            Las descargas se hacen una tras otra. Tu navegador puede pedir permiso para
+            "descargar varios archivos": acéptalo para recibir todos.
+          </p>
+        </div>
+
+        <div id="batch-list" class="batch-list"></div>
       </div>
     </section>
   </main>

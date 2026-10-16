@@ -1,0 +1,11 @@
+# Blueprint de Render: crea el servicio web a partir del Dockerfile.
+# En https://dashboard.render.com -> New -> Blueprint, apunta a este repositorio.
+services:
+  - type: web
+    name: videodl
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    # Render inyecta la variable PORT automáticamente; el Dockerfile la usa.

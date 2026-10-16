@@ -1,0 +1,32 @@
+# VideoDL — imagen de producción (FastAPI + yt-dlp + ffmpeg)
+FROM python:3.12-slim
+
+# ffmpeg es imprescindible: unir video+audio, convertir a MP3 y recortar fragmentos
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8000
+
+WORKDIR /app
+
+# Dependencias primero (mejor caché de capas)
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Usuario sin privilegios
+RUN useradd --create-home --uid 10001 appuser
+
+COPY --chown=appuser:appuser main.py ./
+COPY --chown=appuser:appuser static ./static
+
+USER appuser
+
+EXPOSE 8000
+
+# Un solo worker a propósito: el progreso de las descargas vive en memoria,
+# así que todas las peticiones de un trabajo deben atenderlas el mismo proceso.
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

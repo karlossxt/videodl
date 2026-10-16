@@ -508,19 +508,23 @@ function updateProgress(job) {
 }
 
 function finishDownload(jobId, filename) {
-  // Descargar el archivo servido por el backend (respeta Content-Disposition)
-  const a = document.createElement("a");
-  a.href = `/api/jobs/${jobId}/file`;
-  a.download = filename || "video.mp4";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  triggerFileDownload(`/api/jobs/${jobId}/file`, filename || "video.mp4");
 
   setTimeout(() => {
     hideProgress();
     setButtonsDisabled(false);
     showToast(`Descarga completada: ${filename || "video"}`);
   }, 800);
+}
+
+/** Lanza la descarga de un archivo del servidor (respeta Content-Disposition). */
+function triggerFileDownload(href, filename) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename || "video.mp4";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 $("dl-cancel").addEventListener("click", async () => {
@@ -546,6 +550,376 @@ function hideProgress() {
   downloading.classList.add("hidden");
   activeJobId = null;
   clearInterval(pollTimer);
+}
+
+// ---------------------------------------------------------------------------
+// Cola de descargas en lote
+// ---------------------------------------------------------------------------
+
+const BATCH_STORAGE_KEY = "videodl_batch";
+
+const batchSection = $("batch");
+const batchList = $("batch-list");
+const batchUrls = $("batch-urls");
+const batchMode = $("batch-mode");
+
+let batchItems = [];
+let batchRunning = false;
+const batchRefs = new Map();
+
+function newId() {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `b${Date.now()}${Math.floor(Math.random() * 1e6)}`;
+  }
+}
+
+function loadBatch() {
+  try {
+    const raw = localStorage.getItem(BATCH_STORAGE_KEY);
+    const saved = raw ? JSON.parse(raw) : [];
+    batchItems = saved.map((it) => {
+      const item = { ...it, id: it.id || newId() };
+      // Los estados transitorios vuelven a un estado estable
+      item.analyzed = Boolean(item.title);
+      if (item.status === "downloading" || item.status === "analyzing") {
+        item.status = item.analyzed ? "ready" : "pending";
+      }
+      if (item.status === "pending" && item.analyzed) item.status = "ready";
+      item.percent = 0;
+      item.phase = null;
+      return item;
+    });
+  } catch {
+    batchItems = [];
+  }
+  if (batchItems.length) showBatchSection();
+  renderBatch();
+}
+
+function saveBatch() {
+  try {
+    const data = batchItems.map((it) => ({
+      id: it.id,
+      url: it.url,
+      title: it.title,
+      thumbnail: it.thumbnail,
+      duration: it.duration,
+      status: it.status,
+      error: it.error,
+      filename: it.filename,
+    }));
+    localStorage.setItem(BATCH_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    /* localStorage no disponible */
+  }
+}
+
+function showBatchSection() {
+  batchSection.classList.remove("hidden");
+  $("batch-toggle").classList.add("active");
+}
+
+$("batch-toggle").addEventListener("click", () => {
+  const showing = !batchSection.classList.contains("hidden");
+  batchSection.classList.toggle("hidden", showing);
+  $("batch-toggle").classList.toggle("active", !showing);
+  if (!showing) batchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+function renderBatch() {
+  batchList.innerHTML = "";
+  batchRefs.clear();
+
+  if (!batchItems.length) {
+    batchList.innerHTML = `<p class="empty-note">Aún no hay enlaces en la cola. Pega uno o varios enlaces arriba y pulsa "Añadir a la cola".</p>`;
+  } else {
+    for (const item of batchItems) batchList.appendChild(batchItemRow(item));
+  }
+  updateBatchCount();
+}
+
+function batchItemRow(item) {
+  const row = document.createElement("div");
+  row.className = "batch-item";
+
+  const img = document.createElement("img");
+  img.className = "batch-thumb";
+  img.alt = "";
+  if (item.thumbnail) img.src = item.thumbnail;
+
+  const info = document.createElement("div");
+  info.className = "batch-item-info";
+
+  const title = document.createElement("div");
+  title.className = "batch-item-title";
+  title.textContent = item.title || item.url;
+
+  const sub = document.createElement("div");
+  sub.className = "batch-item-sub";
+
+  const track = document.createElement("div");
+  track.className = "batch-track hidden";
+  const fill = document.createElement("div");
+  fill.className = "batch-fill";
+  track.appendChild(fill);
+
+  info.append(title, sub, track);
+
+  const badge = document.createElement("span");
+  badge.className = "batch-badge pending";
+
+  const remove = document.createElement("button");
+  remove.className = "batch-remove";
+  remove.type = "button";
+  remove.textContent = "✕";
+  remove.title = "Quitar de la cola";
+  remove.addEventListener("click", () => {
+    if (batchRunning && item.status === "downloading") return;
+    batchItems = batchItems.filter((i) => i.id !== item.id);
+    saveBatch();
+    renderBatch();
+  });
+
+  row.append(img, info, badge, remove);
+  batchRefs.set(item.id, { title, sub, badge, fill, track, img });
+  updateBatchItemUI(item);
+  return row;
+}
+
+function updateBatchItemUI(item) {
+  const ref = batchRefs.get(item.id);
+  if (!ref) return;
+  const { title, sub, badge, fill, track, img } = ref;
+
+  const classMap = {
+    pending: "pending",
+    analyzing: "active",
+    ready: "ready",
+    downloading: "active",
+    done: "done",
+    error: "error",
+  };
+  const labelMap = {
+    pending: "Pendiente",
+    analyzing: "Analizando…",
+    ready: "Listo",
+    downloading: "Descargando…",
+    done: "Completado",
+    error: "Error",
+  };
+
+  title.textContent = item.title || item.url;
+  badge.textContent = labelMap[item.status] || item.status;
+  badge.className = `batch-badge ${classMap[item.status] || "pending"}`;
+  if (item.thumbnail) img.src = item.thumbnail;
+
+  if (item.status === "downloading") {
+    track.classList.remove("hidden");
+    const pct = Math.max(0, Math.min(100, item.percent || 0));
+    fill.style.width = `${pct}%`;
+    sub.textContent = `${pct.toFixed(0)}% · ${item.phase === "audio" ? "audio" : "video"}`;
+  } else {
+    track.classList.add("hidden");
+    fill.style.width = "0%";
+    if (item.status === "done") sub.textContent = item.filename || "Descargado";
+    else if (item.status === "error") sub.textContent = item.error || "No se pudo descargar";
+    else if (item.status === "ready") sub.textContent = item.duration ? `Duración ${fmtClock(item.duration)}` : "Listo para descargar";
+    else if (item.status === "analyzing") sub.textContent = "Obteniendo información…";
+    else sub.textContent = "Pendiente de análisis";
+  }
+
+  updateBatchCount();
+}
+
+function updateBatchCount() {
+  const total = batchItems.length;
+  const done = batchItems.filter((i) => i.status === "done").length;
+  $("batch-count").textContent = total ? `${total} enlace(s) · ${done} completado(s)` : "";
+}
+
+// --- Añadir enlaces ---
+
+$("batch-add").addEventListener("click", addBatchFromText);
+
+async function addBatchFromText() {
+  const lines = batchUrls.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const urls = [];
+  for (const line of lines) {
+    const found = line.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+    for (const u of found) urls.push(u);
+  }
+
+  const nuevos = urls.filter(
+    (u) => !batchItems.some((i) => i.url === u)
+  );
+  if (!nuevos.length) {
+    showToast(urls.length ? "Esos enlaces ya están en la cola" : "No se encontraron enlaces válidos");
+    return;
+  }
+
+  showBatchSection();
+  for (const url of nuevos) {
+    batchItems.push({
+      id: newId(),
+      url,
+      title: "",
+      thumbnail: "",
+      duration: 0,
+      analyzed: false,
+      status: "analyzing",
+      error: null,
+      filename: null,
+      percent: 0,
+      phase: null,
+    });
+  }
+  batchUrls.value = "";
+  saveBatch();
+  renderBatch();
+
+  // Analizar de uno en uno para no saturar las plataformas
+  for (const item of batchItems.filter((i) => nuevos.includes(i.url))) {
+    await analyzeBatchItem(item);
+  }
+}
+
+async function analyzeBatchItem(item) {
+  item.status = "analyzing";
+  updateBatchItemUI(item);
+  try {
+    const info = await (await api("/api/info", { url: item.url })).json();
+    item.title = info.title || item.url;
+    item.thumbnail = info.thumbnail || "";
+    item.duration = info.duration || 0;
+    item.analyzed = true;
+    item.status = "ready";
+    item.error = null;
+  } catch (err) {
+    item.analyzed = false;
+    item.status = "error";
+    item.error = err.message;
+  }
+  saveBatch();
+  updateBatchItemUI(item);
+}
+
+// --- Descargar toda la cola ---
+
+$("batch-start").addEventListener("click", startBatch);
+$("batch-clear").addEventListener("click", () => {
+  if (batchRunning) return;
+  batchItems = [];
+  saveBatch();
+  renderBatch();
+  showToast("Cola vaciada");
+});
+
+function setBatchRunning(running) {
+  batchRunning = running;
+  $("batch-add").disabled = running;
+  $("batch-clear").disabled = running;
+  batchMode.disabled = running;
+  const startBtn = $("batch-start");
+  startBtn.disabled = running;
+  startBtn.textContent = running ? "⏳ Descargando…" : "⬇ Descargar todo";
+}
+
+async function startBatch() {
+  if (batchRunning) return;
+  const pendientes = batchItems.filter((i) => i.status !== "done");
+  if (!pendientes.length) {
+    showToast("No hay enlaces pendientes en la cola");
+    return;
+  }
+
+  clearError();
+  setBatchRunning(true);
+  let ok = 0;
+  let fail = 0;
+
+  for (const item of pendientes) {
+    if (!item.analyzed) {
+      await analyzeBatchItem(item);
+    }
+    if (!item.analyzed) {
+      fail++;
+      continue;
+    }
+    const success = await runBatchItem(item);
+    if (success) ok++;
+    else fail++;
+  }
+
+  setBatchRunning(false);
+  saveBatch();
+  showToast(`Lote terminado: ${ok} descargado(s)${fail ? `, ${fail} con error` : ""}`);
+}
+
+async function runBatchItem(item) {
+  const mode = batchMode.value;
+  item.status = "downloading";
+  item.error = null;
+  item.percent = 0;
+  item.phase = null;
+  updateBatchItemUI(item);
+
+  let jobId;
+  try {
+    const res = await api("/api/jobs", {
+      url: item.url,
+      mode,
+      title: item.title || null,
+    });
+    jobId = (await res.json()).id;
+  } catch (err) {
+    item.status = "error";
+    item.error = err.message;
+    updateBatchItemUI(item);
+    return false;
+  }
+
+  const result = await waitForJob(jobId, (job) => {
+    item.percent = job.percent || 0;
+    item.phase = job.phase;
+    updateBatchItemUI(item);
+  });
+
+  if (result.status === "finished") {
+    triggerFileDownload(`/api/jobs/${jobId}/file`, result.filename || "video.mp4");
+    item.status = "done";
+    item.filename = result.filename || "video";
+    updateBatchItemUI(item);
+    return true;
+  }
+
+  item.status = "error";
+  item.error =
+    result.status === "cancelled" ? "Cancelado" : result.error || "No se pudo descargar";
+  updateBatchItemUI(item);
+  return false;
+}
+
+/** Espera a que un trabajo termine, avisando del progreso. */
+function waitForJob(jobId, onUpdate) {
+  return new Promise((resolve) => {
+    const timer = setInterval(async () => {
+      let job;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        if (!res.ok) throw new Error("no disponible");
+        job = await res.json();
+      } catch {
+        return; // reintentar en el siguiente ciclo
+      }
+      if (onUpdate) onUpdate(job);
+      if (["finished", "error", "cancelled"].includes(job.status)) {
+        clearInterval(timer);
+        resolve(job);
+      }
+    }, POLL_INTERVAL_MS);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -630,3 +1004,9 @@ async function saveResponseAsFile(res, fallbackName) {
 function setButtonsDisabled(disabled) {
   document.querySelectorAll(".download-btn, .sub-btn").forEach((b) => (b.disabled = disabled));
 }
+
+// ---------------------------------------------------------------------------
+// Arranque
+// ---------------------------------------------------------------------------
+
+loadBatch();

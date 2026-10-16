@@ -1,0 +1,33 @@
+# Control de versiones y metadatos
+.git
+.gitignore
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Ejemplo de referencia y material de trabajo (no forma parte del proyecto)
+_ejemplo_gemini/
+*.zip
+
+# Secretos y entorno
+.env
+.env.local
+
+# Temporales de descarga
+downloads/
+*.part
+
+# Documentación y licencia (no se necesitan dentro de la imagen)
+README.md
+LICENSE
+
+# Editores / sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

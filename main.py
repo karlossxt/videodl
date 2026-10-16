@@ -621,8 +621,9 @@ async def cancel_job(job_id: str):
 
 
 @app.get("/api/health")
+@app.get("/health")
 async def health():
-    """Comprobación de estado del servicio."""
+    """Comprobación de estado del servicio (alias /health para plataformas)."""
     return {"status": "ok", "ffmpeg": FFMPEG_AVAILABLE}
 
 
@@ -738,4 +739,5 @@ def _clean_ytdlp_error(msg: str) -> str:
 # Archivos estáticos (al final para que la API tenga prioridad)
 # ---------------------------------------------------------------------------
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
