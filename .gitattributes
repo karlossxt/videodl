@@ -1,0 +1,11 @@
+# Normaliza los finales de línea a LF en el repositorio
+* text=auto
+
+# Archivos donde CRLF rompería la ejecución (Docker, shell, configs)
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
