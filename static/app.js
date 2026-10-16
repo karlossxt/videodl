@@ -101,6 +101,122 @@ $("copy-btn").addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Recortador de fragmentos
+// ---------------------------------------------------------------------------
+
+const trimToggle = $("trim-toggle");
+const trimPanel = $("trim-panel");
+const trimStart = $("trim-start");
+const trimEnd = $("trim-end");
+const trimStartNum = $("trim-start-num");
+const trimEndNum = $("trim-end-num");
+
+let trimActive = false;
+let videoDuration = 0;
+
+function clamp(n, min, max) {
+  return Math.min(Math.max(n, min), max);
+}
+
+/** Formatea segundos como m:ss o h:mm:ss (para las etiquetas del recorte). */
+function fmtClock(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+
+/** Prepara el recortador cuando se analiza un video nuevo. */
+function setupTrim(duration) {
+  videoDuration = Math.floor(duration || 0);
+  const hasDuration = videoDuration > 0;
+
+  trimToggle.classList.toggle("hidden", !hasDuration);
+  if (!hasDuration) {
+    setTrimActive(false);
+    return;
+  }
+
+  for (const el of [trimStart, trimEnd]) {
+    el.min = "0";
+    el.max = String(videoDuration);
+  }
+  for (const el of [trimStartNum, trimEndNum]) {
+    el.min = "0";
+    el.max = String(videoDuration);
+  }
+  resetTrim();
+}
+
+function setTrimActive(active) {
+  trimActive = active;
+  trimToggle.classList.toggle("active", active);
+  trimPanel.classList.toggle("hidden", !active);
+}
+
+function resetTrim() {
+  trimStart.value = "0";
+  trimEnd.value = String(videoDuration);
+  trimStartNum.value = "0";
+  trimEndNum.value = String(videoDuration);
+  refreshTrim();
+}
+
+/** Lee inicio/fin actuales (ya acotados a la duración). */
+function currentTrim() {
+  const start = clamp(parseFloat(trimStartNum.value) || 0, 0, videoDuration);
+  const end = clamp(parseFloat(trimEndNum.value) || 0, 0, videoDuration);
+  return { start, end };
+}
+
+/** Actualiza etiquetas y validación; devuelve si el rango es válido. */
+function refreshTrim() {
+  const { start, end } = currentTrim();
+  $("trim-range").textContent = `${fmtClock(start)} – ${fmtClock(end)}`;
+
+  const valid = end - start >= 1;
+  const hint = $("trim-hint");
+  hint.classList.toggle("invalid", trimActive && !valid);
+  hint.textContent = valid
+    ? `Solo se descargará esa parte (dura ${fmtClock(end - start)}).`
+    : "El fin debe ser mayor que el inicio (mínimo 1 segundo).";
+  return valid;
+}
+
+trimToggle.addEventListener("click", () => {
+  setTrimActive(!trimActive);
+  if (trimActive) refreshTrim();
+});
+
+trimStart.addEventListener("input", () => {
+  trimStartNum.value = trimStart.value;
+  refreshTrim();
+});
+trimEnd.addEventListener("input", () => {
+  trimEndNum.value = trimEnd.value;
+  refreshTrim();
+});
+trimStartNum.addEventListener("input", () => {
+  trimStart.value = trimStartNum.value;
+  refreshTrim();
+});
+trimEndNum.addEventListener("input", () => {
+  trimEnd.value = trimEndNum.value;
+  refreshTrim();
+});
+$("trim-reset").addEventListener("click", resetTrim);
+
+/** Devuelve {start, end} si hay un recorte real activo, o null. */
+function activeTrim() {
+  if (!trimActive) return null;
+  const { start, end } = currentTrim();
+  // Si cubre todo el video, no hace falta recortar
+  if (start <= 0 && end >= videoDuration) return null;
+  return { start, end };
+}
+
+// ---------------------------------------------------------------------------
 // Pestañas Video / Audio
 // ---------------------------------------------------------------------------
 
@@ -225,6 +341,9 @@ function renderResult(video) {
   // ----- Pestaña de extras: miniatura y subtítulos -----
   renderAssets(video);
 
+  // ----- Recortador de fragmentos -----
+  setupTrim(video.duration);
+
   switchTab(qualities.length ? "video" : "audio");
   result.classList.remove("hidden");
 }
@@ -307,6 +426,14 @@ let pollTimer = null;
 
 async function startDownload(mode) {
   clearError();
+
+  // Validar el recorte antes de lanzar nada
+  if (trimActive && !refreshTrim()) {
+    showError("Revisa el fragmento: el fin debe ser mayor que el inicio (mínimo 1 segundo).");
+    return;
+  }
+  const trim = activeTrim();
+
   resetProgress();
   downloading.classList.remove("hidden");
   setButtonsDisabled(true);
@@ -316,6 +443,8 @@ async function startDownload(mode) {
       url: urlInput.value.trim(),
       mode,
       title: currentVideo?.title || null,
+      start: trim ? trim.start : null,
+      end: trim ? trim.end : null,
     });
     const { id } = await res.json();
     activeJobId = id;

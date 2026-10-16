@@ -353,6 +353,83 @@ body {
 
 .soft-btn:hover { background: #1d2947; color: #fff; border-color: #3b4d72; }
 
+.soft-btn.active {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #9beeff;
+}
+
+/* ================= Recortador de fragmentos ================= */
+.trim-panel {
+  margin-top: 12px;
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 14px;
+}
+
+.trim-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #cdd8ea;
+}
+
+.trim-head .mono { color: #7fe6f7; font-size: 0.78rem; }
+
+.trim-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.trim-label {
+  width: 42px;
+  flex: none;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.trim-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--cyan-2);
+  height: 4px;
+  cursor: pointer;
+}
+
+.trim-num {
+  width: 62px;
+  flex: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: #e6edf7;
+  padding: 5px 7px;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trim-unit { font-size: 0.7rem; color: var(--muted); }
+
+.trim-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.trim-hint { font-size: 0.7rem; color: var(--muted); }
+
+.trim-hint.invalid { color: #ff9a9a; }
+
+.trim-panel.hidden { display: none; }
+
 /* ================= Pestañas ================= */
 .tabs {
   display: flex;

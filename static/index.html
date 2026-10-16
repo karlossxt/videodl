@@ -98,6 +98,31 @@
 
           <div class="meta-actions">
             <button id="copy-btn" class="soft-btn">⧉ Copiar enlace</button>
+            <button id="trim-toggle" class="soft-btn">✂️ Cortar fragmento</button>
+          </div>
+
+          <!-- Recortador de fragmentos -->
+          <div id="trim-panel" class="trim-panel hidden">
+            <div class="trim-head">
+              <span>Fragmento a descargar</span>
+              <span id="trim-range" class="mono">0:00 – 0:00</span>
+            </div>
+            <div class="trim-row">
+              <span class="trim-label">Inicio</span>
+              <input type="range" id="trim-start" min="0" max="100" value="0" step="1" />
+              <input type="number" id="trim-start-num" class="trim-num" min="0" step="1" value="0" />
+              <span class="trim-unit">s</span>
+            </div>
+            <div class="trim-row">
+              <span class="trim-label">Fin</span>
+              <input type="range" id="trim-end" min="0" max="100" value="100" step="1" />
+              <input type="number" id="trim-end-num" class="trim-num" min="0" step="1" value="0" />
+              <span class="trim-unit">s</span>
+            </div>
+            <div class="trim-actions">
+              <span id="trim-hint" class="trim-hint">Solo se descargará esa parte del video.</span>
+              <button type="button" id="trim-reset" class="sub-btn">↺ Restablecer</button>
+            </div>
           </div>
         </div>
 

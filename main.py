@@ -12,6 +12,9 @@ Endpoints:
   POST /api/subtitles       -> devuelve los subtítulos en .srt o .vtt
   GET  /api/thumbnail       -> devuelve la miniatura como archivo
   GET  /api/health          -> estado del servicio
+
+Tanto /api/download como /api/jobs aceptan "start" y "end" (segundos) para
+descargar solo un fragmento del video; el corte se hace con ffmpeg.
 """
 
 import asyncio
@@ -49,6 +52,8 @@ class DownloadRequest(BaseModel):
     url: str = Field(..., min_length=8, max_length=2048)
     mode: str = "best"  # "best" | "audio" | "video-<height>"
     title: Optional[str] = None  # solo para nombrar el archivo
+    start: Optional[float] = Field(default=None, ge=0)  # recorte: segundo inicial
+    end: Optional[float] = Field(default=None, gt=0)  # recorte: segundo final
 
 
 class SubtitleRequest(BaseModel):
@@ -62,6 +67,8 @@ class JobRequest(BaseModel):
     url: str = Field(..., min_length=8, max_length=2048)
     mode: str = "best"
     title: Optional[str] = None
+    start: Optional[float] = Field(default=None, ge=0)
+    end: Optional[float] = Field(default=None, gt=0)
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +107,21 @@ def _validate_mode(mode: str) -> str:
     if mode in ("best", "audio") or re.fullmatch(r"video-\d{2,4}", mode or ""):
         return mode
     raise HTTPException(status_code=400, detail="Modo de descarga inválido")
+
+
+def _validate_range(start: Optional[float], end: Optional[float]) -> None:
+    """Comprueba que el fragmento solicitado tenga sentido."""
+    if start is not None or end is not None:
+        if not FFMPEG_AVAILABLE:
+            raise HTTPException(
+                status_code=400,
+                detail="Para recortar fragmentos hace falta ffmpeg instalado en el servidor.",
+            )
+    if start is not None and end is not None and end <= start:
+        raise HTTPException(
+            status_code=400,
+            detail="El fin del fragmento debe ser mayor que el inicio.",
+        )
 
 
 def _format_selector(mode: str) -> str:
@@ -158,7 +180,13 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(title="VideoDL", lifespan=_lifespan)
 
 
-def _build_opts(mode: str, tmpdir: Path, progress_hook=None) -> dict:
+def _build_opts(
+    mode: str,
+    tmpdir: Path,
+    progress_hook=None,
+    start: Optional[float] = None,
+    end: Optional[float] = None,
+) -> dict:
     """Opciones de yt-dlp comunes a la descarga directa y a los trabajos."""
     opts = {
         "quiet": True,
@@ -182,6 +210,14 @@ def _build_opts(mode: str, tmpdir: Path, progress_hook=None) -> dict:
             else []
         ),
     }
+
+    # Recorte de un fragmento (requiere ffmpeg para cortar con precisión)
+    if FFMPEG_AVAILABLE and (start is not None or end is not None):
+        opts["download_ranges"] = lambda info_dict, ydl: [
+            {"start_time": start or 0, "end_time": end}
+        ]
+        opts["force_keyframes_at_cuts"] = True
+
     if progress_hook is not None:
         opts["progress_hooks"] = [progress_hook]
     return opts
@@ -196,8 +232,29 @@ def _resolve_output(tmpdir: Path, filename: str):
     return files[0] if files else None
 
 
-def _final_name(mode: str, title: Optional[str], info: dict, path: Path) -> str:
+def _time_tag(seconds: Optional[float]) -> str:
+    """Convierte segundos a una etiqueta corta para el nombre del archivo (ej: 1m05s)."""
+    if seconds is None:
+        return ""
+    total = int(seconds)
+    h, rem = divmod(total, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f"{h}h{m:02d}m{s:02d}s"
+    return f"{m}m{s:02d}s"
+
+
+def _final_name(
+    mode: str,
+    title: Optional[str],
+    info: dict,
+    path: Path,
+    start: Optional[float] = None,
+    end: Optional[float] = None,
+) -> str:
     base = _sanitize_filename(title or info.get("title") or "video")
+    if start is not None or end is not None:
+        base = f"{base} (corte {_time_tag(start or 0)}-{_time_tag(end) or 'fin'})"
     ext = "mp3" if mode == "audio" and FFMPEG_AVAILABLE else (path.suffix.lstrip(".") or "mp4")
     return f"{base}.{ext}"
 
@@ -316,9 +373,10 @@ async def download(req: DownloadRequest):
     """Descarga el video (o solo audio) y lo sirve como archivo (bloqueante)."""
     _validate_url(req.url)
     mode = _validate_mode(req.mode)
+    _validate_range(req.start, req.end)
 
     tmpdir = Path(tempfile.mkdtemp(prefix="videodl_"))
-    opts = _build_opts(mode, tmpdir)
+    opts = _build_opts(mode, tmpdir, start=req.start, end=req.end)
 
     def _download():
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -341,7 +399,7 @@ async def download(req: DownloadRequest):
     return FileResponse(
         path,
         media_type="application/octet-stream",
-        filename=_final_name(mode, req.title, info, path),
+        filename=_final_name(mode, req.title, info, path, req.start, req.end),
         background=BackgroundTask(lambda: _rmtree_robust(tmpdir)),
     )
 
@@ -449,12 +507,19 @@ def _make_progress_hook(job_id: str):
     return hook
 
 
-def _run_job(job_id: str, url: str, mode: str, title: Optional[str]) -> None:
+def _run_job(
+    job_id: str,
+    url: str,
+    mode: str,
+    title: Optional[str],
+    start: Optional[float] = None,
+    end: Optional[float] = None,
+) -> None:
     """Se ejecuta en un hilo aparte: descarga y deja el archivo listo."""
     tmpdir = Path(tempfile.mkdtemp(prefix="videodl_job_"))
     _job_update(job_id, tmpdir=str(tmpdir))
 
-    opts = _build_opts(mode, tmpdir, progress_hook=_make_progress_hook(job_id))
+    opts = _build_opts(mode, tmpdir, progress_hook=_make_progress_hook(job_id), start=start, end=end)
 
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -472,7 +537,7 @@ def _run_job(job_id: str, url: str, mode: str, title: Optional[str]) -> None:
             speed=None,
             eta=0,
             path=str(path),
-            filename=_final_name(mode, title, info, path),
+            filename=_final_name(mode, title, info, path, start, end),
             downloaded=path.stat().st_size,
         )
     except yt_dlp.utils.DownloadCancelled:
@@ -491,13 +556,14 @@ async def create_job(req: JobRequest):
     """Inicia una descarga en segundo plano y devuelve su identificador."""
     _validate_url(req.url)
     mode = _validate_mode(req.mode)
+    _validate_range(req.start, req.end)
 
     _jobs_cleanup_stale()
     job_id = _job_new(req.url.strip(), mode)
 
     threading.Thread(
         target=_run_job,
-        args=(job_id, req.url.strip(), mode, req.title),
+        args=(job_id, req.url.strip(), mode, req.title, req.start, req.end),
         daemon=True,
     ).start()
 
