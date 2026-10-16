@@ -308,6 +308,7 @@ def _build_opts(
     progress_hook=None,
     start: Optional[float] = None,
     end: Optional[float] = None,
+    force_keyframes: bool = True,
 ) -> dict:
     """Opciones de yt-dlp comunes a la descarga directa y a los trabajos."""
     opts = {
@@ -338,7 +339,10 @@ def _build_opts(
         opts["download_ranges"] = lambda info_dict, ydl: [
             {"start_time": start or 0, "end_time": end}
         ]
-        opts["force_keyframes_at_cuts"] = True
+        # force_keyframes_at_cuts recodifica el fragmento al vuelo para que el corte
+        # caiga exactamente en el segundo pedido. Es muy caro en servidores con poca
+        # CPU, así que los clips lo desactivan (cortan después, con ffmpeg).
+        opts["force_keyframes_at_cuts"] = bool(force_keyframes)
 
     if progress_hook is not None:
         opts["progress_hooks"] = [progress_hook]
@@ -1015,6 +1019,46 @@ def _ffprobe_meta(path: Path) -> dict:
     }
 
 
+def _first_video_pts(path: Path) -> Optional[float]:
+    """Instante (en segundos) del primer fotograma de vídeo del archivo.
+
+    Cuando yt-dlp descarga solo un fragmento con ffmpeg, la línea de tiempo
+    resultante queda desplazada: el segundo pedido acaba en 0 y el trozo que
+    arrastra desde el fotograma clave anterior tiene marcas negativas. Saber
+    cuánto se desplazó permite luego recortar con exactitud.
+    """
+    if not FFPROBE_AVAILABLE:
+        return None
+    cmd = [
+        FFPROBE, "-v", "error", "-select_streams", "v:0",
+        "-show_entries", "packet=pts_time", "-of", "csv=p=0",
+        "-read_intervals", "%+#1", str(path),
+    ]
+    try:
+        raw = subprocess.run(cmd, capture_output=True, timeout=120).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for line in raw.decode("utf-8", "replace").splitlines():
+        line = line.strip().rstrip(",")
+        if not line:
+            continue
+        try:
+            return float(line)
+        except ValueError:
+            continue
+    return None
+
+
+def _probe_safe(path) -> dict:
+    """Igual que _ffprobe_meta pero sin lanzar: un archivo roto no debe tumbar el trabajo."""
+    if path is None:
+        return {}
+    try:
+        return _ffprobe_meta(Path(path))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def _run_ffmpeg(
     args: list,
     job_id: str,
@@ -1395,6 +1439,10 @@ _CLIP_LABELS = {
 CLIP_MAX_SECONDS = int(os.environ.get("CLIP_MAX_SECONDS", "300"))
 # Tope de descarga cuando el enlace no admite fragmentos (se baja el vídeo entero).
 CLIP_MAX_FULL_DOWNLOAD_MB = int(os.environ.get("CLIP_MAX_FULL_DOWNLOAD_MB", "500"))
+# Margen de seguridad (segundos) que se descarga de más en cada extremo: los
+# fotogramas clave hacen que el corte de yt-dlp empiece antes de lo pedido y
+# se recupera la precisión en el paso de ffmpeg.
+CLIP_PAD_SECONDS = max(4, int(os.environ.get("CLIP_PAD_SECONDS", "12")))
 
 _clips: dict[str, dict] = {}
 _clips_lock = threading.Lock()
@@ -1549,6 +1597,7 @@ def _clip_transform(
     quality: str,
     pct_from: float,
     pct_to: float,
+    seek_absolute: bool = False,
 ) -> dict:
     """Recorta el fragmento y lo reencuadra. Devuelve tamaño y duración finales."""
     meta = _ffprobe_meta(src)
@@ -1559,6 +1608,10 @@ def _clip_transform(
 
     args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
     if start:  # el corte rápido antes de -i evita decodificar lo que no hace falta
+        if seek_absolute:
+            # El fragmento descargado arrastra marcas de tiempo desplazadas, así que
+            # el segundo de corte hay que buscarlo por su valor absoluto.
+            args += ["-seek_timestamp", "1"]
         args += ["-ss", f"{float(start):.3f}"]
     args += ["-i", str(src)]
     if end is not None:
@@ -1599,14 +1652,20 @@ def _clip_finish(job_id: str, dest: Path, base: str, start, end, aspect: str) ->
     )
 
 
-def _clip_download(job_id, url, tmpdir: Path, start, end, con_rango: bool):
-    """Descarga el fragmento pedido (o el vídeo completo) y devuelve (info, ruta)."""
+def _clip_download(job_id, url, tmpdir: Path, start, end, con_rango: bool, exacto: bool = False):
+    """Descarga el fragmento pedido (o el vídeo completo) y devuelve (info, ruta).
+
+    Con `exacto=False` el fragmento se copia tal cual (barato, pero arrastra el
+    trozo del fotograma clave); con `exacto=True` yt-dlp recodifica al vuelo para
+    que el corte caiga justo en el segundo pedido (mucho más lento).
+    """
     opts = _build_opts(
         "video-1080",
         tmpdir,
         progress_hook=_make_clip_hook(job_id, 70.0),
         start=start if con_rango else None,
         end=end if con_rango else None,
+        force_keyframes=exacto,
     )
     if not con_rango:
         # Si hay que bajar el archivo entero, se pone un tope para no llenar el disco.
@@ -1624,21 +1683,67 @@ def _run_clip_job_url(job_id, url, start, end, aspect, quality, title) -> None:
         job_id, tmpdir=str(tmpdir), status="downloading",
         message="Analizando y descargando el fragmento…",
     )
+    inicio, fin = float(start), float(end)
+    dur = max(0.1, fin - inicio)
+    src = None
+    info: dict = {}
+    corte = (None, None)
+    seek_abs = False
     try:
+        # Se pide un trozo algo más largo de lo necesario: yt-dlp copia desde el
+        # fotograma clave anterior, así que hay que adelantar el inicio y dejar
+        # cola suficiente para poder recuperar después el segundo exacto.
+        a = max(0.0, inicio - CLIP_PAD_SECONDS)
+        problema = None
+        meta = {}
+
+        # 1) Intento barato: descarga en copia del trozo ampliado y recorte exacto
+        #    en el paso de ffmpeg.
         try:
-            info, src = _clip_download(job_id, url, tmpdir, start, end, True)
-            corte = (None, None)  # el fragmento ya viene recortado por yt-dlp
+            info, src = _clip_download(job_id, url, tmpdir, a, fin + CLIP_PAD_SECONDS, True)
+            meta = _probe_safe(src)
         except yt_dlp.utils.DownloadError:
-            # Algunos enlaces (un MP4 suelto, por ejemplo) no permiten descargar
-            # solo un trozo: se baja el archivo completo y se recorta con ffmpeg.
+            problema = "descarga"
+
+        if problema is None:
+            p0 = _first_video_pts(src) if src is not None else None
+            desplazado = p0 is None or p0 <= 0.5
+            ss = (inicio - a) if desplazado else inicio
+            total = float(meta.get("duration") or 0)
+            if not meta.get("has_video") or total <= 0 or ss + dur > total + 0.75:
+                problema = "ajuste"
+            else:
+                corte = (ss, ss + dur)
+                seek_abs = True
+
+        # 2) El fragmento no servía: se pide el corte exacto a yt-dlp (recodifica
+        #    al vuelo, más lento, pero deja el clip en el segundo pedido).
+        if problema == "ajuste":
+            _rmtree_robust(tmpdir)
+            tmpdir = Path(tempfile.mkdtemp(prefix="videodl_clip_"))
+            _clip_update(
+                job_id, tmpdir=str(tmpdir), percent=0.0,
+                message="Ajustando el fragmento al segundo exacto…",
+            )
+            try:
+                info, src = _clip_download(job_id, url, tmpdir, inicio, fin, True, exacto=True)
+                problema = None if _probe_safe(src).get("has_video") else "descarga"
+            except yt_dlp.utils.DownloadError:
+                problema = "descarga"
+            if problema is None:
+                corte = (None, None)
+
+        # 3) Último recurso: algunos enlaces (un MP4 suelto, por ejemplo) no admiten
+        #    descargar solo un trozo; se baja el archivo completo y se recorta luego.
+        if problema == "descarga":
             _rmtree_robust(tmpdir)
             tmpdir = Path(tempfile.mkdtemp(prefix="videodl_clip_"))
             _clip_update(
                 job_id, tmpdir=str(tmpdir), percent=0.0,
                 message="Este enlace no admite fragmentos: descargando el vídeo completo…",
             )
-            info, src = _clip_download(job_id, url, tmpdir, start, end, False)
-            corte = (start, end)
+            info, src = _clip_download(job_id, url, tmpdir, inicio, fin, False)
+            corte = (inicio, fin)
 
         if src is None:
             raise RuntimeError("No se pudo descargar el vídeo.")
@@ -1652,13 +1757,14 @@ def _run_clip_job_url(job_id, url, start, end, aspect, quality, title) -> None:
 
         dest = tmpdir / "clip.mp4"
         datos = _clip_transform(
-            job_id, src, dest, corte[0], corte[1], aspect, quality, 72.0, 99.0
+            job_id, src, dest, corte[0], corte[1], aspect, quality, 72.0, 99.0,
+            seek_absolute=seek_abs,
         )
         src.unlink(missing_ok=True)
 
         base = title or info.get("title") or "clip"
         _clip_update(job_id, width=datos["width"], height=datos["height"], duration=datos["duration"])
-        _clip_finish(job_id, dest, base, start, end, aspect)
+        _clip_finish(job_id, dest, base, inicio, fin, aspect)
     except yt_dlp.utils.DownloadCancelled:
         _rmtree_robust(tmpdir)
         _clip_update(job_id, status="cancelled", message="Cancelado", tmpdir=None)

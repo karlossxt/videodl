@@ -112,9 +112,10 @@ En **✂️ Clips verticales** (o entrando en <http://127.0.0.1:8000/recortar-cl
    - **Original** — solo recorta, sin reencuadrar.
 4. Pulsa **Crear el clip** y descarga el MP4.
 
-Con enlaces de directos largos, el servidor **solo descarga los segundos pedidos**: un
-clip de 30 s en un directo de 10 horas tarda lo mismo que en un video corto. La salida
-es H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
+Con enlaces de directos largos, el servidor **solo descarga los segundos pedidos** (más
+un pequeño margen de seguridad que después se recorta al segundo exacto): un clip de
+30 s en un directo de 10 horas tarda lo mismo que en un video corto. La salida es
+H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
 `CLIP_MAX_SECONDS` (300 s por defecto).
 
 ## Estructura del proyecto
@@ -208,7 +209,7 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 
 - **ffmpeg** debe estar presente (la imagen Docker ya lo incluye) para unir video+audio, generar MP3, recortar fragmentos, comprimir y crear clips verticales.
 - **Mantén yt-dlp actualizado**: las plataformas cambian a menudo. Al reconstruir la imagen se instala la última versión permitida por `requirements.txt`.
-- Variables de entorno opcionales: **`MAX_UPLOAD_MB`** (límite de subida del compresor y de los clips, 200 por defecto), **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`** (duración máxima de un clip, 300 por defecto) y **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope de descarga cuando el enlace no admite fragmentos, 500 por defecto). En servidores gratuitos con poca CPU conviene dejar `veryfast` o `ultrafast`.
+- Variables de entorno opcionales: **`MAX_UPLOAD_MB`** (límite de subida del compresor y de los clips, 200 por defecto), **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`** (duración máxima de un clip, 300 por defecto), **`CLIP_PAD_SECONDS`** (margen de seguridad que se descarga de más en cada extremo del clip para poder clavar el segundo exacto, 12 por defecto) y **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope de descarga cuando el enlace no admite fragmentos, 500 por defecto). En servidores gratuitos con poca CPU conviene dejar `veryfast` o `ultrafast`.
 - Los archivos se descargan a una carpeta temporal y se borran en cuanto se envían al usuario. Al reiniciar el servicio se limpian los restos.
 - Usa la app solo para contenido propio o con licencia; respeta los términos de cada plataforma.
 
