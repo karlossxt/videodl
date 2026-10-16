@@ -662,7 +662,50 @@ async def cancel_job(job_id: str):
 @app.get("/health")
 async def health():
     """Comprobación de estado del servicio (alias /health para plataformas)."""
-    return {"status": "ok", "ffmpeg": FFMPEG_AVAILABLE}
+    cookies_lines = 0
+    if COOKIES_FILE:
+        try:
+            with open(COOKIES_FILE, "r", encoding="utf-8", errors="replace") as fh:
+                cookies_lines = sum(
+                    1 for ln in fh if ln.strip() and not ln.lstrip().startswith("#")
+                )
+        except OSError:
+            cookies_lines = -1
+    return {
+        "status": "ok",
+        "ffmpeg": FFMPEG_AVAILABLE,
+        "cookies": bool(COOKIES_FILE),
+        "cookies_lines": cookies_lines,
+    }
+
+
+@app.get("/api/debug/youtube")
+async def debug_youtube(url: str, client: str = "default"):
+    """DIAGNÓSTICO TEMPORAL: prueba un player_client de YouTube y devuelve el resultado."""
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "skip_download": True,
+        "extractor_args": {"youtube": {"player_client": [client]}},
+    }
+    if COOKIES_FILE:
+        opts["cookiefile"] = COOKIES_FILE
+
+    def _probe():
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        return {
+            "client": client,
+            "ok": True,
+            "title": info.get("title"),
+            "formats": len(info.get("formats") or []),
+        }
+
+    try:
+        return await asyncio.to_thread(_probe)
+    except Exception as exc:  # noqa: BLE001
+        return {"client": client, "ok": False, "error": str(exc).split("\n")[0][:200]}
 
 
 @app.post("/api/subtitles")
