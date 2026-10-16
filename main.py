@@ -83,6 +83,7 @@ FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
 # Archivo de cookies opcional (algunas plataformas piden iniciar sesión desde
 # servidores). Se rellena desde la variable de entorno YTDLP_COOKIES(_B64).
 COOKIES_FILE: Optional[str] = None
+COOKIES_ERROR: str = ""
 
 
 def _setup_cookies() -> None:
@@ -91,28 +92,34 @@ def _setup_cookies() -> None:
     Sirve para plataformas que exigen sesión iniciada (p. ej. YouTube en la nube).
     Es completamente opcional: si no se definen, la app funciona igual.
     """
-    global COOKIES_FILE
+    global COOKIES_FILE, COOKIES_ERROR
 
     raw = os.environ.get("YTDLP_COOKIES", "").strip()
+    fuente = "YTDLP_COOKIES"
     if not raw:
         b64 = os.environ.get("YTDLP_COOKIES_B64", "").strip()
+        fuente = "YTDLP_COOKIES_B64"
         if b64:
             import base64
 
             try:
                 raw = base64.b64decode(b64).decode("utf-8", "replace").strip()
-            except Exception:
+            except Exception as exc:  # noqa: BLE001
+                COOKIES_ERROR = f"base64 invalido: {exc}"
                 raw = ""
 
     if not raw:
+        COOKIES_ERROR = COOKIES_ERROR or f"sin datos ({fuente} vacia o no definida)"
         return
 
     try:
         path = Path(tempfile.gettempdir()) / "videodl_cookies.txt"
         path.write_text(raw, encoding="utf-8")
         COOKIES_FILE = str(path)
-    except OSError:
+        COOKIES_ERROR = ""
+    except OSError as exc:
         COOKIES_FILE = None
+        COOKIES_ERROR = f"no se pudo escribir: {exc}"
 
 
 def _validate_url(url: str) -> None:
@@ -676,6 +683,9 @@ async def health():
         "ffmpeg": FFMPEG_AVAILABLE,
         "cookies": bool(COOKIES_FILE),
         "cookies_lines": cookies_lines,
+        "cookies_error": COOKIES_ERROR,
+        "env_b64_len": len(os.environ.get("YTDLP_COOKIES_B64", "")),
+        "env_raw_len": len(os.environ.get("YTDLP_COOKIES", "")),
     }
 
 
