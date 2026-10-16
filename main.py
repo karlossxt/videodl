@@ -84,16 +84,53 @@ FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
 # servidores). Se rellena desde la variable de entorno YTDLP_COOKIES(_B64).
 COOKIES_FILE: Optional[str] = None
 COOKIES_ERROR: str = ""
+COOKIES_SOURCE: str = ""
+
+# Render y otras plataformas montan aquí los "Secret Files".
+SECRETS_DIR = Path("/etc/secrets")
+
+
+def _buscar_secret_file() -> Optional[str]:
+    """Devuelve un cookies.txt subido como Secret File (/etc/secrets/...), si existe."""
+    candidatos = []
+    try:
+        candidatos.extend(sorted(SECRETS_DIR.glob("*cookie*")))
+    except OSError:
+        pass
+    candidatos.append(SECRETS_DIR / "cookies.txt")
+    for cand in candidatos:
+        try:
+            if cand.is_file() and cand.stat().st_size > 0:
+                return str(cand)
+        except OSError:
+            continue
+    return None
 
 
 def _setup_cookies() -> None:
-    """Prepara un cookies.txt temporal si se define YTDLP_COOKIES o YTDLP_COOKIES_B64.
+    """Localiza el cookies.txt opcional, en este orden:
 
-    Sirve para plataformas que exigen sesión iniciada (p. ej. YouTube en la nube).
-    Es completamente opcional: si no se definen, la app funciona igual.
+    1. Ruta indicada en YTDLP_COOKIES_FILE.
+    2. Un Secret File montado en /etc/secrets (cookies.txt).
+    3. El contenido en YTDLP_COOKIES (texto) o YTDLP_COOKIES_B64 (Base64).
+
+    Es totalmente opcional: sin cookies la app funciona igual.
     """
-    global COOKIES_FILE, COOKIES_ERROR
+    global COOKIES_FILE, COOKIES_ERROR, COOKIES_SOURCE
 
+    # 1) Ruta personalizada
+    ruta = os.environ.get("YTDLP_COOKIES_FILE", "").strip()
+    if ruta and Path(ruta).is_file():
+        COOKIES_FILE, COOKIES_ERROR, COOKIES_SOURCE = ruta, "", "YTDLP_COOKIES_FILE"
+        return
+
+    # 2) Secret File (Render: /etc/secrets/cookies.txt)
+    encontrado = _buscar_secret_file()
+    if encontrado:
+        COOKIES_FILE, COOKIES_ERROR, COOKIES_SOURCE = encontrado, "", "secret-file"
+        return
+
+    # 3) Contenido en variable de entorno
     raw = os.environ.get("YTDLP_COOKIES", "").strip()
     fuente = "YTDLP_COOKIES"
     if not raw:
@@ -105,18 +142,27 @@ def _setup_cookies() -> None:
             try:
                 raw = base64.b64decode(b64).decode("utf-8", "replace").strip()
             except Exception as exc:  # noqa: BLE001
-                COOKIES_ERROR = f"base64 invalido: {exc}"
+                COOKIES_ERROR = (
+                    f"base64 invalido ({len(b64)} caracteres recibidos): {exc}"
+                )
                 raw = ""
 
     if not raw:
         COOKIES_ERROR = COOKIES_ERROR or f"sin datos ({fuente} vacia o no definida)"
         return
 
+    # El formato Netscape de cookies.txt usa tabuladores como separador.
+    if "\t" not in raw:
+        COOKIES_ERROR = (
+            f"{fuente} no parece un cookies.txt valido "
+            f"(formato Netscape, {len(raw)} caracteres)"
+        )
+        return
+
     try:
         path = Path(tempfile.gettempdir()) / "videodl_cookies.txt"
         path.write_text(raw, encoding="utf-8")
-        COOKIES_FILE = str(path)
-        COOKIES_ERROR = ""
+        COOKIES_FILE, COOKIES_ERROR, COOKIES_SOURCE = str(path), "", fuente
     except OSError as exc:
         COOKIES_FILE = None
         COOKIES_ERROR = f"no se pudo escribir: {exc}"
@@ -683,6 +729,7 @@ async def health():
         "ffmpeg": FFMPEG_AVAILABLE,
         "cookies": bool(COOKIES_FILE),
         "cookies_lines": cookies_lines,
+        "cookies_source": COOKIES_SOURCE,
         "cookies_error": COOKIES_ERROR,
         "env_b64_len": len(os.environ.get("YTDLP_COOKIES_B64", "")),
         "env_raw_len": len(os.environ.get("YTDLP_COOKIES", "")),
