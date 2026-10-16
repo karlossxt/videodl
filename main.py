@@ -1112,8 +1112,10 @@ def _compress_file(
         return
 
     # 2) Recomprimir calculando el bitrate a partir del tamaño objetivo.
+    # El 0,94 deja un margen para el contenedor y el redondeo de ABR: así casi
+    # siempre basta con una sola pasada (clave en servidores con poca CPU).
     audio_kbps = 128
-    total_kbps = (target_bytes * 8 / duration / 1000) if duration > 0 else 800.0
+    total_kbps = (target_bytes * 8 * 0.94 / duration / 1000) if duration > 0 else 800.0
     if total_kbps < 420:
         audio_kbps = 96
     if total_kbps < 240:
