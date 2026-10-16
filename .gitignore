@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Entorno y secretos
+.env
+.env.local
+
+# Archivos temporales de descarga
+downloads/
+*.part
+
+# Ejemplo de referencia (no forma parte del proyecto)
+_ejemplo_gemini/
+*.zip
+
+# Editores / sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
