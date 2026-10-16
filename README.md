@@ -9,6 +9,8 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 - 🔍 **Análisis previo**: muestra título, autor, vistas, duración, miniatura y las calidades realmente disponibles.
 - 🎬 **Descarga de video** en la máxima calidad o eligiendo una resolución concreta (MP4).
 - 🎵 **Solo audio** en MP3 (192 kbps) mediante ffmpeg.
+- 💬 **Subtítulos** en `.SRT` o `.VTT` (manuales y automáticos) en el idioma que elijas.
+- 🖼️ **Descarga de la miniatura** de portada en su resolución original.
 - 🖥️ **Interfaz web** oscura y responsive, sin dependencias de frameworks en el frontend.
 - 📋 Botón **Pegar** desde el portapapeles para analizar al instante.
 - ✅ Mensajes de error claros en español (video privado, restringido, URL no soportada, etc.).
@@ -50,6 +52,12 @@ python -m uvicorn main:app --port 8000
 
 Abre <http://127.0.0.1:8000> en el navegador, pega el enlace del video, pulsa **Analizar** y elige el formato que quieras descargar.
 
+La tarjeta de resultado tiene tres pestañas:
+
+- 🎬 **Video**: máxima calidad o una resolución concreta en MP4.
+- 🎵 **Solo Audio**: extrae la pista de audio en MP3.
+- 🗂️ **Extras**: descarga la miniatura de portada y los subtítulos en `.SRT` o `.VTT`.
+
 ## Estructura del proyecto
 
 ```
@@ -67,8 +75,11 @@ videodl/
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `POST` | `/api/info` | Analiza una URL y devuelve metadatos y calidades. Cuerpo: `{ "url": "..." }` |
+| `GET` | `/api/health` | Comprueba el estado del servicio y si ffmpeg está disponible. |
+| `POST` | `/api/info` | Analiza una URL y devuelve metadatos, calidades y subtítulos disponibles. Cuerpo: `{ "url": "..." }` |
 | `POST` | `/api/download` | Descarga y devuelve el archivo. Cuerpo: `{ "url": "...", "mode": "best \| audio \| video-<altura>", "title": "..." }` |
+| `POST` | `/api/subtitles` | Devuelve los subtítulos de un idioma. Cuerpo: `{ "url": "...", "lang": "en", "format": "srt \| vtt", "title": "..." }` |
+| `GET` | `/api/thumbnail` | Devuelve la miniatura como archivo. Parámetros: `url`, `title`. |
 
 ## Aviso legal
 

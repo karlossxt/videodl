@@ -8,12 +8,15 @@ Endpoints:
 """
 
 import asyncio
+import mimetypes
 import re
 import shutil
 import tempfile
 import unicodedata
 from pathlib import Path
 from typing import Optional
+from urllib.request import Request as URLRequest
+from urllib.request import urlopen
 
 import yt_dlp
 from fastapi import FastAPI, HTTPException
@@ -36,6 +39,13 @@ class DownloadRequest(BaseModel):
     url: str = Field(..., min_length=8, max_length=2048)
     mode: str = "best"  # "best" | "audio" | "video-<height>"
     title: Optional[str] = None  # solo para nombrar el archivo
+
+
+class SubtitleRequest(BaseModel):
+    url: str = Field(..., min_length=8, max_length=2048)
+    lang: str = Field(..., min_length=2, max_length=20)
+    format: str = "srt"  # "srt" | "vtt"
+    title: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -68,6 +78,49 @@ def _human_size(n: Optional[int]) -> Optional[str]:
             return f"{n:.1f} {unit}"
         n /= 1024
     return f"{n:.1f} TB"
+
+
+# Idiomas habituales, se muestran primero en la lista de subtítulos
+_COMMON_LANGS = ["es", "en", "pt", "fr", "de", "it", "ja", "ko", "zh", "ru", "ar", "hi"]
+
+_LANG_NAMES = {
+    "es": "Español", "en": "Inglés", "pt": "Portugués", "fr": "Francés",
+    "de": "Alemán", "it": "Italiano", "ja": "Japonés", "ko": "Coreano",
+    "zh": "Chino", "zh-Hans": "Chino simplificado", "zh-Hant": "Chino tradicional",
+    "ru": "Ruso", "ar": "Árabe", "hi": "Hindi", "nl": "Neerlandés",
+    "pl": "Polaco", "tr": "Turco", "sv": "Sueco", "id": "Indonesio",
+    "uk": "Ucraniano", "vi": "Vietnamita", "th": "Tailandés", "ca": "Catalán",
+}
+
+
+def _sub_label(tracks: list, lang: str) -> str:
+    for t in tracks or []:
+        name = t.get("name")
+        if name and name.lower() not in (lang.lower(), "unknown"):
+            return name
+    return _LANG_NAMES.get(lang, lang.upper())
+
+
+def _collect_subtitles(info: dict) -> list:
+    """Combina subtítulos manuales y automáticos, priorizando idiomas comunes."""
+    manual = info.get("subtitles") or {}
+    auto = info.get("automatic_captions") or {}
+
+    result = []
+    manual_bases = set()
+    for lang, tracks in manual.items():
+        result.append({"lang": lang, "label": _sub_label(tracks, lang), "auto": False})
+        manual_bases.add(lang.split("-")[0].lower())
+
+    auto_langs = [l for l in _COMMON_LANGS if l in auto]
+    auto_langs += [l for l in auto if l not in _COMMON_LANGS]
+    for lang in auto_langs:
+        # Omitir el automático si ya existe uno manual del mismo idioma
+        if lang.split("-")[0].lower() in manual_bases:
+            continue
+        result.append({"lang": lang, "label": _sub_label(auto[lang], lang), "auto": True})
+
+    return result[:14]
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +184,7 @@ async def video_info(req: InfoRequest):
         "view_count": info.get("view_count"),
         "qualities": ordered,
         "audio_available": audio_only,
+        "subtitles": _collect_subtitles(info),
         "ffmpeg_available": FFMPEG_AVAILABLE,
     }
 
@@ -226,6 +280,101 @@ async def download(req: DownloadRequest):
     )
 
 
+@app.get("/api/health")
+async def health():
+    """Comprobación de estado del servicio."""
+    return {"status": "ok", "ffmpeg": FFMPEG_AVAILABLE}
+
+
+@app.post("/api/subtitles")
+async def download_subtitles(req: SubtitleRequest):
+    """Descarga los subtítulos de un idioma y los sirve en .srt o .vtt."""
+    _validate_url(req.url)
+    fmt = req.format if req.format in ("srt", "vtt") else "srt"
+
+    tmpdir = Path(tempfile.mkdtemp(prefix="videodl_sub_"))
+
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "skip_download": True,
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitleslangs": [req.lang],
+        "subtitlesformat": fmt,
+        "outtmpl": str(tmpdir / "sub.%(ext)s"),
+    }
+
+    def _run():
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([req.url.strip()])
+
+    try:
+        await asyncio.to_thread(_run)
+    except yt_dlp.utils.DownloadError as e:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise HTTPException(status_code=422, detail=_clean_ytdlp_error(str(e)))
+
+    files = [p for p in tmpdir.iterdir() if p.is_file()]
+    if not files:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise HTTPException(
+            status_code=404,
+            detail="No hay subtítulos disponibles para ese idioma en este video.",
+        )
+
+    path = files[0]
+    ext = path.suffix.lstrip(".") or fmt
+    base = _sanitize_filename(req.title or "subtitulos")
+    lang = re.sub(r"[^\w\-]", "", req.lang) or "sub"
+
+    from starlette.background import BackgroundTask
+
+    return FileResponse(
+        path,
+        media_type="text/vtt" if ext == "vtt" else "application/x-subrip",
+        filename=f"{base}.{lang}.{ext}",
+        background=BackgroundTask(lambda: shutil.rmtree(tmpdir, ignore_errors=True)),
+    )
+
+
+@app.get("/api/thumbnail")
+async def download_thumbnail(url: str, title: Optional[str] = None):
+    """Descarga la miniatura del video como archivo (evita problemas de CORS)."""
+    if not _URL_RE.match(url):
+        raise HTTPException(status_code=400, detail="URL de imagen inválida")
+
+    def _fetch():
+        request = URLRequest(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(request, timeout=30) as response:
+            content_type = response.headers.get_content_type()
+            return response.read(), content_type
+
+    try:
+        data, content_type = await asyncio.to_thread(_fetch)
+    except Exception:
+        raise HTTPException(status_code=502, detail="No se pudo descargar la miniatura")
+
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=415, detail="El enlace no apunta a una imagen válida")
+
+    suffix = mimetypes.guess_extension(content_type) or ".jpg"
+    tmpdir = Path(tempfile.mkdtemp(prefix="videodl_thumb_"))
+    path = tmpdir / f"thumb{suffix}"
+    path.write_bytes(data)
+
+    from starlette.background import BackgroundTask
+
+    name = _sanitize_filename(title or "miniatura") + suffix
+    return FileResponse(
+        path,
+        media_type=content_type,
+        filename=name,
+        background=BackgroundTask(lambda: shutil.rmtree(tmpdir, ignore_errors=True)),
+    )
+
+
 def _clean_ytdlp_error(msg: str) -> str:
     """Muestra un mensaje más amigable, sin rutas locales ni ruido técnico."""
     msg = msg.split("\n")[0]
@@ -240,6 +389,8 @@ def _clean_ytdlp_error(msg: str) -> str:
         return "El video tiene restricción de edad y no se puede descargar."
     if "Sign in" in msg or "login" in msg.lower():
         return "El contenido requiere iniciar sesión y no se puede descargar."
+    if "429" in msg or "Too Many Requests" in msg or "rate limit" in msg.lower():
+        return "La plataforma limitó temporalmente las peticiones. Espera un momento e inténtalo de nuevo."
     return f"No se pudo procesar la URL: {msg[:200]}"
 
 

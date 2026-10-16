@@ -106,6 +106,7 @@
           <div class="tabs">
             <button class="tab active" data-tab="video">🎬 Video</button>
             <button class="tab" data-tab="audio">🎵 Solo Audio</button>
+            <button class="tab" data-tab="assets">🗂️ Extras</button>
           </div>
 
           <!-- Aviso de descarga en curso -->
@@ -128,6 +129,22 @@
               🎵 Extrae la pista de audio en MP3 de 192 kbps (ideal para música, podcasts y discursos).
             </div>
             <div id="audio-list" class="format-list"></div>
+          </div>
+
+          <!-- Pestaña: Subtítulos y miniatura -->
+          <div id="tab-assets" class="tab-panel hidden">
+            <div class="asset-card">
+              <div class="asset-head">
+                <span>🖼️ Miniatura de portada</span>
+                <button id="thumb-btn" class="download-btn">⬇ Descargar portada</button>
+              </div>
+              <div class="thumb-mini"><img id="thumb-asset" alt="Miniatura" /></div>
+            </div>
+
+            <div class="asset-card">
+              <div class="asset-head"><span>💬 Subtítulos</span></div>
+              <div id="subs-list" class="subs-list"></div>
+            </div>
           </div>
         </div>
       </div>

@@ -108,8 +108,10 @@ document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
-    $("tab-video").classList.toggle("hidden", tab.dataset.tab !== "video");
-    $("tab-audio").classList.toggle("hidden", tab.dataset.tab !== "audio");
+    // Mostrar solo el panel correspondiente
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
+    const panel = $(`tab-${tab.dataset.tab}`);
+    if (panel) panel.classList.remove("hidden");
   });
 });
 
@@ -220,8 +222,56 @@ function renderResult(video) {
     audioList.innerHTML = `<p class="empty-note">Este enlace no tiene pista de audio descargable.</p>`;
   }
 
+  // ----- Pestaña de extras: miniatura y subtítulos -----
+  renderAssets(video);
+
   switchTab(qualities.length ? "video" : "audio");
   result.classList.remove("hidden");
+}
+
+function renderAssets(video) {
+  // Miniatura
+  const thumbAsset = $("thumb-asset");
+  thumbAsset.src = video.thumbnail || "";
+  $("thumb-btn").disabled = !video.thumbnail;
+
+  // Subtítulos
+  const subsList = $("subs-list");
+  subsList.innerHTML = "";
+  const subs = video.subtitles || [];
+
+  if (!subs.length) {
+    subsList.innerHTML = `<p class="empty-note">Este video no tiene subtítulos disponibles.</p>`;
+    return;
+  }
+
+  for (const sub of subs) {
+    const row = document.createElement("div");
+    row.className = "sub-row";
+
+    const name = document.createElement("span");
+    name.className = "sub-name";
+    name.innerHTML = `${escapeHtml(sub.label)}${sub.auto ? `<span class="sub-tag">Auto</span>` : ""}`;
+
+    const actions = document.createElement("span");
+    actions.className = "sub-actions";
+    for (const fmt of ["srt", "vtt"]) {
+      const btn = document.createElement("button");
+      btn.className = "sub-btn";
+      btn.textContent = `.${fmt.toUpperCase()}`;
+      btn.addEventListener("click", () => downloadSubtitle(sub.lang, fmt));
+      actions.appendChild(btn);
+    }
+
+    row.append(name, actions);
+    subsList.appendChild(row);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
 }
 
 function formatRow({ icon, label, sub, badge, mode, isAudio }) {
@@ -261,22 +311,7 @@ async function startDownload(mode) {
       mode,
       title: currentVideo?.title || null,
     });
-
-    const disposition = res.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/i);
-    let filename = "video.mp4";
-    if (match) filename = match[1] ? decodeURIComponent(match[1]) : match[2];
-
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(blobUrl);
-
+    const filename = await saveResponseAsFile(res, "video.mp4");
     showToast(`Descarga completada: ${filename}`);
   } catch (err) {
     showError(err.message);
@@ -286,6 +321,63 @@ async function startDownload(mode) {
   }
 }
 
+async function downloadSubtitle(lang, format) {
+  clearError();
+  setButtonsDisabled(true);
+  showToast("Preparando subtítulos…");
+
+  try {
+    const res = await api("/api/subtitles", {
+      url: urlInput.value.trim(),
+      lang,
+      format,
+      title: currentVideo?.title || null,
+    });
+    const filename = await saveResponseAsFile(res, `subtitulos.${lang}.${format}`);
+    showToast(`Subtítulos descargados: ${filename}`);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
+function downloadThumbnail() {
+  if (!currentVideo?.thumbnail) return;
+  const params = new URLSearchParams({
+    url: currentVideo.thumbnail,
+    title: currentVideo.title || "miniatura",
+  });
+  const a = document.createElement("a");
+  a.href = `/api/thumbnail?${params}`;
+  a.download = "";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showToast("Descargando miniatura…");
+}
+
+$("thumb-btn").addEventListener("click", downloadThumbnail);
+
+/** Guarda la respuesta como archivo, respetando el nombre del header Content-Disposition. */
+async function saveResponseAsFile(res, fallbackName) {
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/i);
+  let filename = fallbackName;
+  if (match) filename = match[1] ? decodeURIComponent(match[1]) : match[2];
+
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
+  return filename;
+}
+
 function setButtonsDisabled(disabled) {
-  document.querySelectorAll(".download-btn").forEach((b) => (b.disabled = disabled));
+  document.querySelectorAll(".download-btn, .sub-btn").forEach((b) => (b.disabled = disabled));
 }
