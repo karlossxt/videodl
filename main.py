@@ -11,17 +11,27 @@ Endpoints:
   POST /api/jobs/{id}/cancel-> cancela un trabajo en curso
   POST /api/subtitles       -> devuelve los subtítulos en .srt o .vtt
   GET  /api/thumbnail       -> devuelve la miniatura como archivo
+  POST /api/compress        -> sube un vídeo y lo comprime a un tamaño objetivo
+  GET  /api/compress/{id}   -> progreso de la compresión
+  GET  /api/compress/{id}/file -> descarga el vídeo ya comprimido
   GET  /api/health          -> estado del servicio
+
+Páginas:
+  /                         -> descargador universal de vídeo/audio
+  /comprimir-video-whatsapp -> compresor de vídeo para WhatsApp / Discord / Telegram
+  /herramientas             -> directorio de herramientas
 
 Tanto /api/download como /api/jobs aceptan "start" y "end" (segundos) para
 descargar solo un fragmento del video; el corte se hace con ffmpeg.
 """
 
 import asyncio
+import json
 import mimetypes
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import threading
 import time
@@ -35,7 +45,7 @@ from urllib.request import urlopen
 from contextlib import asynccontextmanager
 
 import yt_dlp
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -79,6 +89,12 @@ class JobRequest(BaseModel):
 _URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
 FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
+FFPROBE_AVAILABLE = shutil.which("ffprobe") is not None
+FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
+FFPROBE = shutil.which("ffprobe") or "ffprobe"
+# Preset de x264: en servidores gratuitos (CPU muy limitada) conviene "veryfast".
+# Se puede ajustar sin tocar código con la variable X264_PRESET.
+X264_PRESET = os.environ.get("X264_PRESET", "veryfast")
 
 # Archivo de cookies opcional (algunas plataformas piden iniciar sesión desde
 # servidores). Se rellena desde la variable de entorno YTDLP_COOKIES(_B64).
@@ -554,6 +570,7 @@ def _janitor_loop() -> None:
         time.sleep(600)
         try:
             _jobs_cleanup_stale()
+            _cjobs_cleanup_stale()
         except Exception:
             pass
 
@@ -727,6 +744,9 @@ async def health():
     return {
         "status": "ok",
         "ffmpeg": FFMPEG_AVAILABLE,
+        "ffprobe": FFPROBE_AVAILABLE,
+        "compressor": FFMPEG_AVAILABLE and FFPROBE_AVAILABLE,
+        "max_upload_mb": MAX_UPLOAD_MB,
         "cookies": bool(COOKIES_FILE),
         "cookies_lines": cookies_lines,
         "cookies_source": COOKIES_SOURCE,
@@ -734,35 +754,6 @@ async def health():
         "env_b64_len": len(os.environ.get("YTDLP_COOKIES_B64", "")),
         "env_raw_len": len(os.environ.get("YTDLP_COOKIES", "")),
     }
-
-
-@app.get("/api/debug/youtube")
-async def debug_youtube(url: str, client: str = "default"):
-    """DIAGNÓSTICO TEMPORAL: prueba un player_client de YouTube y devuelve el resultado."""
-    opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "skip_download": True,
-        "extractor_args": {"youtube": {"player_client": [client]}},
-    }
-    if COOKIES_FILE:
-        opts["cookiefile"] = COOKIES_FILE
-
-    def _probe():
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-        return {
-            "client": client,
-            "ok": True,
-            "title": info.get("title"),
-            "formats": len(info.get("formats") or []),
-        }
-
-    try:
-        return await asyncio.to_thread(_probe)
-    except Exception as exc:  # noqa: BLE001
-        return {"client": client, "ok": False, "error": str(exc).split("\n")[0][:200]}
 
 
 @app.post("/api/subtitles")
@@ -874,8 +865,496 @@ def _clean_ytdlp_error(msg: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Compresor de vídeo (WhatsApp / Discord / Telegram / correo)
+# ---------------------------------------------------------------------------
+
+# Tamaños máximos típicos (MB) de cada plataforma
+COMPRESS_PRESETS = {
+    "whatsapp": 16,
+    "whatsapp-hd": 64,
+    "discord": 10,
+    "discord-nitro": 25,
+    "telegram": 50,
+    "email": 20,
+}
+
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "200"))
+_UPLOAD_CHUNK = 1024 * 1024
+_ALLOWED_HEIGHTS = {0, 360, 480, 540, 720, 1080, 1440}
+_ALLOWED_SUFFIXES = {
+    ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v",
+    ".mpg", ".mpeg", ".flv", ".ts", ".3gp", ".wmv",
+}
+
+_cjobs: dict[str, dict] = {}
+_cjobs_lock = threading.Lock()
+_CJOB_TTL_SECONDS = 3600
+
+
+class _Cancelled(Exception):
+    """Se lanza cuando el usuario cancela una compresión en curso."""
+
+
+def _cjob_new(name: str, size: int, target_mb: float, max_height: int) -> str:
+    job_id = uuid.uuid4().hex[:12]
+    with _cjobs_lock:
+        _cjobs[job_id] = {
+            "id": job_id,
+            "status": "pending",
+            "percent": 0.0,
+            "message": "Preparando…",
+            "input_name": name,
+            "input_size": size,
+            "output_size": 0,
+            "target_mb": target_mb,
+            "max_height": max_height,
+            "filename": None,
+            "path": None,
+            "tmpdir": None,
+            "error": None,
+            "cancel": False,
+            "created": time.time(),
+        }
+    return job_id
+
+
+def _cjob_update(job_id: str, **fields) -> None:
+    with _cjobs_lock:
+        job = _cjobs.get(job_id)
+        if job is not None:
+            job.update(fields)
+
+
+def _cjob_get(job_id: str) -> Optional[dict]:
+    with _cjobs_lock:
+        job = _cjobs.get(job_id)
+        return dict(job) if job else None
+
+
+def _cjob_delete(job_id: str) -> None:
+    with _cjobs_lock:
+        job = _cjobs.pop(job_id, None)
+    if job and job.get("tmpdir"):
+        _rmtree_robust(job["tmpdir"])
+
+
+def _cjobs_cleanup_stale() -> None:
+    """Elimina trabajos de compresión antiguos (memoria y disco)."""
+    now = time.time()
+    with _cjobs_lock:
+        stale = [jid for jid, j in _cjobs.items() if now - j["created"] > _CJOB_TTL_SECONDS]
+    for jid in stale:
+        _cjob_delete(jid)
+
+
+def _ffprobe_meta(path: Path) -> dict:
+    """Lee duración y resolución reales del archivo con ffprobe."""
+    cmd = [
+        FFPROBE, "-v", "error", "-print_format", "json",
+        "-show_format", "-show_streams", str(path),
+    ]
+    raw = subprocess.run(cmd, capture_output=True, timeout=180, check=True).stdout
+    data = json.loads(raw.decode("utf-8", "replace"))
+
+    video = next((s for s in data.get("streams", []) if s.get("codec_type") == "video"), None)
+    audio = next((s for s in data.get("streams", []) if s.get("codec_type") == "audio"), None)
+
+    duration = 0.0
+    try:
+        duration = float(data.get("format", {}).get("duration") or 0)
+    except (TypeError, ValueError):
+        duration = 0.0
+    if duration <= 0 and video is not None:
+        try:
+            duration = float(video.get("duration") or 0)
+        except (TypeError, ValueError):
+            duration = 0.0
+
+    width = int(video.get("width") or 0) if video else 0
+    height = int(video.get("height") or 0) if video else 0
+
+    # Los vídeos grabados con el móvil suelen llevar la rotación en los
+    # metadatos: la resolución "visible" es la rotada.
+    rotation = 0
+    if video:
+        for sd in video.get("side_data_list") or []:
+            if "rotation" in sd:
+                try:
+                    rotation = int(sd["rotation"])
+                except (TypeError, ValueError):
+                    rotation = 0
+    if abs(rotation) % 180 == 90:
+        width, height = height, width
+
+    return {
+        "duration": duration,
+        "width": width,
+        "height": height,
+        "has_video": video is not None,
+        "has_audio": audio is not None,
+    }
+
+
+def _run_ffmpeg(args: list, job_id: str, duration: float, pct_from: float, pct_to: float) -> int:
+    """Ejecuta ffmpeg informando del progreso real. Devuelve el código de salida."""
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+    )
+    try:
+        assert proc.stdout is not None
+        for raw in proc.stdout:
+            job = _cjob_get(job_id)
+            if job and job["cancel"]:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                raise _Cancelled()
+
+            line = raw.strip()
+            if "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            if key in ("out_time_ms", "out_time_us"):
+                # ffmpeg llama "ms" a lo que en realidad son microsegundos.
+                try:
+                    micros = int(value)
+                except ValueError:
+                    continue
+                if micros < 0 or duration <= 0:
+                    continue
+                done = min(micros / 1_000_000, duration)
+                pct = pct_from + (done / duration) * (pct_to - pct_from)
+                _cjob_update(job_id, percent=round(min(pct, pct_to), 1))
+    finally:
+        if proc.stdout is not None:
+            proc.stdout.close()
+    return proc.wait()
+
+
+def _pick_height(src_height: int, video_kbps: float, max_height: int) -> int:
+    """Elige la resolución vertical máxima razonable para ese bitrate."""
+    if max_height and max_height > 0:
+        cap = max_height
+    elif video_kbps >= 1600:
+        cap = 1080
+    elif video_kbps >= 900:
+        cap = 720
+    elif video_kbps >= 460:
+        cap = 480
+    else:
+        cap = 360
+    if src_height and src_height < cap:
+        cap = src_height
+    return cap - (cap % 2)
+
+
+def _compress_file(
+    job_id: str,
+    src: Path,
+    dest: Path,
+    target_bytes: int,
+    max_height: int,
+    duration: float,
+    meta: dict,
+    quality_mode: str = "size",
+) -> None:
+    """Deja en `dest` un MP4 por debajo del tamaño objetivo."""
+    src_size = src.stat().st_size
+
+    # 1) Si ya cabe, basta con remultiplexar: rápido y sin pérdida de calidad.
+    if src_size <= target_bytes and meta.get("has_video"):
+        _cjob_update(
+            job_id, status="compressing", percent=5.0,
+            message="Ya cabe en el límite: optimizando sin perder calidad…",
+        )
+        args = [
+            FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
+            "-progress", "pipe:1", "-nostats",
+            "-i", str(src), "-c", "copy", "-movflags", "+faststart", str(dest),
+        ]
+        code = _run_ffmpeg(args, job_id, duration, 5.0, 90.0)
+        if code == 0 and dest.exists() and 0 < dest.stat().st_size <= target_bytes:
+            return
+        dest.unlink(missing_ok=True)
+
+    # 1b) Modo "priorizar calidad": no se fuerza el tamaño, solo se baja resolución.
+    if quality_mode == "quality":
+        src_h = meta.get("height") or 0
+        cap = max_height if max_height > 0 else src_h
+        if src_h and src_h < cap:
+            cap = src_h
+        height = (cap - (cap % 2)) or None
+
+        args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
+        args += ["-i", str(src)]
+        if height and src_h > height:
+            args += ["-vf", f"scale=-2:{height}"]
+        args += [
+            "-map_metadata", "-1",
+            "-c:v", "libx264", "-preset", X264_PRESET, "-crf", "23",
+            "-pix_fmt", "yuv420p", "-profile:v", "main",
+            "-c:a", "aac", "-b:a", "128k", "-ac", "2",
+            "-movflags", "+faststart",
+            str(dest),
+        ]
+        _cjob_update(job_id, status="compressing", percent=5.0, message="Comprimiendo el vídeo…")
+        code = _run_ffmpeg(args, job_id, duration, 5.0, 98.0)
+        if code != 0 or not dest.exists() or dest.stat().st_size == 0:
+            raise RuntimeError("No se pudo comprimir el vídeo (ffmpeg falló).")
+        return
+
+    # 2) Recomprimir calculando el bitrate a partir del tamaño objetivo.
+    audio_kbps = 128
+    total_kbps = (target_bytes * 8 / duration / 1000) if duration > 0 else 800.0
+    if total_kbps < 420:
+        audio_kbps = 96
+    if total_kbps < 240:
+        audio_kbps = 64
+
+    video_kbps = max(60.0, total_kbps - audio_kbps - 4)
+
+    for attempt in range(2):
+        height = _pick_height(meta.get("height") or 0, video_kbps, max_height)
+        args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
+        args += ["-i", str(src)]
+        if height and (meta.get("height") or 0) > height:
+            args += ["-vf", f"scale=-2:{height}"]
+        args += [
+            "-map_metadata", "-1",
+            "-c:v", "libx264", "-preset", X264_PRESET,
+            "-b:v", f"{int(video_kbps)}k",
+            "-maxrate", f"{int(video_kbps)}k",
+            "-bufsize", f"{int(video_kbps * 2)}k",
+            "-pix_fmt", "yuv420p", "-profile:v", "main",
+            "-c:a", "aac", "-b:a", f"{audio_kbps}k", "-ac", "2",
+            "-movflags", "+faststart",
+            str(dest),
+        ]
+        msg = "Comprimiendo el vídeo…" if attempt == 0 else "Ajustando el tamaño final…"
+        _cjob_update(job_id, status="compressing", percent=5.0, message=msg)
+
+        code = _run_ffmpeg(args, job_id, duration, 5.0, 98.0)
+        if code != 0 or not dest.exists() or dest.stat().st_size == 0:
+            raise RuntimeError("No se pudo comprimir el vídeo (ffmpeg falló).")
+        if dest.stat().st_size <= target_bytes:
+            return
+
+        # Se pasó del objetivo: bajar el bitrate y reintentar una sola vez.
+        factor = (target_bytes / dest.stat().st_size) * 0.94
+        new_kbps = max(60.0, video_kbps * factor)
+        if new_kbps >= video_kbps - 5:
+            return  # ya estamos en el mínimo razonable
+        video_kbps = new_kbps
+        dest.unlink(missing_ok=True)
+
+
+def _run_compress_job(
+    job_id: str,
+    src: Path,
+    base_name: str,
+    target_mb: float,
+    max_height: int,
+    quality_mode: str = "size",
+) -> None:
+    """Se ejecuta en un hilo aparte: analiza y comprime el vídeo subido."""
+    tmpdir = src.parent
+    try:
+        _cjob_update(job_id, status="probing", percent=0.0, message="Analizando el vídeo…")
+        meta = _ffprobe_meta(src)
+        if not meta["has_video"]:
+            raise RuntimeError("El archivo no contiene pista de vídeo. Sube un MP4, MOV, MKV o WEBM.")
+        duration = meta["duration"]
+        if duration <= 0:
+            raise RuntimeError("No se pudo leer la duración del vídeo.")
+
+        target_bytes = int(target_mb * 1024 * 1024)
+        dest = tmpdir / "comprimido.mp4"
+        _compress_file(
+            job_id, src, dest, target_bytes, max_height, duration, meta, quality_mode
+        )
+
+        if not dest.exists() or dest.stat().st_size == 0:
+            raise RuntimeError("No se generó el archivo comprimido.")
+
+        base = _sanitize_filename(base_name.rsplit(".", 1)[0] or "video")
+        nombre = f"{base} ({int(target_mb)}MB).mp4"
+        _cjob_update(
+            job_id,
+            status="finished",
+            percent=100.0,
+            message="¡Listo!",
+            output_size=dest.stat().st_size,
+            filename=nombre,
+            path=str(dest),
+        )
+    except _Cancelled:
+        _rmtree_robust(tmpdir)
+        _cjob_update(job_id, status="cancelled", message="Cancelado", tmpdir=None)
+    except Exception as exc:  # noqa: BLE001
+        _rmtree_robust(tmpdir)
+        _cjob_update(job_id, status="error", error=str(exc), message="Error", tmpdir=None)
+
+
+@app.get("/api/compress/presets")
+async def compress_presets():
+    """Tamaños recomendados (MB) para cada plataforma."""
+    return {
+        "presets": COMPRESS_PRESETS,
+        "max_upload_mb": MAX_UPLOAD_MB,
+        "heights": sorted(h for h in _ALLOWED_HEIGHTS),
+    }
+
+
+@app.post("/api/compress")
+async def create_compress_job(
+    file: UploadFile = File(...),
+    target_mb: float = Form(16.0),
+    max_height: int = Form(0),
+    quality_mode: str = Form("size"),
+):
+    """Sube un vídeo y lo comprime para que quepa en el tamaño elegido."""
+    if not (FFMPEG_AVAILABLE and FFPROBE_AVAILABLE):
+        raise HTTPException(
+            status_code=503,
+            detail="El servidor no tiene ffmpeg instalado; la compresión no está disponible.",
+        )
+    if target_mb < 1 or target_mb > 200:
+        raise HTTPException(status_code=400, detail="El tamaño objetivo debe estar entre 1 y 200 MB.")
+    if max_height not in _ALLOWED_HEIGHTS:
+        raise HTTPException(status_code=400, detail="Resolución no válida.")
+    if quality_mode not in ("size", "quality"):
+        quality_mode = "size"
+
+    nombre = _sanitize_filename(file.filename or "video")
+    sufijo = Path(nombre).suffix.lower()
+    if sufijo not in _ALLOWED_SUFFIXES:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato no compatible. Sube un vídeo (MP4, MOV, MKV, WEBM…).",
+        )
+
+    tmpdir = Path(tempfile.mkdtemp(prefix="videodl_cmp_"))
+    src = tmpdir / f"entrada{sufijo}"
+    limite = MAX_UPLOAD_MB * 1024 * 1024
+    total = 0
+    try:
+        with src.open("wb") as fh:
+            while True:
+                chunk = await file.read(_UPLOAD_CHUNK)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > limite:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"El archivo supera el límite de {MAX_UPLOAD_MB} MB.",
+                    )
+                fh.write(chunk)
+    except HTTPException:
+        _rmtree_robust(tmpdir)
+        raise
+    except Exception:
+        _rmtree_robust(tmpdir)
+        raise HTTPException(status_code=500, detail="No se pudo guardar el archivo subido.")
+    finally:
+        await file.close()
+
+    if total == 0:
+        _rmtree_robust(tmpdir)
+        raise HTTPException(status_code=400, detail="El archivo está vacío.")
+
+    _cjobs_cleanup_stale()
+    job_id = _cjob_new(nombre, total, target_mb, max_height)
+    _cjob_update(job_id, tmpdir=str(tmpdir))
+
+    threading.Thread(
+        target=_run_compress_job,
+        args=(job_id, src, nombre, target_mb, max_height, quality_mode),
+        daemon=True,
+    ).start()
+
+    return {"id": job_id}
+
+
+@app.get("/api/compress/{job_id}")
+async def compress_status(job_id: str):
+    """Estado y progreso de una compresión."""
+    job = _cjob_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    return {
+        k: job[k]
+        for k in (
+            "id", "status", "percent", "message", "input_name", "input_size",
+            "output_size", "target_mb", "filename", "error",
+        )
+    }
+
+
+@app.get("/api/compress/{job_id}/file")
+async def compress_file(job_id: str):
+    """Devuelve el vídeo comprimido y libera los recursos del trabajo."""
+    job = _cjob_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    if job["status"] == "cancelled":
+        raise HTTPException(status_code=409, detail="La compresión fue cancelada")
+    if job["status"] != "finished" or not job.get("path"):
+        raise HTTPException(status_code=409, detail="La compresión todavía no ha terminado")
+
+    path = Path(job["path"])
+    if not path.exists():
+        _cjob_delete(job_id)
+        raise HTTPException(status_code=410, detail="El archivo ya no está disponible")
+
+    from starlette.background import BackgroundTask
+
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+        filename=job["filename"] or "video-comprimido.mp4",
+        background=BackgroundTask(lambda: _cjob_delete(job_id)),
+    )
+
+
+@app.post("/api/compress/{job_id}/cancel")
+async def cancel_compress_job(job_id: str):
+    """Solicita cancelar una compresión en curso."""
+    job = _cjob_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    if job["status"] in ("finished", "error", "cancelled"):
+        return {"ok": False, "status": job["status"]}
+    _cjob_update(job_id, cancel=True)
+    return {"ok": True, "status": "cancelling"}
+
+
+# ---------------------------------------------------------------------------
 # Archivos estáticos (al final para que la API tenga prioridad)
 # ---------------------------------------------------------------------------
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+@app.get("/comprimir-video-whatsapp", include_in_schema=False)
+@app.get("/comprimir", include_in_schema=False)
+async def page_comprimir():
+    """Página dedicada al compresor (URL pensada para posicionar en Google)."""
+    return FileResponse(STATIC_DIR / "comprimir.html")
+
+
+@app.get("/herramientas", include_in_schema=False)
+async def page_herramientas():
+    """Directorio con todas las herramientas del sitio."""
+    return FileResponse(STATIC_DIR / "herramientas.html")
+
+
 app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")

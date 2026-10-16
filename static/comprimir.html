@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comprimir vídeo para WhatsApp y Discord sin perder calidad — VideoDL</title>
+  <meta name="description" content="Reduce el tamaño de un vídeo para enviarlo por WhatsApp (16 MB), Discord (10 MB), Telegram o email. Gratis, sin marca de agua, sin registro y sin subir tus datos a ningún sitio raro." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗜️</text></svg>" />
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <nav class="toolnav">
+    <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
+    <div class="toolnav-links">
+      <a href="/">Descargar vídeos</a>
+      <a href="/comprimir-video-whatsapp" class="active">Comprimir</a>
+      <a href="/herramientas">Herramientas</a>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Comprimir vídeo para WhatsApp, Discord o email</h1>
+      <p class="hero-sub">
+        Reduce el tamaño de cualquier vídeo hasta que entre en el límite de la app
+        (16 MB, 25 MB, 10 MB…). Gratis, sin marca de agua y sin registro.
+      </p>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div id="error-box" class="error-box hidden">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar">✕</button>
+    </div>
+
+    <!-- ============ 1. ARCHIVO ============ -->
+    <div class="section-head">
+      <h3>Paso 1 · Elige el vídeo</h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone">
+      <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
+      <div class="dropzone-icon">🎬</div>
+      <p class="dropzone-title">Arrastra el vídeo aquí o <span class="accent">búscalo en tu equipo</span></p>
+      <p class="dropzone-sub">MP4, MOV, MKV, WEBM, AVI… · hasta <span id="limit-hint-2">200 MB</span></p>
+    </div>
+
+    <div id="file-card" class="file-card hidden">
+      <div class="file-icon">🎞️</div>
+      <div class="file-info">
+        <div class="file-name" id="file-name"></div>
+        <div class="file-meta" id="file-meta"></div>
+      </div>
+      <video id="file-preview" class="file-preview" muted playsinline></video>
+      <button type="button" id="file-clear" class="ghost-btn small">✕ Quitar</button>
+    </div>
+
+    <!-- ============ 2. TAMAÑO ============ -->
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 2 · ¿Para dónde lo quieres?</h3>
+      <span class="muted-small">Se elige el tamaño máximo del archivo</span>
+    </div>
+
+    <div class="presets" id="presets">
+      <button type="button" class="preset active" data-mb="16">
+        <span class="preset-icon">🟢</span>
+        <span class="preset-name">WhatsApp</span>
+        <span class="preset-size">16 MB</span>
+      </button>
+      <button type="button" class="preset" data-mb="64">
+        <span class="preset-icon">🟢</span>
+        <span class="preset-name">WhatsApp HD</span>
+        <span class="preset-size">64 MB</span>
+      </button>
+      <button type="button" class="preset" data-mb="10">
+        <span class="preset-icon">🟣</span>
+        <span class="preset-name">Discord</span>
+        <span class="preset-size">10 MB</span>
+      </button>
+      <button type="button" class="preset" data-mb="25">
+        <span class="preset-icon">🟣</span>
+        <span class="preset-name">Discord Nitro</span>
+        <span class="preset-size">25 MB</span>
+      </button>
+      <button type="button" class="preset" data-mb="50">
+        <span class="preset-icon">🔵</span>
+        <span class="preset-name">Telegram</span>
+        <span class="preset-size">50 MB</span>
+      </button>
+      <button type="button" class="preset" data-mb="20">
+        <span class="preset-icon">✉️</span>
+        <span class="preset-name">Email</span>
+        <span class="preset-size">20 MB</span>
+      </button>
+      <button type="button" class="preset custom" data-mb="custom">
+        <span class="preset-icon">🎚️</span>
+        <span class="preset-name">Personalizado</span>
+        <span class="preset-size">
+          <input type="number" id="custom-mb" min="1" max="200" value="30" />
+          MB
+        </span>
+      </button>
+    </div>
+
+    <div class="compress-options">
+      <label class="option-field">
+        <span>Resolución máxima</span>
+        <select id="max-height">
+          <option value="0" selected>Automática (la mejor que quepa)</option>
+          <option value="1080">1080p (Full HD)</option>
+          <option value="720">720p (HD)</option>
+          <option value="480">480p (ahorra más)</option>
+          <option value="360">360p (mínimo)</option>
+        </select>
+      </label>
+
+      <label class="option-field">
+        <span>Objetivo</span>
+        <select id="quality-mode">
+          <option value="size" selected>Que quepa sí o sí</option>
+          <option value="quality">Priorizar calidad</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="compress-action">
+      <button type="button" id="compress-btn" class="primary-btn big" disabled>
+        🗜️ Comprimir vídeo
+      </button>
+      <span class="muted-small" id="action-hint">Elige primero un vídeo.</span>
+    </div>
+
+    <!-- ============ PROGRESO ============ -->
+    <div id="progress" class="progress-notice hidden">
+      <div class="progress-head">
+        <span id="pr-status">Subiendo el vídeo…</span>
+        <span id="pr-percent" class="mono">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="pr-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="pr-detail">—</span>
+        <button type="button" id="pr-cancel" class="ghost-btn small">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <!-- ============ RESULTADO ============ -->
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Vídeo comprimido</h3>
+        <span class="status-live"><i></i> Listo para enviar</span>
+      </div>
+
+      <div class="compare-card">
+        <video id="out-preview" class="compare-preview" controls playsinline></video>
+
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Antes</span>
+            <span class="compare-value" id="out-before">—</span>
+          </div>
+          <div class="compare-arrow">→</div>
+          <div class="compare-stat">
+            <span class="compare-label">Ahora</span>
+            <span class="compare-value accent" id="out-after">—</span>
+          </div>
+          <div class="compare-saved" id="out-saved"></div>
+        </div>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big">⬇ Descargar vídeo comprimido</button>
+          <button type="button" id="again-btn" class="soft-btn">🗜️ Comprimir otro</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTENIDO SEO ============ -->
+    <section class="seo-block">
+      <h2>¿Cómo comprimir un vídeo para WhatsApp?</h2>
+      <ol class="steps">
+        <li><strong>Elige el vídeo</strong> desde tu equipo (o arrástralo a la caja de arriba).</li>
+        <li><strong>Selecciona el destino</strong>: WhatsApp, Discord, Telegram o un tamaño personalizado.</li>
+        <li><strong>Pulsa «Comprimir»</strong> y espera unos segundos mientras se reduce el peso.</li>
+        <li><strong>Descarga el resultado</strong> y envíalo con total tranquilidad.</li>
+      </ol>
+
+      <h2>Límites de tamaño más habituales</h2>
+      <table class="limits-table">
+        <thead>
+          <tr><th>Plataforma</th><th>Límite típico</th><th>Recomendado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>WhatsApp (vídeo)</td><td>16 MB</td><td>Preset <strong>WhatsApp 16 MB</strong></td></tr>
+          <tr><td>WhatsApp HD</td><td>64 MB</td><td>Preset <strong>WhatsApp HD</strong></td></tr>
+          <tr><td>Discord (gratis)</td><td>10 MB</td><td>Preset <strong>Discord</strong></td></tr>
+          <tr><td>Discord Nitro</td><td>25 MB</td><td>Preset <strong>Discord Nitro</strong></td></tr>
+          <tr><td>Telegram</td><td>50 MB</td><td>Preset <strong>Telegram</strong></td></tr>
+          <tr><td>Correo electrónico</td><td>20–25 MB</td><td>Preset <strong>Email</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Pierde mucha calidad el vídeo?</summary>
+        <p>Muy poca. El compresor reparte el peso disponible entre imagen y sonido y baja la
+        resolución solo cuando es imprescindible. Además, si tu vídeo ya cabe en el límite,
+        se entrega sin recodificar, es decir, sin pérdida alguna.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Hay marca de agua o límite de uso?</summary>
+        <p>No. Ninguna marca de agua, sin registro y sin límite de compresiones.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con el vídeo que subo?</summary>
+        <p>Se procesa en el servidor y se borra automáticamente en cuanto lo descargas
+        (y en todo caso tras una hora). No se comparte con terceros.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué formatos acepta?</summary>
+        <p>MP4, MOV, MKV, WEBM, AVI, M4V, MPG, FLV, TS, 3GP y WMV. La salida siempre es MP4,
+        compatible con todas las apps y móviles.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo comprimirlo también en vertical para TikTok o Reels?</summary>
+        <p>Muy pronto añadiremos un recortador que convierte cualquier vídeo a formato vertical
+        (9:16) para TikTok, Reels y Shorts.</p>
+      </details>
+    </section>
+
+    <div class="tool-cross">
+      <p>¿Necesitas bajar primero el vídeo? 🎬</p>
+      <a class="primary-btn" href="/">Descargar vídeo de cualquier plataforma →</a>
+    </div>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <p>🗜️ Compresor de vídeo gratis para WhatsApp, Discord y Telegram · VideoDL</p>
+    <p>Sube solo contenido que te pertenezca o que puedas usar libremente.</p>
+  </footer>
+
+  <script src="/comprimir.js"></script>
+</body>
+</html>
