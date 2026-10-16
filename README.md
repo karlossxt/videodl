@@ -1,5 +1,7 @@
 # VideoDL
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/karlossxt/videodl)
+
 Descargador universal de video y audio con interfaz web. Pega el enlace de un video y descárgalo en tu equipo en la calidad que quieras.
 
 El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: YouTube, TikTok, Instagram, X / Twitter, Facebook, Reddit, Twitch, Vimeo y enlaces directos MP4/WebM, entre muchos otros.
@@ -143,6 +145,20 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 - **Mantén yt-dlp actualizado**: las plataformas cambian a menudo. Al reconstruir la imagen se instala la última versión permitida por `requirements.txt`.
 - Los archivos se descargan a una carpeta temporal y se borran en cuanto se envían al usuario. Al reiniciar el servicio se limpian los restos.
 - Usa la app solo para contenido propio o con licencia; respeta los términos de cada plataforma.
+
+### Cookies (opcional, para YouTube en la nube)
+
+Desde una IP de servidor (Render, Railway…), YouTube a veces responde
+*"Sign in to confirm you're not a bot"*. Si te ocurre, puedes pasar tus cookies de
+navegador con la variable de entorno **`YTDLP_COOKIES`** (el contenido del archivo
+`cookies.txt`) o **`YTDLP_COOKIES_B64`** (el mismo contenido en Base64):
+
+1. Exporta tus cookies de YouTube con una extensión tipo *Get cookies.txt*.
+2. En Render → tu servicio → **Environment** → añade la variable `YTDLP_COOKIES_B64`
+   con el contenido del archivo codificado en Base64.
+3. Vuelve a desplegar. La app escribirá un `cookies.txt` temporal y lo usará en yt-dlp.
+
+Si estas variables no están definidas, la app funciona exactamente igual.
 
 ## Aviso legal
 

@@ -7,5 +7,5 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     healthCheckPath: /api/health
-    autoDeploy: true
+    autoDeployTrigger: commit
     # Render inyecta la variable PORT automáticamente; el Dockerfile la usa.

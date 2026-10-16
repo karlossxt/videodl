@@ -19,6 +19,7 @@ descargar solo un fragmento del video; el corte se hace con ffmpeg.
 
 import asyncio
 import mimetypes
+import os
 import re
 import shutil
 import tempfile
@@ -78,6 +79,40 @@ class JobRequest(BaseModel):
 _URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
 FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
+
+# Archivo de cookies opcional (algunas plataformas piden iniciar sesión desde
+# servidores). Se rellena desde la variable de entorno YTDLP_COOKIES(_B64).
+COOKIES_FILE: Optional[str] = None
+
+
+def _setup_cookies() -> None:
+    """Prepara un cookies.txt temporal si se define YTDLP_COOKIES o YTDLP_COOKIES_B64.
+
+    Sirve para plataformas que exigen sesión iniciada (p. ej. YouTube en la nube).
+    Es completamente opcional: si no se definen, la app funciona igual.
+    """
+    global COOKIES_FILE
+
+    raw = os.environ.get("YTDLP_COOKIES", "").strip()
+    if not raw:
+        b64 = os.environ.get("YTDLP_COOKIES_B64", "").strip()
+        if b64:
+            import base64
+
+            try:
+                raw = base64.b64decode(b64).decode("utf-8", "replace").strip()
+            except Exception:
+                raw = ""
+
+    if not raw:
+        return
+
+    try:
+        path = Path(tempfile.gettempdir()) / "videodl_cookies.txt"
+        path.write_text(raw, encoding="utf-8")
+        COOKIES_FILE = str(path)
+    except OSError:
+        COOKIES_FILE = None
 
 
 def _validate_url(url: str) -> None:
@@ -172,6 +207,7 @@ def _sweep_temp_dirs() -> None:
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
     """Limpia restos de ejecuciones anteriores y arranca el hilo de limpieza."""
+    _setup_cookies()
     await asyncio.to_thread(_sweep_temp_dirs)
     threading.Thread(target=_janitor_loop, daemon=True).start()
     yield
@@ -220,6 +256,8 @@ def _build_opts(
 
     if progress_hook is not None:
         opts["progress_hooks"] = [progress_hook]
+    if COOKIES_FILE:
+        opts["cookiefile"] = COOKIES_FILE
     return opts
 
 
