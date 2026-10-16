@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recortar clip vertical de Twitch, Kick o YouTube para TikTok — VideoDL</title>
+  <meta name="description" content="Pega un directo o un clip de Twitch, Kick o YouTube, elige el momento y descarga esos segundos en vertical 9:16 listos para TikTok, Reels y Shorts. Gratis, sin marca de agua y sin registro." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂️</text></svg>" />
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <nav class="toolnav">
+    <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
+    <div class="toolnav-links">
+      <a href="/">Descargar vídeos</a>
+      <a href="/comprimir-video-whatsapp">Comprimir</a>
+      <a href="/recortar-clip-vertical" class="active">Clips verticales</a>
+      <a href="/herramientas">Herramientas</a>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Recortar un clip vertical para TikTok, Reels o Shorts</h1>
+      <p class="hero-sub">
+        Pega el enlace de Twitch, Kick, YouTube o de cualquier otra plataforma, elige
+        los segundos que quieres y descárgalos en vertical (9:16) sin marca de agua.
+      </p>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div id="error-box" class="error-box hidden">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar">✕</button>
+    </div>
+
+    <!-- ============ 1. ORIGEN ============ -->
+    <div class="section-head">
+      <h3>Paso 1 · Elige el vídeo</h3>
+      <span class="muted-small" id="limit-hint"></span>
+    </div>
+
+    <div class="tabs clip-src-tabs">
+      <button type="button" class="tab active" data-src="url">🔗 Pegar enlace</button>
+      <button type="button" class="tab" data-src="file">📁 Subir archivo</button>
+    </div>
+
+    <!-- Panel: enlace -->
+    <div id="src-url-panel" class="clip-panel">
+      <form id="clip-url-form" class="searchbar" autocomplete="off">
+        <span class="search-icon">🔗</span>
+        <input
+          type="text"
+          id="clip-url"
+          placeholder="https://www.twitch.tv/videos/… o https://clips.twitch.tv/…"
+          spellcheck="false"
+        />
+        <button type="submit" id="clip-analyze" class="primary-btn">Analizar →</button>
+      </form>
+      <p class="clip-hint-line">
+        Funciona con directos guardados (VOD) y clips de Twitch y Kick, y también con
+        YouTube, TikTok, Instagram, X, Facebook… El vídeo se procesa en el servidor y
+        solo se descargan los segundos que pidas.
+      </p>
+    </div>
+
+    <!-- Panel: archivo -->
+    <div id="src-file-panel" class="clip-panel hidden">
+      <div id="clip-dropzone" class="dropzone">
+        <input type="file" id="clip-file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
+        <div class="dropzone-icon">🎬</div>
+        <p class="dropzone-title">Arrastra un vídeo aquí o <span class="accent">búscalo en tu equipo</span></p>
+        <p class="dropzone-sub">MP4, MOV, MKV, WEBM, AVI… · hasta <span id="limit-hint-2">200 MB</span></p>
+      </div>
+    </div>
+
+    <!-- ============ FICHA + VISTA PREVIA ============ -->
+    <div id="info-card" class="clip-info hidden">
+      <div class="clip-preview vertical" id="clip-preview">
+        <img class="pv-bg" id="pv-bg" alt="" />
+        <img class="pv-fg" id="pv-fg" alt="" />
+        <span class="pv-badge" id="pv-badge">9:16</span>
+      </div>
+
+      <div class="clip-info-body">
+        <div class="clip-info-title" id="info-title">—</div>
+        <div class="clip-info-meta" id="info-meta"></div>
+
+        <!-- ---- 2. MOMENTO ---- -->
+        <div class="section-head" style="margin-top:20px">
+          <h3>Paso 2 · Elige el momento</h3>
+          <span class="muted-small" id="clip-max-hint"></span>
+        </div>
+
+        <div id="trim-panel" class="trim-panel">
+          <div class="trim-head">
+            <span>Fragmento seleccionado</span>
+            <span class="mono" id="trim-readout">0:00 → 0:30</span>
+          </div>
+
+          <div class="trim-row">
+            <span class="trim-label">Inicio</span>
+            <input type="range" id="start-range" min="0" max="30" step="1" value="0" />
+            <input type="number" id="start-num" class="trim-num" min="0" step="1" value="0" />
+            <span class="trim-unit">s</span>
+          </div>
+
+          <div class="trim-row">
+            <span class="trim-label">Fin</span>
+            <input type="range" id="end-range" min="0" max="30" step="1" value="30" />
+            <input type="number" id="end-num" class="trim-num" min="0" step="1" value="30" />
+            <span class="trim-unit">s</span>
+          </div>
+
+          <div class="trim-actions">
+            <button type="button" class="soft-btn small" data-quick="first">⏱️ Primeros 30 s</button>
+            <button type="button" class="soft-btn small" data-quick="last">⏭️ Últimos 30 s</button>
+            <button type="button" class="soft-btn small" data-quick="all">↔️ Todo el vídeo</button>
+          </div>
+          <p class="trim-hint" id="trim-hint"></p>
+        </div>
+
+        <!-- ---- 3. FORMATO ---- -->
+        <div class="section-head" style="margin-top:22px">
+          <h3>Paso 3 · Formato de salida</h3>
+          <span class="muted-small">Lo que verás en TikTok, Reels y Shorts</span>
+        </div>
+
+        <div class="presets clip-aspects">
+          <button type="button" class="preset active" data-aspect="vertical">
+            <span class="preset-icon">📱</span>
+            <span class="preset-name">Vertical 9:16</span>
+            <span class="preset-size">Recorte centrado</span>
+          </button>
+          <button type="button" class="preset" data-aspect="vertical-blur">
+            <span class="preset-icon">🖼️</span>
+            <span class="preset-name">Vertical + fondo</span>
+            <span class="preset-size">Se ve todo, fondo desenfocado</span>
+          </button>
+          <button type="button" class="preset" data-aspect="square">
+            <span class="preset-icon">⬛</span>
+            <span class="preset-name">Cuadrado 1:1</span>
+            <span class="preset-size">Feed de Instagram</span>
+          </button>
+          <button type="button" class="preset" data-aspect="original">
+            <span class="preset-icon">🖥️</span>
+            <span class="preset-name">Original</span>
+            <span class="preset-size">Solo recorta, sin reencuadrar</span>
+          </button>
+        </div>
+
+        <div class="compress-options">
+          <label class="option-field">
+            <span>Calidad</span>
+            <select id="clip-quality">
+              <option value="media" selected>Media — 720×1280 (recomendada)</option>
+              <option value="alta">Alta — 1080×1920 (más lenta)</option>
+              <option value="baja">Baja — 480×854 (más rápida)</option>
+            </select>
+          </label>
+          <label class="option-field">
+            <span>Resultado</span>
+            <span class="option-readout" id="out-size">720 × 1280 · 9:16</span>
+          </label>
+        </div>
+
+        <div class="compress-action">
+          <button type="button" id="clip-btn" class="primary-btn big" disabled>
+            ✂️ Crear el clip vertical
+          </button>
+          <span class="muted-small" id="clip-hint">Elige primero un vídeo.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PROGRESO ============ -->
+    <div id="progress" class="progress-notice hidden">
+      <div class="progress-head">
+        <span id="pr-status">Preparando…</span>
+        <span id="pr-percent" class="mono">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="pr-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="pr-detail">—</span>
+        <button type="button" id="pr-cancel" class="ghost-btn small">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <!-- ============ RESULTADO ============ -->
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Tu clip vertical</h3>
+        <span class="status-live"><i></i> Listo para publicar</span>
+      </div>
+
+      <div class="compare-card">
+        <div class="clip-result-wrap">
+          <video id="out-preview" class="clip-result-video" controls playsinline></video>
+        </div>
+
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Formato</span>
+            <span class="compare-value accent" id="out-dims">—</span>
+          </div>
+          <div class="compare-stat">
+            <span class="compare-label">Duración</span>
+            <span class="compare-value" id="out-dur">—</span>
+          </div>
+          <div class="compare-stat">
+            <span class="compare-label">Tamaño</span>
+            <span class="compare-value" id="out-weight">—</span>
+          </div>
+          <div class="compare-saved" id="out-note"></div>
+        </div>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big">⬇ Descargar el clip</button>
+          <button type="button" id="again-btn" class="soft-btn">✂️ Crear otro clip</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTENIDO SEO ============ -->
+    <section class="seo-block">
+      <h2>¿Cómo recortar un clip vertical de Twitch para TikTok?</h2>
+      <ol class="steps">
+        <li><strong>Pega el enlace</strong> del directo, del vídeo o del clip y pulsa «Analizar».</li>
+        <li><strong>Elige el momento</strong>: mueve el inicio y el fin, o usa los atajos de 30 segundos.</li>
+        <li><strong>Elige el formato</strong>: vertical 9:16 con recorte centrado o con fondo desenfocado.</li>
+        <li><strong>Pulsa «Crear el clip»</strong>, espera unos segundos y descárgalo listo para subir.</li>
+      </ol>
+
+      <h2>¿Qué formato vertical es mejor para cada red?</h2>
+      <table class="limits-table">
+        <thead>
+          <tr><th>Red</th><th>Formato ideal</th><th>Duración</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>TikTok</td><td>Vertical 9:16 (1080×1920)</td><td>15–60 s</td></tr>
+          <tr><td>Instagram Reels</td><td>Vertical 9:16</td><td>15–90 s</td></tr>
+          <tr><td>YouTube Shorts</td><td>Vertical 9:16</td><td>hasta 3 min</td></tr>
+          <tr><td>Feed de Instagram</td><td>Cuadrado 1:1</td><td>libre</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Consejos para que el clip se vea bien</h2>
+      <p>
+        El modo <strong>vertical con recorte centrado</strong> es el más nítido: usa toda la
+        pantalla y amplía el centro del vídeo, así que elige momentos en los que la acción
+        esté en el medio del encuadre. Si en tu clip pasan cosas importantes por los lados
+        (marcadores, caras de varios jugadores, alertas del chat), el modo
+        <strong>vertical con fondo desenfocado</strong> mantiene el encuadre completo y rellena
+        los lados con una copia difuminada, igual que hacen las apps de edición.
+      </p>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Sirve para directos largos de Twitch o Kick?</summary>
+        <p>Sí. Al pegar un VOD, el servidor analiza la duración total y solo descarga los
+        segundos que elijas, no la transmisión completa. Así un clip de 4 horas de directo
+        tarda lo mismo que uno de 10 minutos.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cuánto puede durar el clip?</summary>
+        <p>Hasta 5 minutos (<span id="faq-max">300</span> segundos). Para TikTok, Reels y Shorts lo
+        habitual es quedarse entre 15 y 60 segundos, que además es cuando más gente lo ve entero.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Lleva marca de agua o logo?</summary>
+        <p>No. La salida es un MP4 limpio, sin marcas de agua, sin registro y sin límite de clips.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con el vídeo que proceso?</summary>
+        <p>Se procesa en el servidor y se borra automáticamente en cuanto lo descargas
+        (y en todo caso tras una hora). No se comparte con terceros.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo hacer lo mismo con un vídeo de mi móvil?</summary>
+        <p>Sí. Cambia a la pestaña «Subir archivo», arrastra el vídeo y recórtalo igual.
+        Es útil para pasar grabaciones horizontales a vertical antes de publicarlas.</p>
+      </details>
+    </section>
+
+    <div class="tool-cross">
+      <p>¿El clip te pesa demasiado para enviarlo por WhatsApp? 🗜️</p>
+      <a class="primary-btn" href="/comprimir-video-whatsapp">Comprimir un vídeo →</a>
+    </div>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">
+    <p>✂️ Recortador de clips verticales para TikTok, Reels y Shorts · VideoDL</p>
+    <p>Recorta y publica solo contenido que te pertenezca o que puedas usar libremente.</p>
+  </footer>
+
+  <script src="/clips.js"></script>
+</body>
+</html>

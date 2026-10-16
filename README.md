@@ -2,7 +2,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/karlossxt/videodl)
 
-Suite de herramientas de video con interfaz web. Pega el enlace de un video y descárgalo en tu equipo en la calidad que quieras, o sube un archivo para comprimirlo y enviarlo por WhatsApp o Discord.
+Suite de herramientas de video con interfaz web. Pega el enlace de un video y descárgalo en tu equipo en la calidad que quieras, sube un archivo para comprimirlo y enviarlo por WhatsApp o Discord, o recorta un clip vertical listo para TikTok, Reels y Shorts.
 
 > 🌐 **Demo en vivo:** https://videodl-6md8.onrender.com
 > *(plan gratuito: si lleva un rato sin usarse, la primera visita puede tardar ~50 s en despertar)*
@@ -15,6 +15,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 |---|---|
 | `/` | **Descargar video y audio** de casi cualquier plataforma: MP4 en cualquier resolución, MP3, subtítulos, miniatura, recortes y cola en lote. |
 | `/comprimir-video-whatsapp` | **Comprimir video** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
+| `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) de Twitch, Kick, YouTube o de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
 | `/herramientas` | Directorio con todas las herramientas del sitio. |
 
 ## Características
@@ -29,6 +30,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 - 🖼️ **Descarga de la miniatura** de portada en su resolución original.
 - 🗜️ **Compresor de video**: sube un archivo y redúcelo al tamaño objetivo (WhatsApp, Discord, Telegram, correo o MB personalizados). Calcula el bitrate disponible, baja la resolución solo cuando hace falta y, si el video ya cabe, lo entrega **sin recodificar**.
 - 🎚️ **Modo "priorizar calidad"**: recodifica con CRF sin forzar el tamaño objetivo, útil para bajar resolución sin destrozar la imagen.
+- ✂️ **Clips verticales para TikTok / Reels / Shorts**: pega un directo (VOD) o un clip de Twitch, Kick, YouTube… y descarga **solo los segundos que elijas** ya reencuadrados en 9:16. Incluye recorte centrado, fondo desenfocado para no perder los laterales, cuadrado 1:1 y hasta 5 minutos de clip.
 - 🖥️ **Interfaz web** oscura y responsive, sin dependencias de frameworks en el frontend.
 - 📋 Botón **Pegar** desde el portapapeles para analizar al instante.
 - ✅ Mensajes de error claros en español (video privado, restringido, URL no soportada, etc.).
@@ -94,17 +96,40 @@ El servidor calcula el bitrate que cabe en ese tamaño, baja la resolución solo
 imprescindible y, si el video ya cabía, lo entrega sin recodificar (sin pérdida).
 Con la opción **Priorizar calidad** se recodifica con CRF y no se fuerza el tamaño.
 
+### Recortar un clip vertical (TikTok / Reels / Shorts)
+
+En **✂️ Clips verticales** (o entrando en <http://127.0.0.1:8000/recortar-clip-vertical>):
+
+1. Pega el enlace de un directo guardado (VOD) o de un clip de Twitch, Kick, YouTube…
+   y pulsa **Analizar**. También puedes subir un archivo de tu equipo.
+2. Elige el momento con los deslizadores de inicio y fin, o con los atajos de
+   **Primeros 30 s**, **Últimos 30 s** y **Todo el video**.
+3. Elige el formato de salida:
+   - **Vertical 9:16** — recorte centrado, la opción más nítida.
+   - **Vertical + fondo** — mantiene el encuadre completo y rellena los lados con una
+     copia desenfocada (como las apps de edición).
+   - **Cuadrado 1:1** — para el feed de Instagram.
+   - **Original** — solo recorta, sin reencuadrar.
+4. Pulsa **Crear el clip** y descarga el MP4.
+
+Con enlaces de directos largos, el servidor **solo descarga los segundos pedidos**: un
+clip de 30 s en un directo de 10 horas tarda lo mismo que en un video corto. La salida
+es H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
+`CLIP_MAX_SECONDS` (300 s por defecto).
+
 ## Estructura del proyecto
 
 ```
 videodl/
-├── main.py                  # Backend FastAPI (descargas + compresor)
+├── main.py                  # Backend FastAPI (descargas + compresor + clips)
 ├── requirements.txt         # Dependencias de Python
 ├── static/
 │   ├── index.html           # Descargador universal
 │   ├── app.js               # Lógica del descargador
 │   ├── comprimir.html       # Compresor para WhatsApp / Discord
 │   ├── comprimir.js         # Lógica del compresor
+│   ├── clips.html           # Recortador de clips verticales
+│   ├── clips.js             # Lógica del recortador de clips
 │   ├── herramientas.html    # Directorio de herramientas
 │   └── style.css            # Estilos (compartidos)
 ├── Dockerfile               # Imagen de producción (incluye ffmpeg)
@@ -132,6 +157,12 @@ videodl/
 | `GET` | `/api/compress/{id}` | Estado y progreso: `status`, `percent`, `message`, `input_size`, `output_size`, `filename`. |
 | `GET` | `/api/compress/{id}/file` | Descarga el video comprimido (libera los recursos al enviarlo). |
 | `POST` | `/api/compress/{id}/cancel` | Cancela una compresión en curso. |
+| `GET` | `/api/clips/options` | Formatos, calidades, duración máxima de clip y límite de subida. |
+| `POST` | `/api/clips` | Crea un clip vertical a partir de un fragmento de un video en línea. Cuerpo: `{ "url": "...", "start": 0, "end": 30, "aspect": "vertical \| vertical-blur \| square \| original", "quality": "alta \| media \| baja", "title": "..." }`. Devuelve `{ "id": "..." }`. |
+| `POST` | `/api/clips/upload` | Crea un clip vertical desde un archivo propio (`multipart/form-data`): campos `file`, `start`, `end`, `aspect`, `quality`, `duration`. |
+| `GET` | `/api/clips/{id}` | Estado y progreso: `status` (`downloading` \| `transforming`), `percent`, `downloaded`, `speed`, `eta`, `width`, `height`, `duration`, `output_size`, `filename`. |
+| `GET` | `/api/clips/{id}/file` | Descarga el clip terminado (libera los recursos al enviarlo). |
+| `POST` | `/api/clips/{id}/cancel` | Cancela un clip en curso. |
 
 > El frontend usa `/api/jobs` para mostrar la barra de progreso en vivo. `/api/download` se mantiene para usos programáticos o scripts.
 >
@@ -175,9 +206,9 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 
 ### Notas de producción
 
-- **ffmpeg** debe estar presente (la imagen Docker ya lo incluye) para unir video+audio, generar MP3, recortar fragmentos y comprimir.
+- **ffmpeg** debe estar presente (la imagen Docker ya lo incluye) para unir video+audio, generar MP3, recortar fragmentos, comprimir y crear clips verticales.
 - **Mantén yt-dlp actualizado**: las plataformas cambian a menudo. Al reconstruir la imagen se instala la última versión permitida por `requirements.txt`.
-- Variables de entorno opcionales: **`MAX_UPLOAD_MB`** (límite de subida del compresor, 200 por defecto) y **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto). En servidores gratuitos con poca CPU conviene dejar `veryfast` o `ultrafast`.
+- Variables de entorno opcionales: **`MAX_UPLOAD_MB`** (límite de subida del compresor y de los clips, 200 por defecto), **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`** (duración máxima de un clip, 300 por defecto) y **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope de descarga cuando el enlace no admite fragmentos, 500 por defecto). En servidores gratuitos con poca CPU conviene dejar `veryfast` o `ultrafast`.
 - Los archivos se descargan a una carpeta temporal y se borran en cuanto se envían al usuario. Al reiniciar el servicio se limpian los restos.
 - Usa la app solo para contenido propio o con licencia; respeta los términos de cada plataforma.
 
