@@ -3,8 +3,15 @@
 Backend FastAPI + yt-dlp.
 
 Endpoints:
-  POST /api/info     -> analiza una URL y devuelve título, miniatura y calidades
-  POST /api/download -> descarga el video/audio y lo devuelve como archivo
+  POST /api/info            -> analiza una URL y devuelve metadatos, calidades y subtítulos
+  POST /api/download        -> descarga y devuelve el archivo directamente (bloqueante)
+  POST /api/jobs            -> inicia una descarga en segundo plano y devuelve su id
+  GET  /api/jobs/{id}       -> progreso en vivo del trabajo (%, velocidad, ETA)
+  GET  /api/jobs/{id}/file  -> descarga el archivo del trabajo terminado
+  POST /api/jobs/{id}/cancel-> cancela un trabajo en curso
+  POST /api/subtitles       -> devuelve los subtítulos en .srt o .vtt
+  GET  /api/thumbnail       -> devuelve la miniatura como archivo
+  GET  /api/health          -> estado del servicio
 """
 
 import asyncio
@@ -12,19 +19,22 @@ import mimetypes
 import re
 import shutil
 import tempfile
+import threading
+import time
 import unicodedata
+import uuid
 from pathlib import Path
 from typing import Optional
 from urllib.request import Request as URLRequest
 from urllib.request import urlopen
+
+from contextlib import asynccontextmanager
 
 import yt_dlp
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-
-app = FastAPI(title="VideoDL")
 
 # ---------------------------------------------------------------------------
 # Modelos
@@ -45,6 +55,12 @@ class SubtitleRequest(BaseModel):
     url: str = Field(..., min_length=8, max_length=2048)
     lang: str = Field(..., min_length=2, max_length=20)
     format: str = "srt"  # "srt" | "vtt"
+    title: Optional[str] = None
+
+
+class JobRequest(BaseModel):
+    url: str = Field(..., min_length=8, max_length=2048)
+    mode: str = "best"
     title: Optional[str] = None
 
 
@@ -78,6 +94,112 @@ def _human_size(n: Optional[int]) -> Optional[str]:
             return f"{n:.1f} {unit}"
         n /= 1024
     return f"{n:.1f} TB"
+
+
+def _validate_mode(mode: str) -> str:
+    if mode in ("best", "audio") or re.fullmatch(r"video-\d{2,4}", mode or ""):
+        return mode
+    raise HTTPException(status_code=400, detail="Modo de descarga inválido")
+
+
+def _format_selector(mode: str) -> str:
+    """Construye la cadena de formato de yt-dlp para el modo elegido."""
+    if mode == "audio":
+        return "bestaudio/best"
+    if mode == "best":
+        return (
+            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
+            if FFMPEG_AVAILABLE
+            else "best[ext=mp4]/best"
+        )
+    height = mode.split("-", 1)[1]
+    if FFMPEG_AVAILABLE:
+        return (
+            f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]"
+            f"/bestvideo[height<={height}]+bestaudio"
+            f"/best[height<={height}][ext=mp4]/best[height<={height}]"
+        )
+    return f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
+
+
+def _rmtree_robust(path) -> None:
+    """Borra un directorio con reintentos: en Windows los archivos pueden seguir bloqueados."""
+    p = Path(path)
+    for attempt in range(5):
+        shutil.rmtree(p, ignore_errors=True)
+        if not p.exists():
+            return
+        time.sleep(0.2 * (attempt + 1))
+    shutil.rmtree(p, ignore_errors=True)
+
+
+def _sweep_temp_dirs() -> None:
+    """Elimina carpetas temporales de ejecuciones anteriores (residuos huérfanos)."""
+    tmp_root = Path(tempfile.gettempdir())
+    for pattern in ("videodl_*",):
+        for folder in tmp_root.glob(pattern):
+            try:
+                if folder.is_dir():
+                    age = time.time() - folder.stat().st_mtime
+                    if age > 300:  # más de 5 minutos -> no pertenece a trabajos activos
+                        _rmtree_robust(folder)
+            except OSError:
+                continue
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Limpia restos de ejecuciones anteriores y arranca el hilo de limpieza."""
+    await asyncio.to_thread(_sweep_temp_dirs)
+    threading.Thread(target=_janitor_loop, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="VideoDL", lifespan=_lifespan)
+
+
+def _build_opts(mode: str, tmpdir: Path, progress_hook=None) -> dict:
+    """Opciones de yt-dlp comunes a la descarga directa y a los trabajos."""
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "outtmpl": str(tmpdir / "media.%(ext)s"),
+        "format": _format_selector(mode),
+        "merge_output_format": None if mode == "audio" else "mp4",
+        "noprogress": True,
+        "restrictfilenames": False,
+        # Solo audio -> convertir a mp3 si hay ffmpeg
+        "postprocessors": (
+            [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "192",
+                }
+            ]
+            if mode == "audio" and FFMPEG_AVAILABLE
+            else []
+        ),
+    }
+    if progress_hook is not None:
+        opts["progress_hooks"] = [progress_hook]
+    return opts
+
+
+def _resolve_output(tmpdir: Path, filename: str):
+    """Devuelve el archivo final generado (el post-procesado puede cambiar la extensión)."""
+    path = Path(filename)
+    if path.exists():
+        return path
+    files = [p for p in tmpdir.iterdir() if p.is_file()]
+    return files[0] if files else None
+
+
+def _final_name(mode: str, title: Optional[str], info: dict, path: Path) -> str:
+    base = _sanitize_filename(title or info.get("title") or "video")
+    ext = "mp3" if mode == "audio" and FFMPEG_AVAILABLE else (path.suffix.lstrip(".") or "mp4")
+    return f"{base}.{ext}"
 
 
 # Idiomas habituales, se muestran primero en la lista de subtítulos
@@ -191,93 +313,245 @@ async def video_info(req: InfoRequest):
 
 @app.post("/api/download")
 async def download(req: DownloadRequest):
-    """Descarga el video (o solo audio) y lo sirve como archivo."""
+    """Descarga el video (o solo audio) y lo sirve como archivo (bloqueante)."""
     _validate_url(req.url)
-
-    mode = req.mode
-    if mode not in ("best", "audio") and not re.fullmatch(r"video-\d{2,4}", mode):
-        raise HTTPException(status_code=400, detail="Modo de descarga inválido")
+    mode = _validate_mode(req.mode)
 
     tmpdir = Path(tempfile.mkdtemp(prefix="videodl_"))
-
-    if mode == "audio":
-        fmt = "bestaudio/best"
-    elif mode == "best":
-        fmt = (
-            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
-            if FFMPEG_AVAILABLE
-            else "best[ext=mp4]/best"
-        )
-    else:  # video-<height>
-        height = mode.split("-", 1)[1]
-        fmt = (
-            f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]"
-            f"/bestvideo[height<={height}]+bestaudio"
-            f"/best[height<={height}][ext=mp4]/best[height<={height}]"
-            if FFMPEG_AVAILABLE
-            else f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
-        )
-
-    opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "outtmpl": str(tmpdir / "media.%(ext)s"),
-        "format": fmt,
-        "merge_output_format": None if mode == "audio" else "mp4",
-        "noprogress": True,
-        "restrictfilenames": False,
-        # Solo audio -> convertir a mp3 si hay ffmpeg
-        "postprocessors": (
-            [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }
-            ]
-            if mode == "audio" and FFMPEG_AVAILABLE
-            else []
-        ),
-    }
+    opts = _build_opts(mode, tmpdir)
 
     def _download():
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(req.url.strip(), download=True)
-            filename = ydl.prepare_filename(info)
-            return info, filename
+            return info, ydl.prepare_filename(info)
 
     try:
         info, filename = await asyncio.to_thread(_download)
     except yt_dlp.utils.DownloadError as e:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        _rmtree_robust(tmpdir)
         raise HTTPException(status_code=422, detail=_clean_ytdlp_error(str(e)))
 
-    # Determinar el archivo final (el post-procesado puede cambiar la extensión)
-    path = Path(filename)
-    if not path.exists():
-        files = [p for p in tmpdir.iterdir() if p.is_file()]
-        if not files:
-            shutil.rmtree(tmpdir, ignore_errors=True)
-            raise HTTPException(status_code=500, detail="No se generó ningún archivo")
-        path = files[0]
+    path = _resolve_output(tmpdir, filename)
+    if path is None:
+        _rmtree_robust(tmpdir)
+        raise HTTPException(status_code=500, detail="No se generó ningún archivo")
 
-    base = _sanitize_filename(req.title or info.get("title") or "video")
-    ext = "mp3" if mode == "audio" and FFMPEG_AVAILABLE else path.suffix.lstrip(".") or "mp4"
-    final_name = f"{base}.{ext}"
-
-    # Limpieza automática tras enviar la respuesta
     from starlette.background import BackgroundTask
-
-    def _cleanup():
-        shutil.rmtree(tmpdir, ignore_errors=True)
 
     return FileResponse(
         path,
         media_type="application/octet-stream",
-        filename=final_name,
-        background=BackgroundTask(_cleanup),
+        filename=_final_name(mode, req.title, info, path),
+        background=BackgroundTask(lambda: _rmtree_robust(tmpdir)),
     )
+
+
+# ---------------------------------------------------------------------------
+# Trabajos de descarga en segundo plano (con progreso en vivo)
+# ---------------------------------------------------------------------------
+
+_jobs: dict[str, dict] = {}
+_jobs_lock = threading.Lock()
+_JOB_TTL_SECONDS = 3600  # los trabajos terminados se limpian tras 1 hora
+
+
+def _job_new(url: str, mode: str) -> str:
+    job_id = uuid.uuid4().hex[:12]
+    with _jobs_lock:
+        _jobs[job_id] = {
+            "id": job_id,
+            "status": "pending",
+            "percent": 0.0,
+            "downloaded": 0,
+            "total": 0,
+            "speed": None,
+            "eta": None,
+            "error": None,
+            "filename": None,
+            "path": None,
+            "tmpdir": None,
+            "cancel": False,
+            "phase": None,
+            "created": time.time(),
+        }
+    return job_id
+
+
+def _job_update(job_id: str, **fields) -> None:
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is not None:
+            job.update(fields)
+
+
+def _job_get(job_id: str) -> Optional[dict]:
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        return dict(job) if job else None
+
+
+def _jobs_cleanup_stale() -> None:
+    """Elimina trabajos antiguos para no acumular basura en memoria y disco."""
+    now = time.time()
+    with _jobs_lock:
+        stale = [jid for jid, j in _jobs.items() if now - j["created"] > _JOB_TTL_SECONDS]
+    for jid in stale:
+        _job_delete(jid)
+
+
+def _janitor_loop() -> None:
+    """Hilo de limpieza: cada 10 minutos libera trabajos vencidos y residuos."""
+    while True:
+        time.sleep(600)
+        try:
+            _jobs_cleanup_stale()
+        except Exception:
+            pass
+
+
+def _job_delete(job_id: str) -> None:
+    with _jobs_lock:
+        job = _jobs.pop(job_id, None)
+    if job and job.get("tmpdir"):
+        _rmtree_robust(job["tmpdir"])
+
+
+def _make_progress_hook(job_id: str):
+    """Hook de yt-dlp que actualiza el estado del trabajo y atiende la cancelación."""
+
+    def hook(d: dict) -> None:
+        job = _job_get(job_id)
+        if job and job["cancel"]:
+            raise yt_dlp.utils.DownloadCancelled("Cancelado por el usuario")
+
+        status = d.get("status")
+        if status == "downloading":
+            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+            downloaded = d.get("downloaded_bytes") or 0
+            percent = (downloaded / total * 100) if total else 0.0
+            # En calidades altas se descargan dos archivos por separado (video y audio)
+            name = (d.get("filename") or "").lower()
+            phase = "audio" if name.endswith((".m4a", ".mp3", ".opus", ".ogg", ".aac")) else "video"
+            _job_update(
+                job_id,
+                status="downloading",
+                percent=round(min(percent, 100.0), 1),
+                downloaded=downloaded,
+                total=total,
+                speed=d.get("speed"),
+                eta=d.get("eta"),
+                phase=phase,
+            )
+        elif status == "finished":
+            # El archivo actual terminó; puede quedar el post-procesado (unir audio)
+            _job_update(job_id, status="processing", percent=100.0, speed=None, eta=0)
+
+    return hook
+
+
+def _run_job(job_id: str, url: str, mode: str, title: Optional[str]) -> None:
+    """Se ejecuta en un hilo aparte: descarga y deja el archivo listo."""
+    tmpdir = Path(tempfile.mkdtemp(prefix="videodl_job_"))
+    _job_update(job_id, tmpdir=str(tmpdir))
+
+    opts = _build_opts(mode, tmpdir, progress_hook=_make_progress_hook(job_id))
+
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+
+        path = _resolve_output(tmpdir, filename)
+        if path is None:
+            raise RuntimeError("No se generó ningún archivo")
+
+        _job_update(
+            job_id,
+            status="finished",
+            percent=100.0,
+            speed=None,
+            eta=0,
+            path=str(path),
+            filename=_final_name(mode, title, info, path),
+            downloaded=path.stat().st_size,
+        )
+    except yt_dlp.utils.DownloadCancelled:
+        _rmtree_robust(tmpdir)
+        _job_update(job_id, status="cancelled", error="Descarga cancelada", tmpdir=None)
+    except yt_dlp.utils.DownloadError as e:
+        _rmtree_robust(tmpdir)
+        _job_update(job_id, status="error", error=_clean_ytdlp_error(str(e)), tmpdir=None)
+    except Exception:
+        _rmtree_robust(tmpdir)
+        _job_update(job_id, status="error", error="Error inesperado durante la descarga", tmpdir=None)
+
+
+@app.post("/api/jobs")
+async def create_job(req: JobRequest):
+    """Inicia una descarga en segundo plano y devuelve su identificador."""
+    _validate_url(req.url)
+    mode = _validate_mode(req.mode)
+
+    _jobs_cleanup_stale()
+    job_id = _job_new(req.url.strip(), mode)
+
+    threading.Thread(
+        target=_run_job,
+        args=(job_id, req.url.strip(), mode, req.title),
+        daemon=True,
+    ).start()
+
+    return {"id": job_id}
+
+
+@app.get("/api/jobs/{job_id}")
+async def job_status(job_id: str):
+    """Estado y progreso de un trabajo."""
+    job = _job_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    return {
+        k: job[k]
+        for k in ("id", "status", "percent", "downloaded", "total", "speed", "eta", "error", "filename", "phase")
+    }
+
+
+@app.get("/api/jobs/{job_id}/file")
+async def job_file(job_id: str):
+    """Devuelve el archivo de un trabajo terminado y libera sus recursos."""
+    job = _job_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    if job["status"] == "cancelled":
+        raise HTTPException(status_code=409, detail="La descarga fue cancelada")
+    if job["status"] != "finished" or not job.get("path"):
+        raise HTTPException(status_code=409, detail="La descarga todavía no ha terminado")
+
+    path = Path(job["path"])
+    if not path.exists():
+        _job_delete(job_id)
+        raise HTTPException(status_code=410, detail="El archivo ya no está disponible")
+
+    from starlette.background import BackgroundTask
+
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        filename=job["filename"] or "video.mp4",
+        background=BackgroundTask(lambda: _job_delete(job_id)),
+    )
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+async def cancel_job(job_id: str):
+    """Solicita cancelar un trabajo en curso."""
+    job = _job_get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    if job["status"] in ("finished", "error", "cancelled"):
+        return {"ok": False, "status": job["status"]}
+    _job_update(job_id, cancel=True)
+    return {"ok": True, "status": "cancelling"}
 
 
 @app.get("/api/health")
@@ -313,12 +587,12 @@ async def download_subtitles(req: SubtitleRequest):
     try:
         await asyncio.to_thread(_run)
     except yt_dlp.utils.DownloadError as e:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        _rmtree_robust(tmpdir)
         raise HTTPException(status_code=422, detail=_clean_ytdlp_error(str(e)))
 
     files = [p for p in tmpdir.iterdir() if p.is_file()]
     if not files:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        _rmtree_robust(tmpdir)
         raise HTTPException(
             status_code=404,
             detail="No hay subtítulos disponibles para ese idioma en este video.",
@@ -335,7 +609,7 @@ async def download_subtitles(req: SubtitleRequest):
         path,
         media_type="text/vtt" if ext == "vtt" else "application/x-subrip",
         filename=f"{base}.{lang}.{ext}",
-        background=BackgroundTask(lambda: shutil.rmtree(tmpdir, ignore_errors=True)),
+        background=BackgroundTask(lambda: _rmtree_robust(tmpdir)),
     )
 
 
@@ -371,7 +645,7 @@ async def download_thumbnail(url: str, title: Optional[str] = None):
         path,
         media_type=content_type,
         filename=name,
-        background=BackgroundTask(lambda: shutil.rmtree(tmpdir, ignore_errors=True)),
+        background=BackgroundTask(lambda: _rmtree_robust(tmpdir)),
     )
 
 

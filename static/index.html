@@ -109,12 +109,20 @@
             <button class="tab" data-tab="assets">🗂️ Extras</button>
           </div>
 
-          <!-- Aviso de descarga en curso -->
+          <!-- Aviso de descarga en curso con progreso real -->
           <div id="downloading" class="progress-notice hidden">
-            <div class="spinner small"></div>
-            <div>
-              <strong>Descargando en el servidor…</strong>
-              <span>El tiempo depende del tamaño del video. No cierres esta pestaña.</span>
+            <div class="progress-head">
+              <span id="dl-status">Iniciando descarga…</span>
+              <span id="dl-percent" class="mono">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="dl-fill" class="progress-fill"></div>
+            </div>
+            <div class="progress-foot">
+              <span id="dl-speed">—</span>
+              <span id="dl-size">—</span>
+              <span id="dl-eta">—</span>
+              <button type="button" id="dl-cancel" class="ghost-btn small">✕ Cancelar</button>
             </div>
           </div>
 

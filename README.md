@@ -9,6 +9,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 - 🔍 **Análisis previo**: muestra título, autor, vistas, duración, miniatura y las calidades realmente disponibles.
 - 🎬 **Descarga de video** en la máxima calidad o eligiendo una resolución concreta (MP4).
 - 🎵 **Solo audio** en MP3 (192 kbps) mediante ffmpeg.
+- 📊 **Progreso en vivo**: porcentaje, velocidad, tamaño y tiempo restante mientras se descarga en el servidor, con opción de cancelar.
 - 💬 **Subtítulos** en `.SRT` o `.VTT` (manuales y automáticos) en el idioma que elijas.
 - 🖼️ **Descarga de la miniatura** de portada en su resolución original.
 - 🖥️ **Interfaz web** oscura y responsive, sin dependencias de frameworks en el frontend.
@@ -77,9 +78,15 @@ videodl/
 |---|---|---|
 | `GET` | `/api/health` | Comprueba el estado del servicio y si ffmpeg está disponible. |
 | `POST` | `/api/info` | Analiza una URL y devuelve metadatos, calidades y subtítulos disponibles. Cuerpo: `{ "url": "..." }` |
-| `POST` | `/api/download` | Descarga y devuelve el archivo. Cuerpo: `{ "url": "...", "mode": "best \| audio \| video-<altura>", "title": "..." }` |
+| `POST` | `/api/download` | Descarga y devuelve el archivo (bloqueante, sin progreso). Cuerpo: `{ "url": "...", "mode": "best \| audio \| video-<altura>", "title": "..." }` |
+| `POST` | `/api/jobs` | Inicia una descarga en segundo plano. Devuelve `{ "id": "..." }`. Mismo cuerpo que `/api/download`. |
+| `GET` | `/api/jobs/{id}` | Estado y progreso: `status`, `percent`, `speed`, `eta`, `downloaded`, `total`, `phase`. |
+| `GET` | `/api/jobs/{id}/file` | Descarga el archivo del trabajo terminado (libera los recursos al enviarlo). |
+| `POST` | `/api/jobs/{id}/cancel` | Cancela un trabajo en curso. |
 | `POST` | `/api/subtitles` | Devuelve los subtítulos de un idioma. Cuerpo: `{ "url": "...", "lang": "en", "format": "srt \| vtt", "title": "..." }` |
 | `GET` | `/api/thumbnail` | Devuelve la miniatura como archivo. Parámetros: `url`, `title`. |
+
+> El frontend usa `/api/jobs` para mostrar la barra de progreso en vivo. `/api/download` se mantiene para usos programáticos o scripts.
 
 ## Aviso legal
 

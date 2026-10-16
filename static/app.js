@@ -297,28 +297,148 @@ function formatRow({ icon, label, sub, badge, mode, isAudio }) {
 }
 
 // ---------------------------------------------------------------------------
-// Descarga
+// Descarga con progreso real (trabajos en segundo plano)
 // ---------------------------------------------------------------------------
+
+const POLL_INTERVAL_MS = 600;
+
+let activeJobId = null;
+let pollTimer = null;
 
 async function startDownload(mode) {
   clearError();
+  resetProgress();
   downloading.classList.remove("hidden");
   setButtonsDisabled(true);
 
   try {
-    const res = await api("/api/download", {
+    const res = await api("/api/jobs", {
       url: urlInput.value.trim(),
       mode,
       title: currentVideo?.title || null,
     });
-    const filename = await saveResponseAsFile(res, "video.mp4");
-    showToast(`Descarga completada: ${filename}`);
+    const { id } = await res.json();
+    activeJobId = id;
+    pollJob(id);
   } catch (err) {
-    showError(err.message);
-  } finally {
-    downloading.classList.add("hidden");
+    hideProgress();
     setButtonsDisabled(false);
+    showError(err.message);
   }
+}
+
+function pollJob(jobId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    let job;
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      if (!res.ok) throw new Error("no disponible");
+      job = await res.json();
+    } catch {
+      return; // fallo puntual de red: reintentar en el siguiente ciclo
+    }
+
+    updateProgress(job);
+
+    if (job.status === "finished") {
+      clearInterval(pollTimer);
+      finishDownload(jobId, job.filename);
+    } else if (job.status === "error") {
+      clearInterval(pollTimer);
+      hideProgress();
+      setButtonsDisabled(false);
+      showError(job.error || "No se pudo completar la descarga.");
+    } else if (job.status === "cancelled") {
+      clearInterval(pollTimer);
+      hideProgress();
+      setButtonsDisabled(false);
+      showToast("Descarga cancelada");
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function updateProgress(job) {
+  const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
+  $("dl-fill").style.width = `${pct}%`;
+  $("dl-percent").textContent = `${pct.toFixed(0)}%`;
+
+  const labels = {
+    pending: "Iniciando descarga…",
+    downloading: job.phase === "audio" ? "Descargando audio…" : "Descargando video…",
+    processing: "Procesando (uniendo audio y video con ffmpeg)…",
+    finished: "¡Listo! Guardando archivo…",
+  };
+  $("dl-status").textContent = labels[job.status] || "Descargando…";
+
+  $("dl-speed").textContent = job.speed ? `${formatBytes(job.speed)}/s` : "—";
+  $("dl-size").textContent = job.total
+    ? `${formatBytes(job.downloaded)} / ${formatBytes(job.total)}`
+    : formatBytes(job.downloaded);
+  $("dl-eta").textContent = job.eta ? `Quedan ${formatTime(job.eta)}` : "—";
+}
+
+function finishDownload(jobId, filename) {
+  // Descargar el archivo servido por el backend (respeta Content-Disposition)
+  const a = document.createElement("a");
+  a.href = `/api/jobs/${jobId}/file`;
+  a.download = filename || "video.mp4";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => {
+    hideProgress();
+    setButtonsDisabled(false);
+    showToast(`Descarga completada: ${filename || "video"}`);
+  }, 800);
+}
+
+$("dl-cancel").addEventListener("click", async () => {
+  if (!activeJobId) return;
+  $("dl-status").textContent = "Cancelando…";
+  try {
+    await fetch(`/api/jobs/${activeJobId}/cancel`, { method: "POST" });
+  } catch {
+    /* el sondeo detectará el estado final */
+  }
+});
+
+function resetProgress() {
+  $("dl-fill").style.width = "0%";
+  $("dl-percent").textContent = "0%";
+  $("dl-status").textContent = "Iniciando descarga…";
+  $("dl-speed").textContent = "—";
+  $("dl-size").textContent = "—";
+  $("dl-eta").textContent = "—";
+}
+
+function hideProgress() {
+  downloading.classList.add("hidden");
+  activeJobId = null;
+  clearInterval(pollTimer);
+}
+
+// ---------------------------------------------------------------------------
+// Formato de datos
+// ---------------------------------------------------------------------------
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let n = Number(bytes);
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i++;
+  }
+  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+function formatTime(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m} min ${s % 60} s` : `${s} s`;
 }
 
 async function downloadSubtitle(lang, format) {
