@@ -25,7 +25,7 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 - La limpieza por TTL ya no borra trabajos en curso.
 - Dependencias actualizadas y `python-multipart` con versión mínima corregida.
 - El JavaScript del frontend comparte utilidades en `static/common.js` (objeto global `VD`) en lugar de duplicarlas en cada página, y las peticiones llevan timeout.
-- Las páginas HTML usan rutas absolutas, metadatos descriptivos y roles/etiquetas ARIA (pestañas, zonas de arrastre, barras de progreso y avisos) con foco visible y respeto por `prefers-reduced-motion`.
+- El error del control anti-bot de YouTube ahora explica que hay que configurar cookies en el servidor (antes solo decía que hacía falta iniciar sesión).- Las páginas HTML usan rutas absolutas, metadatos descriptivos y roles/etiquetas ARIA (pestañas, zonas de arrastre, barras de progreso y avisos) con foco visible y respeto por `prefers-reduced-motion`.
 
 ### Arreglado
 - El filtro anti-SSRF bloqueaba **cualquier dominio**: `host_is_public` cortaba con `return` el caso de IP literal y nunca llegaba a resolver el DNS (solo funcionaban las IPs escritas directamente). Ahora solo se rechazan las IPs internas/privadas reales. Añadidas pruebas de regresión con dominios.

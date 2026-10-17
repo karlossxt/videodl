@@ -20,3 +20,10 @@ def test_age_restriction():
 
 def test_rate_limit():
     assert "limitó" in clean_ytdlp_error("ERROR: HTTP Error 429: Too Many Requests")
+
+
+def test_bot_check_indica_como_solucionarlo():
+    msg = clean_ytdlp_error(
+        "ERROR: Sign in to confirm you're not a bot. Use --cookies for the authentication."
+    )
+    assert "cookies" in msg.lower()

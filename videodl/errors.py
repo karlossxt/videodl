@@ -18,7 +18,12 @@ def clean_ytdlp_error(msg: str) -> str:
     if "age" in msg.lower() and "confirm" in msg.lower():
         return "El video tiene restricción de edad y no se puede descargar."
     if "Sign in" in msg or "login" in msg.lower():
-        return "El contenido requiere iniciar sesión y no se puede descargar."
+        return (
+            "La plataforma exige iniciar sesión para servir este vídeo (en YouTube es "
+            "su comprobación anti-bot, habitual desde servidores en la nube). El "
+            "administrador debe configurar cookies: consulta la sección «Cookies» del "
+            "README."
+        )
     if "429" in msg or "Too Many Requests" in msg or "rate limit" in msg.lower():
         return "La plataforma limitó temporalmente las peticiones. Espera un momento e inténtalo de nuevo."
     return f"No se pudo procesar la URL: {msg[:200]}"
