@@ -8,4 +8,18 @@ services:
     plan: free
     healthCheckPath: /api/health
     autoDeployTrigger: commit
-    # Render inyecta la variable PORT automáticamente; el Dockerfile la usa.
+    # Render inyecta PORT automáticamente; el Dockerfile la usa.
+    # Estas variables son opcionales (sync: false = se editan en el panel).
+    envVars:
+      - key: LOG_LEVEL
+        value: INFO
+      - key: MAX_UPLOAD_MB
+        value: "200"
+      - key: X264_PRESET
+        value: veryfast
+      - key: CLIP_MAX_SECONDS
+        value: "300"
+      - key: MAX_CONCURRENT_JOBS
+        value: "4"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"

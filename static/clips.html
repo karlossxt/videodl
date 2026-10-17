@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Recortar clip vertical de Twitch, Kick o YouTube para TikTok — VideoDL</title>
   <meta name="description" content="Pega un directo o un clip de Twitch, Kick o YouTube, elige el momento y descarga esos segundos en vertical 9:16 listos para TikTok, Reels y Shorts. Gratis, sin marca de agua y sin registro." />
+  <meta name="theme-color" content="#0b0f19" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂️</text></svg>" />
 </head>
 <body>
 
   <!-- ============ NAV ============ -->
-  <nav class="toolnav">
+  <nav class="toolnav" aria-label="Navegación principal">
     <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
     <div class="toolnav-links">
       <a href="/">Descargar vídeos</a>
       <a href="/comprimir-video-whatsapp">Comprimir</a>
-      <a href="/recortar-clip-vertical" class="active">Clips verticales</a>
+      <a href="/recortar-clip-vertical" class="active" aria-current="page">Clips verticales</a>
       <a href="/herramientas">Herramientas</a>
     </div>
   </nav>
@@ -35,9 +36,9 @@
 
   <main class="main">
 
-    <div id="error-box" class="error-box hidden">
+    <div id="error-box" class="error-box hidden" role="alert">
       <span id="error-text"></span>
-      <button id="error-close" title="Cerrar">✕</button>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
     </div>
 
     <!-- ============ 1. ORIGEN ============ -->
@@ -46,18 +47,20 @@
       <span class="muted-small" id="limit-hint"></span>
     </div>
 
-    <div class="tabs clip-src-tabs">
-      <button type="button" class="tab active" data-src="url">🔗 Pegar enlace</button>
-      <button type="button" class="tab" data-src="file">📁 Subir archivo</button>
+    <div class="tabs clip-src-tabs" role="tablist" aria-label="Origen del vídeo">
+      <button type="button" class="tab active" data-src="url" role="tab" id="src-tab-url" aria-selected="true" aria-controls="src-url-panel">🔗 Pegar enlace</button>
+      <button type="button" class="tab" data-src="file" role="tab" id="src-tab-file" aria-selected="false" aria-controls="src-file-panel" tabindex="-1">📁 Subir archivo</button>
     </div>
 
     <!-- Panel: enlace -->
-    <div id="src-url-panel" class="clip-panel">
+    <div id="src-url-panel" class="clip-panel" role="tabpanel" aria-labelledby="src-tab-url">
       <form id="clip-url-form" class="searchbar" autocomplete="off">
-        <span class="search-icon">🔗</span>
+        <span class="search-icon" aria-hidden="true">🔗</span>
+        <label class="sr-only" for="clip-url">Enlace del vídeo</label>
         <input
-          type="text"
+          type="url"
           id="clip-url"
+          inputmode="url"
           placeholder="https://www.twitch.tv/videos/… o https://clips.twitch.tv/…"
           spellcheck="false"
         />
@@ -71,10 +74,10 @@
     </div>
 
     <!-- Panel: archivo -->
-    <div id="src-file-panel" class="clip-panel hidden">
-      <div id="clip-dropzone" class="dropzone">
+    <div id="src-file-panel" class="clip-panel hidden" role="tabpanel" aria-labelledby="src-tab-file">
+      <div id="clip-dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un vídeo">
         <input type="file" id="clip-file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
-        <div class="dropzone-icon">🎬</div>
+        <div class="dropzone-icon" aria-hidden="true">🎬</div>
         <p class="dropzone-title">Arrastra un vídeo aquí o <span class="accent">búscalo en tu equipo</span></p>
         <p class="dropzone-sub">MP4, MOV, MKV, WEBM, AVI… · hasta <span id="limit-hint-2">200 MB</span></p>
       </div>
@@ -105,16 +108,16 @@
           </div>
 
           <div class="trim-row">
-            <span class="trim-label">Inicio</span>
-            <input type="range" id="start-range" min="0" max="30" step="1" value="0" />
-            <input type="number" id="start-num" class="trim-num" min="0" step="1" value="0" />
+            <label class="trim-label" for="start-range">Inicio</label>
+            <input type="range" id="start-range" min="0" max="30" step="1" value="0" aria-label="Segundo de inicio" />
+            <input type="number" id="start-num" class="trim-num" min="0" step="1" value="0" aria-label="Segundo de inicio (número)" />
             <span class="trim-unit">s</span>
           </div>
 
           <div class="trim-row">
-            <span class="trim-label">Fin</span>
-            <input type="range" id="end-range" min="0" max="30" step="1" value="30" />
-            <input type="number" id="end-num" class="trim-num" min="0" step="1" value="30" />
+            <label class="trim-label" for="end-range">Fin</label>
+            <input type="range" id="end-range" min="0" max="30" step="1" value="30" aria-label="Segundo final" />
+            <input type="number" id="end-num" class="trim-num" min="0" step="1" value="30" aria-label="Segundo final (número)" />
             <span class="trim-unit">s</span>
           </div>
 
@@ -123,7 +126,7 @@
             <button type="button" class="soft-btn small" data-quick="last">⏭️ Últimos 30 s</button>
             <button type="button" class="soft-btn small" data-quick="all">↔️ Todo el vídeo</button>
           </div>
-          <p class="trim-hint" id="trim-hint"></p>
+          <p class="trim-hint" id="trim-hint" role="status" aria-live="polite"></p>
         </div>
 
         <!-- ---- 3. FORMATO ---- -->
@@ -132,24 +135,24 @@
           <span class="muted-small">Lo que verás en TikTok, Reels y Shorts</span>
         </div>
 
-        <div class="presets clip-aspects">
-          <button type="button" class="preset active" data-aspect="vertical">
-            <span class="preset-icon">📱</span>
+        <div class="presets clip-aspects" role="group" aria-label="Formato de salida">
+          <button type="button" class="preset active" data-aspect="vertical" aria-pressed="true">
+            <span class="preset-icon" aria-hidden="true">📱</span>
             <span class="preset-name">Vertical 9:16</span>
             <span class="preset-size">Recorte centrado</span>
           </button>
-          <button type="button" class="preset" data-aspect="vertical-blur">
-            <span class="preset-icon">🖼️</span>
+          <button type="button" class="preset" data-aspect="vertical-blur" aria-pressed="false">
+            <span class="preset-icon" aria-hidden="true">🖼️</span>
             <span class="preset-name">Vertical + fondo</span>
             <span class="preset-size">Se ve todo, fondo desenfocado</span>
           </button>
-          <button type="button" class="preset" data-aspect="square">
-            <span class="preset-icon">⬛</span>
+          <button type="button" class="preset" data-aspect="square" aria-pressed="false">
+            <span class="preset-icon" aria-hidden="true">⬛</span>
             <span class="preset-name">Cuadrado 1:1</span>
             <span class="preset-size">Feed de Instagram</span>
           </button>
-          <button type="button" class="preset" data-aspect="original">
-            <span class="preset-icon">🖥️</span>
+          <button type="button" class="preset" data-aspect="original" aria-pressed="false">
+            <span class="preset-icon" aria-hidden="true">🖥️</span>
             <span class="preset-name">Original</span>
             <span class="preset-size">Solo recorta, sin reencuadrar</span>
           </button>
@@ -182,10 +185,10 @@
     <!-- ============ PROGRESO ============ -->
     <div id="progress" class="progress-notice hidden">
       <div class="progress-head">
-        <span id="pr-status">Preparando…</span>
+        <span id="pr-status" role="status" aria-live="polite">Preparando…</span>
         <span id="pr-percent" class="mono">0%</span>
       </div>
-      <div class="progress-track">
+      <div class="progress-track" id="pr-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso del clip">
         <div id="pr-fill" class="progress-fill"></div>
       </div>
       <div class="progress-foot">
@@ -198,7 +201,7 @@
     <section id="result" class="result hidden">
       <div class="section-head">
         <h3>Tu clip vertical</h3>
-        <span class="status-live"><i></i> Listo para publicar</span>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para publicar</span>
       </div>
 
       <div class="compare-card">
@@ -296,13 +299,14 @@
     </div>
   </main>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <footer class="footer">
     <p>✂️ Recortador de clips verticales para TikTok, Reels y Shorts · VideoDL</p>
     <p>Recorta y publica solo contenido que te pertenezca o que puedas usar libremente.</p>
   </footer>
 
+  <script src="/common.js"></script>
   <script src="/clips.js"></script>
 </body>
 </html>

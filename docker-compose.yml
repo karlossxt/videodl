@@ -3,8 +3,30 @@ services:
     build: .
     image: videodl:latest
     container_name: videodl
+    init: true
     ports:
       - "8000:8000"
+    # Copia .env.example a .env para configurar la app sin tocar este archivo.
+    env_file:
+      - path: .env
+        required: false
     environment:
       - PORT=8000
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    # ffmpeg puede consumir mucha CPU/RAM: estos límites evitan tumbar el host.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

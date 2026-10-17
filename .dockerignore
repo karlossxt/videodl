@@ -1,6 +1,7 @@
 # Control de versiones y metadatos
 .git
 .gitignore
+.gitattributes
 .github
 
 # Python
@@ -16,11 +17,22 @@ _ejemplo_gemini/
 
 # Secretos y entorno
 .env
-.env.local
+.env.*
+!.env.example
+cookies.txt
+*.cookies
 
 # Temporales de descarga
 downloads/
 *.part
+
+# Pruebas y calidad de código (no hacen falta en la imagen)
+tests/
+pyproject.toml
+requirements-dev.txt
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # Documentación y licencia (no se necesitan dentro de la imagen)
 README.md
@@ -31,3 +43,4 @@ LICENSE
 .idea/
 Thumbs.db
 desktop.ini
+.DS_Store

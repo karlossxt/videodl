@@ -121,30 +121,49 @@ H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
 ## Estructura del proyecto
 
 ```
-videodl/
-├── main.py                  # Backend FastAPI (descargas + compresor + clips)
-├── requirements.txt         # Dependencias de Python
+.
+├── main.py                  # Punto de entrada fino: importa y expone `app`
+├── videodl/                 # Paquete de la aplicación
+│   ├── app.py               # Crea la app FastAPI (middlewares, salud, estáticos)
+│   ├── config.py            # Configuración validada desde variables de entorno
+│   ├── security.py          # Protección SSRF, rate limit y límite de concurrencia
+│   ├── jobs.py, stores.py   # JobStore genérico y almacenes compartidos
+│   ├── downloader.py        # Rutas de descarga (/api/info, /api/jobs…)
+│   ├── compressor.py        # Rutas del compresor (/api/compress…)
+│   ├── clips.py             # Rutas del recortador (/api/clips…)
+│   ├── media.py             # Envoltorios de ffmpeg/ffprobe y opciones de yt-dlp
+│   ├── pages.py, paths.py   # Páginas HTML y resolución segura de archivos
+│   ├── models.py, errors.py # Esquemas de petición y errores legibles
+│   └── uploads.py, utils.py, constants.py, runtime.py
 ├── static/
-│   ├── index.html           # Descargador universal
-│   ├── app.js               # Lógica del descargador
-│   ├── comprimir.html       # Compresor para WhatsApp / Discord
-│   ├── comprimir.js         # Lógica del compresor
-│   ├── clips.html           # Recortador de clips verticales
-│   ├── clips.js             # Lógica del recortador de clips
-│   ├── herramientas.html    # Directorio de herramientas
-│   └── style.css            # Estilos (compartidos)
+│   ├── index.html / app.js          # Descargador universal
+│   ├── comprimir.html / comprimir.js# Compresor para WhatsApp / Discord
+│   ├── clips.html / clips.js        # Recortador de clips verticales
+│   ├── herramientas.html            # Directorio de herramientas
+│   ├── common.js                    # Utilidades JS compartidas (window.VD)
+│   └── style.css                    # Estilos (compartidos)
+├── tests/                   # Pruebas con pytest (API, seguridad, jobs, utils)
+├── requirements.txt         # Dependencias de Python (fijadas)
+├── requirements-dev.txt     # Dependencias de desarrollo (pytest, ruff…)
+├── .env.example             # Plantilla comentada de variables de entorno
 ├── Dockerfile               # Imagen de producción (incluye ffmpeg)
 ├── docker-compose.yml       # Ejecución local/servidor con Docker
 ├── render.yaml              # Blueprint para Render
 ├── railway.json             # Configuración para Railway
-└── README.md
+├── SECURITY.md              # Política de seguridad y modelo de amenazas
+├── CONTRIBUTING.md          # Cómo contribuir y ejecutar las pruebas
+└── CHANGELOG.md             # Historial de cambios
 ```
+
+`main.py` es solo un puente (`from videodl.app import app`) para que `uvicorn main:app`
+y los archivos de plataforma sigan funcionando; también puedes arrancar con
+`uvicorn videodl.app:app`.
 
 ## API
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/api/health` | Comprueba el estado del servicio y si ffmpeg está disponible. |
+| `GET` | `/api/health` _(o `/health`)_ | Estado del servicio: `status`, `version`, disponibilidad de `ffmpeg`/`ffprobe`, `compressor`, `clips`, `clip_max_seconds`, `max_upload_mb` y `cookies` (booleano). No expone rutas ni secretos. |
 | `POST` | `/api/info` | Analiza una URL y devuelve metadatos, calidades y subtítulos disponibles. Cuerpo: `{ "url": "..." }` |
 | `POST` | `/api/download` | Descarga y devuelve el archivo (bloqueante, sin progreso). Cuerpo: `{ "url": "...", "mode": "best \| audio \| video-<altura>", "title": "...", "start": 0, "end": 30 }` |
 | `POST` | `/api/jobs` | Inicia una descarga en segundo plano. Devuelve `{ "id": "..." }`. Mismo cuerpo que `/api/download`. |
@@ -168,6 +187,23 @@ videodl/
 > El frontend usa `/api/jobs` para mostrar la barra de progreso en vivo. `/api/download` se mantiene para usos programáticos o scripts.
 >
 > Los campos opcionales `start` y `end` (en segundos) recortan el fragmento a descargar. Si se indican, `end` debe ser mayor que `start` y hace falta ffmpeg.
+
+## Pruebas
+
+```powershell
+# 1. Dependencias de desarrollo (pytest, ruff…)
+python -m pip install -r requirements-dev.txt
+
+# 2. Ejecutar las pruebas y el linter
+python -m pytest
+ruff check .
+```
+
+Las pruebas usan el `TestClient` de FastAPI y **no necesitan ffmpeg ni conexión a
+internet**: los endpoints que dependen de ffmpeg se degradan correctamente cuando no
+está instalado y las pruebas verifican ese comportamiento. En `tests/` hay cobertura
+de la API, la seguridad (SSRF, rate limit), el `JobStore` y las utilidades. Consulta
+[`CONTRIBUTING.md`](CONTRIBUTING.md) para más detalles.
 
 ## Despliegue
 
@@ -209,7 +245,13 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 
 - **ffmpeg** debe estar presente (la imagen Docker ya lo incluye) para unir video+audio, generar MP3, recortar fragmentos, comprimir y crear clips verticales.
 - **Mantén yt-dlp actualizado**: las plataformas cambian a menudo. Al reconstruir la imagen se instala la última versión permitida por `requirements.txt`.
-- Variables de entorno opcionales: **`MAX_UPLOAD_MB`** (límite de subida del compresor y de los clips, 200 por defecto), **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`** (duración máxima de un clip, 300 por defecto), **`CLIP_PAD_SECONDS`** (margen de seguridad que se descarga de más en cada extremo del clip para poder clavar el segundo exacto, 12 por defecto) y **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope de descarga cuando el enlace no admite fragmentos, 500 por defecto). En servidores gratuitos con poca CPU conviene dejar `veryfast` o `ultrafast`.
+- **Variables de entorno** (todas opcionales; hay una plantilla comentada en `.env.example`):
+  - Servidor: **`PORT`**, **`LOG_LEVEL`**, **`FORWARDED_ALLOW_IPS`** (IP del proxy de confianza para leer `X-Forwarded-For`; déjalo en `127.0.0.1` salvo que uses un proxy propio).
+  - Límites: **`RATE_LIMIT_PER_MINUTE`** (peticiones por minuto y por IP, `0` = sin límite), **`MAX_CONCURRENT_JOBS`** (trabajos pesados simultáneos).
+  - Vídeo: **`MAX_UPLOAD_MB`**, **`COMPRESS_MAX_TARGET_MB`**, **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`**, **`CLIP_PAD_SECONDS`** (margen de seguridad descargado de más en cada extremo para clavar el segundo exacto), **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope cuando el enlace no admite fragmentos), **`FFMPEG_TIMEOUT_SECONDS`** (mata codificaciones colgadas) y **`YTDLP_SOCKET_TIMEOUT`**.
+  - Seguridad: **`CORS_ORIGINS`** (orígenes permitidos separados por comas; vacío = mismo origen) y **`CONTENT_SECURITY_POLICY`** (CSP propia; vacío = se usa una por defecto sensata).
+  - En servidores gratuitos con poca CPU conviene dejar `X264_PRESET` en `veryfast` o `ultrafast`.
+- **Seguridad**: la app valida las URLs (bloquea peticiones a direcciones internas/privadas para evitar SSRF), aplica un límite de peticiones por IP y de trabajos concurrentes, y envía cabeceras de seguridad (incluida una CSP por defecto). Consulta [`SECURITY.md`](SECURITY.md) para el modelo de amenazas y cómo reportar problemas.
 - Los archivos se descargan a una carpeta temporal y se borran en cuanto se envían al usuario. Al reiniciar el servicio se limpian los restos.
 - Usa la app solo para contenido propio o con licencia; respeta los términos de cada plataforma.
 
@@ -233,8 +275,11 @@ Recomendaciones:
   **Netscape** (la primera línea suele ser `# Netscape HTTP Cookie File`).
 - Usa una **cuenta secundaria** de YouTube: si esa cuenta cae en un control
   anti-bot, no pierdes la principal.
-- Comprueba el resultado en `/api/health`: los campos `cookies`, `cookies_lines` y
-  `cookies_source` indican si se cargaron y desde dónde.
+- Comprueba el resultado: el campo `cookies` de `/api/health` indica `true` si se
+  cargaron. En los registros del servidor (arranque) se indica desde dónde
+  (`YTDLP_COOKIES_FILE`, Secret File, `YTDLP_COOKIES` o `YTDLP_COOKIES_B64`);
+  sube el nivel con `LOG_LEVEL=INFO`. Por seguridad, `/api/health` ya no expone
+  el origen ni el número de líneas de las cookies.
 
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.

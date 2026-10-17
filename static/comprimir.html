@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Comprimir vídeo para WhatsApp y Discord sin perder calidad — VideoDL</title>
   <meta name="description" content="Reduce el tamaño de un vídeo para enviarlo por WhatsApp (16 MB), Discord (10 MB), Telegram o email. Gratis, sin marca de agua, sin registro y sin subir tus datos a ningún sitio raro." />
+  <meta name="theme-color" content="#0b0f19" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗜️</text></svg>" />
 </head>
 <body>
 
   <!-- ============ NAV ============ -->
-  <nav class="toolnav">
+  <nav class="toolnav" aria-label="Navegación principal">
     <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
     <div class="toolnav-links">
       <a href="/">Descargar vídeos</a>
-      <a href="/comprimir-video-whatsapp" class="active">Comprimir</a>
+      <a href="/comprimir-video-whatsapp" class="active" aria-current="page">Comprimir</a>
       <a href="/recortar-clip-vertical">Clips verticales</a>
       <a href="/herramientas">Herramientas</a>
     </div>
@@ -35,9 +36,9 @@
 
   <main class="main">
 
-    <div id="error-box" class="error-box hidden">
+    <div id="error-box" class="error-box hidden" role="alert">
       <span id="error-text"></span>
-      <button id="error-close" title="Cerrar">✕</button>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
     </div>
 
     <!-- ============ 1. ARCHIVO ============ -->
@@ -46,15 +47,15 @@
       <span id="limit-hint" class="muted-small"></span>
     </div>
 
-    <div id="dropzone" class="dropzone">
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un vídeo">
       <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
-      <div class="dropzone-icon">🎬</div>
+      <div class="dropzone-icon" aria-hidden="true">🎬</div>
       <p class="dropzone-title">Arrastra el vídeo aquí o <span class="accent">búscalo en tu equipo</span></p>
       <p class="dropzone-sub">MP4, MOV, MKV, WEBM, AVI… · hasta <span id="limit-hint-2">200 MB</span></p>
     </div>
 
     <div id="file-card" class="file-card hidden">
-      <div class="file-icon">🎞️</div>
+      <div class="file-icon" aria-hidden="true">🎞️</div>
       <div class="file-info">
         <div class="file-name" id="file-name"></div>
         <div class="file-meta" id="file-meta"></div>
@@ -71,43 +72,48 @@
 
     <div class="presets" id="presets">
       <button type="button" class="preset active" data-mb="16">
-        <span class="preset-icon">🟢</span>
+        <span class="preset-icon" aria-hidden="true">🟢</span>
         <span class="preset-name">WhatsApp</span>
         <span class="preset-size">16 MB</span>
       </button>
       <button type="button" class="preset" data-mb="64">
-        <span class="preset-icon">🟢</span>
+        <span class="preset-icon" aria-hidden="true">🟢</span>
         <span class="preset-name">WhatsApp HD</span>
         <span class="preset-size">64 MB</span>
       </button>
       <button type="button" class="preset" data-mb="10">
-        <span class="preset-icon">🟣</span>
+        <span class="preset-icon" aria-hidden="true">🟣</span>
         <span class="preset-name">Discord</span>
         <span class="preset-size">10 MB</span>
       </button>
       <button type="button" class="preset" data-mb="25">
-        <span class="preset-icon">🟣</span>
+        <span class="preset-icon" aria-hidden="true">🟣</span>
         <span class="preset-name">Discord Nitro</span>
         <span class="preset-size">25 MB</span>
       </button>
       <button type="button" class="preset" data-mb="50">
-        <span class="preset-icon">🔵</span>
+        <span class="preset-icon" aria-hidden="true">🔵</span>
         <span class="preset-name">Telegram</span>
         <span class="preset-size">50 MB</span>
       </button>
       <button type="button" class="preset" data-mb="20">
-        <span class="preset-icon">✉️</span>
+        <span class="preset-icon" aria-hidden="true">✉️</span>
         <span class="preset-name">Email</span>
         <span class="preset-size">20 MB</span>
       </button>
       <button type="button" class="preset custom" data-mb="custom">
-        <span class="preset-icon">🎚️</span>
+        <span class="preset-icon" aria-hidden="true">🎚️</span>
         <span class="preset-name">Personalizado</span>
-        <span class="preset-size">
-          <input type="number" id="custom-mb" min="1" max="200" value="30" />
-          MB
-        </span>
+        <span class="preset-size">Elige los MB</span>
       </button>
+    </div>
+
+    <!-- El campo va FUERA del botón: un input dentro de un <button> es HTML inválido
+         y el navegador no deja escribirlo. -->
+    <div class="custom-mb-row">
+      <label for="custom-mb">Tamaño personalizado (MB)</label>
+      <input type="number" id="custom-mb" min="1" max="200" value="30" inputmode="numeric" />
+      <span class="muted-small">Entre 1 y 200 MB</span>
     </div>
 
     <div class="compress-options">
@@ -141,10 +147,10 @@
     <!-- ============ PROGRESO ============ -->
     <div id="progress" class="progress-notice hidden">
       <div class="progress-head">
-        <span id="pr-status">Subiendo el vídeo…</span>
+        <span id="pr-status" role="status" aria-live="polite">Subiendo el vídeo…</span>
         <span id="pr-percent" class="mono">0%</span>
       </div>
-      <div class="progress-track">
+      <div class="progress-track" id="pr-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la compresión">
         <div id="pr-fill" class="progress-fill"></div>
       </div>
       <div class="progress-foot">
@@ -157,7 +163,7 @@
     <section id="result" class="result hidden">
       <div class="section-head">
         <h3>Vídeo comprimido</h3>
-        <span class="status-live"><i></i> Listo para enviar</span>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para enviar</span>
       </div>
 
       <div class="compare-card">
@@ -243,13 +249,14 @@
     </div>
   </main>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <footer class="footer">
     <p>🗜️ Compresor de vídeo gratis para WhatsApp, Discord y Telegram · VideoDL</p>
     <p>Sube solo contenido que te pertenezca o que puedas usar libremente.</p>
   </footer>
 
+  <script src="/common.js"></script>
   <script src="/comprimir.js"></script>
 </body>
 </html>

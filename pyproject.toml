@@ -1,0 +1,38 @@
+[project]
+name = "videodl"
+version = "2.0.0"
+description = "Suite de herramientas de vídeo: descarga, compresión y clips verticales."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM"]
+ignore = [
+    "E501",  # la longitud de línea la controla el formateador
+    "B008",  # FastAPI usa llamadas en los valores por defecto (File(...), Form(...))
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["videodl"]

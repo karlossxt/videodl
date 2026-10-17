@@ -7,11 +7,23 @@ venv/
 
 # Entorno y secretos
 .env
-.env.local
+.env.*
+!.env.example
+cookies.txt
+*.cookies
 
 # Archivos temporales de descarga
 downloads/
 *.part
+
+# Pruebas y calidad de código
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
 
 # Ejemplo de referencia (no forma parte del proyecto)
 _ejemplo_gemini/
@@ -22,3 +34,5 @@ _ejemplo_gemini/
 .idea/
 Thumbs.db
 desktop.ini
+.DS_Store
+*.log

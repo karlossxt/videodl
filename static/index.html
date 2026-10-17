@@ -4,16 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VideoDL — Descarga videos de cualquier plataforma</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Descarga vídeos y audio de YouTube, TikTok, Instagram, X, Facebook, Twitch y enlaces directos MP4 en la calidad que quieras. Gratis, sin registro y sin límite de velocidad." />
+  <meta name="theme-color" content="#0b0f19" />
+  <meta property="og:title" content="VideoDL — Descarga videos de cualquier plataforma" />
+  <meta property="og:description" content="Descargador universal de vídeo y audio compatible con +1000 sitios vía yt-dlp." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬇️</text></svg>" />
 </head>
 <body>
 
   <!-- ============ NAV ============ -->
-  <nav class="toolnav">
+  <nav class="toolnav" aria-label="Navegación principal">
     <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
     <div class="toolnav-links">
-      <a href="/" class="active">Descargar vídeos</a>
+      <a href="/" class="active" aria-current="page">Descargar vídeos</a>
       <a href="/comprimir-video-whatsapp">Comprimir</a>
       <a href="/recortar-clip-vertical">Clips verticales</a>
       <a href="/herramientas">Herramientas</a>
@@ -25,7 +30,7 @@
     <div class="hero-glow"></div>
     <div class="hero-inner">
       <div class="brand">
-        <span class="brand-icon">⬇</span>
+        <span class="brand-icon" aria-hidden="true">⬇</span>
         <span class="brand-name">Video<span class="accent">DL</span></span>
       </div>
 
@@ -37,21 +42,24 @@
 
       <!-- Barra de búsqueda -->
       <form id="url-form" class="searchbar" autocomplete="off">
-        <span class="search-icon">⌕</span>
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <label class="sr-only" for="url-input">Enlace del vídeo</label>
         <input
-          type="text"
+          type="url"
           id="url-input"
+          inputmode="url"
+          spellcheck="false"
           placeholder="Pega el enlace del video aquí (ej: https://…)"
           required
         />
-        <button type="button" id="clear-btn" class="icon-btn hidden" title="Limpiar">✕</button>
+        <button type="button" id="clear-btn" class="icon-btn hidden" title="Limpiar" aria-label="Limpiar el enlace">✕</button>
         <button type="button" id="paste-btn" class="ghost-btn" title="Pegar del portapapeles">📋 Pegar</button>
         <button type="submit" id="analyze-btn" class="primary-btn">Analizar →</button>
       </form>
 
       <p class="hero-hint">Compatible con +1000 sitios web vía yt-dlp. Sin límite de velocidad.</p>
 
-      <button type="button" id="batch-toggle" class="batch-open">📚 Descargar varios enlaces en lote</button>
+      <button type="button" id="batch-toggle" class="batch-open" aria-expanded="false" aria-controls="batch">📚 Descargar varios enlaces en lote</button>
 
       <a class="cross-link" href="/comprimir-video-whatsapp">
         🗜️ ¿El vídeo pesa demasiado? <strong>Comprímelo para WhatsApp</strong> →
@@ -61,14 +69,14 @@
       <div class="platforms">
         <span class="platforms-title">Plataformas y formatos compatibles</span>
         <div class="platforms-list">
-          <span class="platform"><i class="dot" style="background:#ff4d4d"></i>YouTube</span>
-          <span class="platform"><i class="dot" style="background:#3ec7e0"></i>TikTok</span>
-          <span class="platform"><i class="dot" style="background:#e1518e"></i>Instagram</span>
-          <span class="platform"><i class="dot" style="background:#cfd8e6"></i>X / Twitter</span>
-          <span class="platform"><i class="dot" style="background:#4d7cff"></i>Facebook</span>
-          <span class="platform"><i class="dot" style="background:#ff8b3d"></i>Reddit</span>
-          <span class="platform"><i class="dot" style="background:#4ecb8d"></i>Twitch</span>
-          <span class="platform"><i class="dot" style="background:#7ee2a8"></i>MP4 / WebM directo</span>
+          <span class="platform"><i class="dot" style="background:#ff4d4d" aria-hidden="true"></i>YouTube</span>
+          <span class="platform"><i class="dot" style="background:#3ec7e0" aria-hidden="true"></i>TikTok</span>
+          <span class="platform"><i class="dot" style="background:#e1518e" aria-hidden="true"></i>Instagram</span>
+          <span class="platform"><i class="dot" style="background:#cfd8e6" aria-hidden="true"></i>X / Twitter</span>
+          <span class="platform"><i class="dot" style="background:#4d7cff" aria-hidden="true"></i>Facebook</span>
+          <span class="platform"><i class="dot" style="background:#ff8b3d" aria-hidden="true"></i>Reddit</span>
+          <span class="platform"><i class="dot" style="background:#4ecb8d" aria-hidden="true"></i>Twitch</span>
+          <span class="platform"><i class="dot" style="background:#7ee2a8" aria-hidden="true"></i>MP4 / WebM directo</span>
         </div>
       </div>
     </div>
@@ -77,14 +85,14 @@
   <main class="main">
 
     <!-- ============ ERRORES ============ -->
-    <div id="error-box" class="error-box hidden">
+    <div id="error-box" class="error-box hidden" role="alert">
       <span id="error-text"></span>
-      <button id="error-close" title="Cerrar">✕</button>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
     </div>
 
     <!-- ============ CARGANDO ANÁLISIS ============ -->
-    <div id="loader" class="loader hidden">
-      <div class="spinner"></div>
+    <div id="loader" class="loader hidden" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
       <span>Analizando el enlace… extrayendo metadatos y calidades</span>
     </div>
 
@@ -92,14 +100,14 @@
     <section id="result" class="result hidden">
       <div class="section-head">
         <h3>Resultado del análisis multimedia</h3>
-        <span class="status-live"><i></i> Listo para descarga</span>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para descarga</span>
       </div>
 
       <div class="result-card">
         <!-- Columna izquierda: previsualización y datos -->
         <div class="result-left">
           <div class="thumb-wrap">
-            <img id="thumb" alt="Miniatura del video" />
+            <img id="thumb" alt="" />
             <span id="duration" class="duration"></span>
           </div>
 
@@ -115,7 +123,7 @@
 
           <div class="meta-actions">
             <button id="copy-btn" class="soft-btn">⧉ Copiar enlace</button>
-            <button id="trim-toggle" class="soft-btn">✂️ Cortar fragmento</button>
+            <button id="trim-toggle" class="soft-btn" aria-expanded="false" aria-controls="trim-panel">✂️ Cortar fragmento</button>
           </div>
 
           <!-- Recortador de fragmentos -->
@@ -125,19 +133,19 @@
               <span id="trim-range" class="mono">0:00 – 0:00</span>
             </div>
             <div class="trim-row">
-              <span class="trim-label">Inicio</span>
-              <input type="range" id="trim-start" min="0" max="100" value="0" step="1" />
-              <input type="number" id="trim-start-num" class="trim-num" min="0" step="1" value="0" />
+              <label class="trim-label" for="trim-start">Inicio</label>
+              <input type="range" id="trim-start" min="0" max="100" value="0" step="1" aria-label="Segundo de inicio" />
+              <input type="number" id="trim-start-num" class="trim-num" min="0" step="1" value="0" aria-label="Segundo de inicio (número)" />
               <span class="trim-unit">s</span>
             </div>
             <div class="trim-row">
-              <span class="trim-label">Fin</span>
-              <input type="range" id="trim-end" min="0" max="100" value="100" step="1" />
-              <input type="number" id="trim-end-num" class="trim-num" min="0" step="1" value="0" />
+              <label class="trim-label" for="trim-end">Fin</label>
+              <input type="range" id="trim-end" min="0" max="100" value="100" step="1" aria-label="Segundo final" />
+              <input type="number" id="trim-end-num" class="trim-num" min="0" step="1" value="0" aria-label="Segundo final (número)" />
               <span class="trim-unit">s</span>
             </div>
             <div class="trim-actions">
-              <span id="trim-hint" class="trim-hint">Solo se descargará esa parte del video.</span>
+              <span id="trim-hint" class="trim-hint" role="status" aria-live="polite">Solo se descargará esa parte del video.</span>
               <button type="button" id="trim-reset" class="sub-btn">↺ Restablecer</button>
             </div>
           </div>
@@ -145,19 +153,19 @@
 
         <!-- Columna derecha: pestañas de descarga -->
         <div class="result-right">
-          <div class="tabs">
-            <button class="tab active" data-tab="video">🎬 Video</button>
-            <button class="tab" data-tab="audio">🎵 Solo Audio</button>
-            <button class="tab" data-tab="assets">🗂️ Extras</button>
+          <div class="tabs" role="tablist" aria-label="Formatos de descarga">
+            <button class="tab active" id="tab-btn-video" data-tab="video" role="tab" aria-selected="true" aria-controls="tab-video">🎬 Video</button>
+            <button class="tab" id="tab-btn-audio" data-tab="audio" role="tab" aria-selected="false" aria-controls="tab-audio" tabindex="-1">🎵 Solo Audio</button>
+            <button class="tab" id="tab-btn-assets" data-tab="assets" role="tab" aria-selected="false" aria-controls="tab-assets" tabindex="-1">🗂️ Extras</button>
           </div>
 
           <!-- Aviso de descarga en curso con progreso real -->
           <div id="downloading" class="progress-notice hidden">
             <div class="progress-head">
-              <span id="dl-status">Iniciando descarga…</span>
+              <span id="dl-status" role="status" aria-live="polite">Iniciando descarga…</span>
               <span id="dl-percent" class="mono">0%</span>
             </div>
-            <div class="progress-track">
+            <div class="progress-track" id="dl-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la descarga">
               <div id="dl-fill" class="progress-fill"></div>
             </div>
             <div class="progress-foot">
@@ -169,12 +177,12 @@
           </div>
 
           <!-- Pestaña: Video -->
-          <div id="tab-video" class="tab-panel">
+          <div id="tab-video" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-video" tabindex="0">
             <div id="quality-list" class="format-list"></div>
           </div>
 
           <!-- Pestaña: Audio -->
-          <div id="tab-audio" class="tab-panel hidden">
+          <div id="tab-audio" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-audio" tabindex="0">
             <div class="info-note">
               🎵 Extrae la pista de audio en MP3 de 192 kbps (ideal para música, podcasts y discursos).
             </div>
@@ -182,13 +190,13 @@
           </div>
 
           <!-- Pestaña: Subtítulos y miniatura -->
-          <div id="tab-assets" class="tab-panel hidden">
+          <div id="tab-assets" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-assets" tabindex="0">
             <div class="asset-card">
               <div class="asset-head">
                 <span>🖼️ Miniatura de portada</span>
                 <button id="thumb-btn" class="download-btn">⬇ Descargar portada</button>
               </div>
-              <div class="thumb-mini"><img id="thumb-asset" alt="Miniatura" /></div>
+              <div class="thumb-mini"><img id="thumb-asset" alt="Miniatura del vídeo" /></div>
             </div>
 
             <div class="asset-card">
@@ -204,11 +212,12 @@
     <section id="batch" class="batch hidden">
       <div class="section-head">
         <h3>📚 Cola de descargas en lote</h3>
-        <span id="batch-count" class="batch-count"></span>
+        <span id="batch-count" class="batch-count" role="status" aria-live="polite"></span>
       </div>
 
       <div class="batch-card">
         <div class="batch-input">
+          <label class="sr-only" for="batch-urls">Enlaces para la cola (uno por línea)</label>
           <textarea
             id="batch-urls"
             rows="4"
@@ -216,6 +225,7 @@
           ></textarea>
 
           <div class="batch-controls">
+            <label class="sr-only" for="batch-mode">Formato para toda la cola</label>
             <select id="batch-mode" class="batch-select" title="Formato para toda la cola">
               <option value="best">⭐ Máxima calidad (MP4)</option>
               <option value="video-1080">🎬 1080p (MP4)</option>
@@ -241,12 +251,13 @@
   </main>
 
   <!-- ============ TOAST ============ -->
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <footer class="footer">
     <p>⚠️ Descarga solo contenido que te pertenezca o que tenga licencia de uso. Respeta los derechos de autor y los términos de cada plataforma.</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="/common.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -22,6 +22,7 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .hidden { display: none !important; }
@@ -1043,7 +1044,7 @@ body {
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
 }
 
-.preset:hover { border-color: #3b4d72; background: #16203300; background-color: #162033; transform: translateY(-1px); }
+.preset:hover { border-color: #3b4d72; background-color: #162033; transform: translateY(-1px); }
 
 .preset.active {
   border-color: rgba(34, 211, 238, 0.65);
@@ -1445,4 +1446,77 @@ body {
   .clip-preview.original { max-width: 100%; }
   .searchbar { flex-wrap: wrap; }
   .searchbar .primary-btn { width: 100%; }
+}
+
+/* ================= Añadidos: accesibilidad y utilidades ================= */
+
+/* Fuerza el tema oscuro en controles nativos (scrollbars, selects…). */
+:root { color-scheme: dark; }
+
+/* Texto solo para lectores de pantalla. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Fila del tamaño personalizado (el input ya no va dentro del botón). */
+.custom-mb-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.custom-mb-row label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.custom-mb-row input {
+  width: 84px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.custom-mb-row input:focus-visible { border-color: var(--cyan); }
+
+/* Aviso de error en el toast (antes todo salía con el mismo estilo). */
+.toast-error { border-color: rgba(251, 113, 133, 0.65); }
+
+/* Zona de arrastre usable con teclado. */
+.dropzone { cursor: pointer; }
+.dropzone:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Respeta a quien prefiere menos animaciones. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

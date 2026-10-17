@@ -1,4 +1,20 @@
-const $ = (id) => document.getElementById(id);
+/* Descargador universal de vídeo/audio.
+   Las utilidades compartidas (avisos, fetch con timeout, sondeo…) viven en
+   common.js y se exponen en window.VD. */
+
+const {
+  $,
+  showToast,
+  showError,
+  clearError,
+  formatBytes,
+  fmtClock,
+  api,
+  errorFromResponse,
+  pollJob: pollJobBase,
+  triggerDownload,
+  saveResponseAsFile,
+} = window.VD;
 
 const form = $("url-form");
 const urlInput = $("url-input");
@@ -6,42 +22,29 @@ const analyzeBtn = $("analyze-btn");
 const pasteBtn = $("paste-btn");
 const clearBtn = $("clear-btn");
 const loader = $("loader");
-const errorBox = $("error-box");
-const errorText = $("error-text");
 const result = $("result");
 const downloading = $("downloading");
-const toast = $("toast");
 
 let currentVideo = null;
 
-// ---------------------------------------------------------------------------
-// Utilidades de UI
-// ---------------------------------------------------------------------------
-
-let toastTimer = null;
-function showToast(msg) {
-  toast.textContent = `✓ ${msg}`;
-  toast.classList.remove("hidden");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.add("hidden"), 3000);
-}
-
-function showError(msg) {
-  errorText.textContent = msg;
-  errorBox.classList.remove("hidden");
-}
-
-function clearError() {
-  errorBox.classList.add("hidden");
-}
-
 $("error-close").addEventListener("click", clearError);
+
+// ---------------------------------------------------------------------------
+// Utilidades propias de esta página
+// ---------------------------------------------------------------------------
 
 function formatViews(n) {
   if (!n) return "";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} M vistas`;
   if (n >= 1_000) return `${Math.round(n / 1_000)} mil vistas`;
   return `${n} vistas`;
+}
+
+/** Segundos -> "m min s s" (para la ETA). */
+function formatTime(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m} min ${s % 60} s` : `${s} s`;
 }
 
 function updateClearBtn() {
@@ -55,23 +58,6 @@ clearBtn.addEventListener("click", () => {
   updateClearBtn();
   urlInput.focus();
 });
-
-async function api(path, body) {
-  const res = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let detail = "Error inesperado";
-    try {
-      const data = await res.json();
-      detail = data.detail || detail;
-    } catch { /* respuesta no JSON */ }
-    throw new Error(detail);
-  }
-  return res;
-}
 
 // ---------------------------------------------------------------------------
 // Botones del hero: Pegar / Copiar
@@ -87,7 +73,7 @@ pasteBtn.addEventListener("click", async () => {
       form.requestSubmit();
     }
   } catch {
-    showToast("El navegador no permitió leer el portapapeles");
+    showToast("El navegador no permitió leer el portapapeles", { error: true });
   }
 });
 
@@ -96,7 +82,7 @@ $("copy-btn").addEventListener("click", async () => {
     await navigator.clipboard.writeText(urlInput.value.trim());
     showToast("Enlace copiado al portapapeles");
   } catch {
-    showToast("No se pudo copiar el enlace");
+    showToast("No se pudo copiar el enlace", { error: true });
   }
 });
 
@@ -116,15 +102,6 @@ let videoDuration = 0;
 
 function clamp(n, min, max) {
   return Math.min(Math.max(n, min), max);
-}
-
-/** Formatea segundos como m:ss o h:mm:ss (para las etiquetas del recorte). */
-function fmtClock(seconds) {
-  const total = Math.max(0, Math.floor(Number(seconds) || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
 /** Prepara el recortador cuando se analiza un video nuevo. */
@@ -152,6 +129,7 @@ function setupTrim(duration) {
 function setTrimActive(active) {
   trimActive = active;
   trimToggle.classList.toggle("active", active);
+  trimToggle.setAttribute("aria-expanded", String(active));
   trimPanel.classList.toggle("hidden", !active);
 }
 
@@ -217,32 +195,54 @@ function activeTrim() {
 }
 
 // ---------------------------------------------------------------------------
-// Pestañas Video / Audio
+// Pestañas Video / Audio / Extras (con soporte de teclado y ARIA)
 // ---------------------------------------------------------------------------
 
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    // Mostrar solo el panel correspondiente
-    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
-    const panel = $(`tab-${tab.dataset.tab}`);
-    if (panel) panel.classList.remove("hidden");
+const tabs = Array.from(document.querySelectorAll(".tab"));
+
+function selectTab(tab) {
+  for (const t of tabs) {
+    const active = t === tab;
+    t.classList.toggle("active", active);
+    t.setAttribute("aria-selected", String(active));
+    t.setAttribute("tabindex", active ? "0" : "-1");
+  }
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
+  const panel = $(`tab-${tab.dataset.tab}`);
+  if (panel) panel.classList.remove("hidden");
+}
+
+tabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectTab(tab));
+  tab.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const dir = e.key === "ArrowRight" ? 1 : -1;
+    const next = tabs[(index + dir + tabs.length) % tabs.length];
+    next.focus();
+    selectTab(next);
   });
 });
 
 function switchTab(name) {
-  document.querySelector(`.tab[data-tab="${name}"]`).click();
+  const tab = document.querySelector(`.tab[data-tab="${name}"]`);
+  if (tab) selectTab(tab);
 }
 
 // ---------------------------------------------------------------------------
 // Analizar URL
 // ---------------------------------------------------------------------------
 
+// Cada análisis incrementa el token; las respuestas que llegan tarde se ignoran
+// (evita que el resultado de una URL antigua pise al de la actual).
+let analyzeToken = 0;
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const url = urlInput.value.trim();
   if (!url) return;
+
+  const token = ++analyzeToken;
 
   clearError();
   result.classList.add("hidden");
@@ -252,20 +252,26 @@ form.addEventListener("submit", async (e) => {
   loader.classList.remove("hidden");
 
   try {
-    currentVideo = await (await api("/api/info", { url })).json();
+    const res = await api("/api/info", { url }, { timeoutMs: 45000 });
+    const data = await res.json();
+    if (token !== analyzeToken) return; // llegó tarde: hay un análisis más nuevo
+    currentVideo = data;
     renderResult(currentVideo);
     showToast("¡Video analizado con éxito! Elige tu formato.");
   } catch (err) {
+    if (token !== analyzeToken) return;
     showError(err.message);
   } finally {
-    analyzeBtn.disabled = false;
-    loader.classList.add("hidden");
+    if (token === analyzeToken) {
+      analyzeBtn.disabled = false;
+      loader.classList.add("hidden");
+    }
   }
 });
 
 function renderResult(video) {
   $("thumb").src = video.thumbnail || "";
-  $("thumb").alt = video.title || "";
+  $("thumb").alt = video.title ? `Miniatura de ${video.title}` : "";
   $("video-title").textContent = video.title || "Sin título";
   $("video-uploader").textContent = video.uploader || "Autor desconocido";
   $("video-platform").textContent = video.extractor || "Web";
@@ -277,11 +283,7 @@ function renderResult(video) {
     durationEl.textContent = video.duration_string;
     durationEl.classList.remove("hidden");
   } else if (video.duration) {
-    const total = Math.floor(video.duration);
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = String(total % 60).padStart(2, "0");
-    durationEl.textContent = h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+    durationEl.textContent = fmtClock(video.duration);
     durationEl.classList.remove("hidden");
   } else {
     durationEl.classList.add("hidden");
@@ -370,15 +372,23 @@ function renderAssets(video) {
 
     const name = document.createElement("span");
     name.className = "sub-name";
-    name.innerHTML = `${escapeHtml(sub.label)}${sub.auto ? `<span class="sub-tag">Auto</span>` : ""}`;
+    name.textContent = sub.label || sub.lang;
+    if (sub.auto) {
+      const tag = document.createElement("span");
+      tag.className = "sub-tag";
+      tag.textContent = "Auto";
+      name.appendChild(tag);
+    }
 
     const actions = document.createElement("span");
     actions.className = "sub-actions";
-    for (const fmt of ["srt", "vtt"]) {
+    for (const format of ["srt", "vtt"]) {
       const btn = document.createElement("button");
       btn.className = "sub-btn";
-      btn.textContent = `.${fmt.toUpperCase()}`;
-      btn.addEventListener("click", () => downloadSubtitle(sub.lang, fmt));
+      btn.type = "button";
+      btn.textContent = `.${format.toUpperCase()}`;
+      btn.setAttribute("aria-label", `Descargar subtítulos en formato ${format.toUpperCase()}`);
+      btn.addEventListener("click", () => downloadSubtitle(sub.lang, format));
       actions.appendChild(btn);
     }
 
@@ -387,27 +397,42 @@ function renderAssets(video) {
   }
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
-
+/**
+ * Construye una fila de calidad usando textContent.
+ * (La versión anterior interpolaba la etiqueta en innerHTML: si el título o la
+ * calidad traían HTML —por ejemplo una URL manipulada— se ejecutaba.)
+ */
 function formatRow({ icon, label, sub, badge, mode, isAudio }) {
   const row = document.createElement("div");
   row.className = "format-row" + (isAudio ? " audio" : "");
 
   const info = document.createElement("div");
   info.className = "format-info";
-  info.innerHTML = `
-    <div class="format-icon">${icon}</div>
-    <div>
-      <div class="format-label">${label}${badge ? `<span class="format-badge">${badge}</span>` : ""}</div>
-      <div class="format-sub">${sub || ""}</div>
-    </div>`;
+
+  const iconEl = document.createElement("div");
+  iconEl.className = "format-icon";
+  iconEl.setAttribute("aria-hidden", "true");
+  iconEl.textContent = icon;
+
+  const body = document.createElement("div");
+  const labelEl = document.createElement("div");
+  labelEl.className = "format-label";
+  labelEl.textContent = label;
+  if (badge) {
+    const badgeEl = document.createElement("span");
+    badgeEl.className = "format-badge";
+    badgeEl.textContent = badge;
+    labelEl.appendChild(badgeEl);
+  }
+  const subEl = document.createElement("div");
+  subEl.className = "format-sub";
+  subEl.textContent = sub || "";
+  body.append(labelEl, subEl);
+  info.append(iconEl, body);
 
   const btn = document.createElement("button");
   btn.className = "download-btn";
+  btn.type = "button";
   btn.textContent = isAudio ? "⬇ Descargar Audio" : "⬇ Descargar";
   btn.addEventListener("click", () => startDownload(mode));
 
@@ -422,7 +447,7 @@ function formatRow({ icon, label, sub, badge, mode, isAudio }) {
 const POLL_INTERVAL_MS = 600;
 
 let activeJobId = null;
-let pollTimer = null;
+let pollRunId = 0;
 
 async function startDownload(mode) {
   clearError();
@@ -456,41 +481,46 @@ async function startDownload(mode) {
   }
 }
 
-function pollJob(jobId) {
-  clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    let job;
-    try {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (!res.ok) throw new Error("no disponible");
-      job = await res.json();
-    } catch {
-      return; // fallo puntual de red: reintentar en el siguiente ciclo
-    }
-
-    updateProgress(job);
+async function pollJob(jobId) {
+  const runId = ++pollRunId;
+  try {
+    const job = await pollJobBase({
+      intervalMs: POLL_INTERVAL_MS,
+      fetcher: async () => {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        if (!res.ok) throw await errorFromResponse(res, "Trabajo no disponible");
+        return res.json();
+      },
+      onUpdate: (j) => {
+        if (runId === pollRunId) updateProgress(j);
+      },
+    });
+    if (runId !== pollRunId) return;
 
     if (job.status === "finished") {
-      clearInterval(pollTimer);
       finishDownload(jobId, job.filename);
     } else if (job.status === "error") {
-      clearInterval(pollTimer);
       hideProgress();
       setButtonsDisabled(false);
       showError(job.error || "No se pudo completar la descarga.");
     } else if (job.status === "cancelled") {
-      clearInterval(pollTimer);
       hideProgress();
       setButtonsDisabled(false);
       showToast("Descarga cancelada");
     }
-  }, POLL_INTERVAL_MS);
+  } catch (err) {
+    if (runId !== pollRunId) return;
+    hideProgress();
+    setButtonsDisabled(false);
+    showError(err.message);
+  }
 }
 
 function updateProgress(job) {
   const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
   $("dl-fill").style.width = `${pct}%`;
   $("dl-percent").textContent = `${pct.toFixed(0)}%`;
+  $("dl-track").setAttribute("aria-valuenow", String(Math.round(pct)));
 
   const labels = {
     pending: "Iniciando descarga…",
@@ -508,23 +538,13 @@ function updateProgress(job) {
 }
 
 function finishDownload(jobId, filename) {
-  triggerFileDownload(`/api/jobs/${jobId}/file`, filename || "video.mp4");
+  triggerDownload(`/api/jobs/${jobId}/file`, filename || "video.mp4");
 
   setTimeout(() => {
     hideProgress();
     setButtonsDisabled(false);
     showToast(`Descarga completada: ${filename || "video"}`);
   }, 800);
-}
-
-/** Lanza la descarga de un archivo del servidor (respeta Content-Disposition). */
-function triggerFileDownload(href, filename) {
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = filename || "video.mp4";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
 }
 
 $("dl-cancel").addEventListener("click", async () => {
@@ -540,6 +560,7 @@ $("dl-cancel").addEventListener("click", async () => {
 function resetProgress() {
   $("dl-fill").style.width = "0%";
   $("dl-percent").textContent = "0%";
+  $("dl-track").setAttribute("aria-valuenow", "0");
   $("dl-status").textContent = "Iniciando descarga…";
   $("dl-speed").textContent = "—";
   $("dl-size").textContent = "—";
@@ -549,7 +570,7 @@ function resetProgress() {
 function hideProgress() {
   downloading.classList.add("hidden");
   activeJobId = null;
-  clearInterval(pollTimer);
+  pollRunId++; // invalida cualquier sondeo en curso
 }
 
 // ---------------------------------------------------------------------------
@@ -619,12 +640,14 @@ function saveBatch() {
 function showBatchSection() {
   batchSection.classList.remove("hidden");
   $("batch-toggle").classList.add("active");
+  $("batch-toggle").setAttribute("aria-expanded", "true");
 }
 
 $("batch-toggle").addEventListener("click", () => {
   const showing = !batchSection.classList.contains("hidden");
   batchSection.classList.toggle("hidden", showing);
   $("batch-toggle").classList.toggle("active", !showing);
+  $("batch-toggle").setAttribute("aria-expanded", String(!showing));
   if (!showing) batchSection.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
@@ -675,6 +698,7 @@ function batchItemRow(item) {
   remove.type = "button";
   remove.textContent = "✕";
   remove.title = "Quitar de la cola";
+  remove.setAttribute("aria-label", `Quitar ${item.title || item.url} de la cola`);
   remove.addEventListener("click", () => {
     if (batchRunning && item.status === "downloading") return;
     batchItems = batchItems.filter((i) => i.id !== item.id);
@@ -751,11 +775,12 @@ async function addBatchFromText() {
     for (const u of found) urls.push(u);
   }
 
-  const nuevos = urls.filter(
-    (u) => !batchItems.some((i) => i.url === u)
-  );
+  const nuevos = urls.filter((u) => !batchItems.some((i) => i.url === u));
   if (!nuevos.length) {
-    showToast(urls.length ? "Esos enlaces ya están en la cola" : "No se encontraron enlaces válidos");
+    showToast(
+      urls.length ? "Esos enlaces ya están en la cola" : "No se encontraron enlaces válidos",
+      { error: !urls.length }
+    );
     return;
   }
 
@@ -789,7 +814,8 @@ async function analyzeBatchItem(item) {
   item.status = "analyzing";
   updateBatchItemUI(item);
   try {
-    const info = await (await api("/api/info", { url: item.url })).json();
+    const res = await api("/api/info", { url: item.url }, { timeoutMs: 45000 });
+    const info = await res.json();
     item.title = info.title || item.url;
     item.thumbnail = info.thumbnail || "";
     item.duration = info.duration || 0;
@@ -867,11 +893,7 @@ async function runBatchItem(item) {
 
   let jobId;
   try {
-    const res = await api("/api/jobs", {
-      url: item.url,
-      mode,
-      title: item.title || null,
-    });
+    const res = await api("/api/jobs", { url: item.url, mode, title: item.title || null });
     jobId = (await res.json()).id;
   } catch (err) {
     item.status = "error";
@@ -880,14 +902,22 @@ async function runBatchItem(item) {
     return false;
   }
 
-  const result = await waitForJob(jobId, (job) => {
-    item.percent = job.percent || 0;
-    item.phase = job.phase;
+  let result;
+  try {
+    result = await waitForJob(jobId, (job) => {
+      item.percent = job.percent || 0;
+      item.phase = job.phase;
+      updateBatchItemUI(item);
+    });
+  } catch (err) {
+    item.status = "error";
+    item.error = err.message;
     updateBatchItemUI(item);
-  });
+    return false;
+  }
 
   if (result.status === "finished") {
-    triggerFileDownload(`/api/jobs/${jobId}/file`, result.filename || "video.mp4");
+    triggerDownload(`/api/jobs/${jobId}/file`, result.filename || "video.mp4");
     item.status = "done";
     item.filename = result.filename || "video";
     updateBatchItemUI(item);
@@ -903,46 +933,20 @@ async function runBatchItem(item) {
 
 /** Espera a que un trabajo termine, avisando del progreso. */
 function waitForJob(jobId, onUpdate) {
-  return new Promise((resolve) => {
-    const timer = setInterval(async () => {
-      let job;
-      try {
-        const res = await fetch(`/api/jobs/${jobId}`);
-        if (!res.ok) throw new Error("no disponible");
-        job = await res.json();
-      } catch {
-        return; // reintentar en el siguiente ciclo
-      }
-      if (onUpdate) onUpdate(job);
-      if (["finished", "error", "cancelled"].includes(job.status)) {
-        clearInterval(timer);
-        resolve(job);
-      }
-    }, POLL_INTERVAL_MS);
+  return pollJobBase({
+    intervalMs: POLL_INTERVAL_MS,
+    fetcher: async () => {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      if (!res.ok) throw await errorFromResponse(res, "Trabajo no disponible");
+      return res.json();
+    },
+    onUpdate,
   });
 }
 
 // ---------------------------------------------------------------------------
-// Formato de datos
+// Subtítulos y miniatura
 // ---------------------------------------------------------------------------
-
-function formatBytes(bytes) {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  let n = Number(bytes);
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
-}
-
-function formatTime(seconds) {
-  const s = Math.max(0, Math.round(seconds));
-  const m = Math.floor(s / 60);
-  return m > 0 ? `${m} min ${s % 60} s` : `${s} s`;
-}
 
 async function downloadSubtitle(lang, format) {
   clearError();
@@ -971,35 +975,11 @@ function downloadThumbnail() {
     url: currentVideo.thumbnail,
     title: currentVideo.title || "miniatura",
   });
-  const a = document.createElement("a");
-  a.href = `/api/thumbnail?${params}`;
-  a.download = "";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  triggerDownload(`/api/thumbnail?${params}`);
   showToast("Descargando miniatura…");
 }
 
 $("thumb-btn").addEventListener("click", downloadThumbnail);
-
-/** Guarda la respuesta como archivo, respetando el nombre del header Content-Disposition. */
-async function saveResponseAsFile(res, fallbackName) {
-  const disposition = res.headers.get("Content-Disposition") || "";
-  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/i);
-  let filename = fallbackName;
-  if (match) filename = match[1] ? decodeURIComponent(match[1]) : match[2];
-
-  const blob = await res.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(blobUrl);
-  return filename;
-}
 
 function setButtonsDisabled(disabled) {
   document.querySelectorAll(".download-btn, .sub-btn").forEach((b) => (b.disabled = disabled));

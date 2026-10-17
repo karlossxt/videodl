@@ -1,8 +1,20 @@
-/* Recortador de clips verticales (TikTok / Reels / Shorts) para Twitch, Kick, YouTube… */
+/* Recortador de clips verticales (TikTok / Reels / Shorts) para Twitch, Kick, YouTube…
+   Utilidades compartidas en common.js (window.VD). */
 
-const $ = (id) => document.getElementById(id);
-
-const ALLOWED = [".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mpg", ".mpeg", ".flv", ".ts", ".3gp", ".wmv"];
+const {
+  $,
+  showToast,
+  showError,
+  clearError,
+  formatBytes,
+  fmtClock,
+  fetchWithTimeout,
+  errorFromResponse,
+  pollJob: pollJobBase,
+  linkDropzone,
+  isAllowedVideo,
+  triggerDownload,
+} = window.VD;
 
 let maxUploadMb = 200;
 let maxSeconds = 300;
@@ -19,7 +31,7 @@ let aspect = "vertical";
 let quality = "media";
 
 let jobId = null;
-let pollTimer = null;
+let pollRunId = 0;
 let jobStartedAt = 0;
 let outUrl = null;
 let outName = "clip-vertical.mp4";
@@ -31,46 +43,7 @@ const ASPECT_LABEL = {
   original: "original",
 };
 
-// ---------------------------------------------------------------------------
-// Utilidades de UI
-// ---------------------------------------------------------------------------
-
-let toastTimer = null;
-function showToast(msg) {
-  $("toast").textContent = `✓ ${msg}`;
-  $("toast").classList.remove("hidden");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $("toast").classList.add("hidden"), 3200);
-}
-
-function showError(msg) {
-  $("error-text").textContent = msg;
-  $("error-box").classList.remove("hidden");
-}
-
-function clearError() {
-  $("error-box").classList.add("hidden");
-}
-
 $("error-close").addEventListener("click", clearError);
-
-function formatBytes(bytes) {
-  if (bytes === null || bytes === undefined || isNaN(bytes)) return "—";
-  let n = Number(bytes);
-  if (n < 1024) return `${Math.round(n)} B`;
-  const units = ["KB", "MB", "GB"];
-  let i = -1;
-  do { n /= 1024; i++; } while (n >= 1024 && i < units.length - 1);
-  return `${n.toFixed(n >= 100 ? 0 : 1)} ${units[i]}`;
-}
-
-function fmtClock(seconds) {
-  const total = Math.max(0, Math.round(seconds || 0));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
-}
 
 // ---------------------------------------------------------------------------
 // Configuración del servidor
@@ -78,7 +51,7 @@ function fmtClock(seconds) {
 
 (async function loadOptions() {
   try {
-    const res = await fetch("/api/clips/options");
+    const res = await fetchWithTimeout("/api/clips/options", {}, 15000);
     if (!res.ok) return;
     const cfg = await res.json();
     if (cfg.max_upload_mb) {
@@ -89,25 +62,42 @@ function fmtClock(seconds) {
     if (cfg.max_seconds) {
       maxSeconds = cfg.max_seconds;
       $("faq-max").textContent = String(maxSeconds);
-      $("clip-max-hint").textContent =
-        `Hasta ${Math.round(maxSeconds / 60)} min de clip`;
+      $("clip-max-hint").textContent = `Hasta ${Math.round(maxSeconds / 60)} min de clip`;
     }
-  } catch { /* sin conexión: valores por defecto */ }
+  } catch {
+    /* sin conexión: valores por defecto */
+  }
 })();
 
 // ---------------------------------------------------------------------------
 // Paso 1 · origen (enlace o archivo)
 // ---------------------------------------------------------------------------
 
-document.querySelectorAll(".clip-src-tabs .tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".clip-src-tabs .tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    mode = tab.dataset.src;
-    $("src-url-panel").classList.toggle("hidden", mode !== "url");
-    $("src-file-panel").classList.toggle("hidden", mode !== "file");
-    clearError();
-    resetSource();
+const srcTabs = Array.from(document.querySelectorAll(".clip-src-tabs .tab"));
+
+function selectSrcTab(tab) {
+  for (const t of srcTabs) {
+    const active = t === tab;
+    t.classList.toggle("active", active);
+    t.setAttribute("aria-selected", String(active));
+    t.setAttribute("tabindex", active ? "0" : "-1");
+  }
+  mode = tab.dataset.src;
+  $("src-url-panel").classList.toggle("hidden", mode !== "url");
+  $("src-file-panel").classList.toggle("hidden", mode !== "file");
+  clearError();
+  resetSource();
+}
+
+srcTabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectSrcTab(tab));
+  tab.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const dir = e.key === "ArrowRight" ? 1 : -1;
+    const next = srcTabs[(index + dir + srcTabs.length) % srcTabs.length];
+    next.focus();
+    selectSrcTab(next);
   });
 });
 
@@ -132,13 +122,17 @@ $("clip-url-form").addEventListener("submit", async (e) => {
   btn.textContent = "Analizando…";
 
   try {
-    const res = await fetch("/api/info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
+    const res = await fetchWithTimeout(
+      "/api/info",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      },
+      45000
+    );
+    if (!res.ok) throw await errorFromResponse(res, "No se pudo analizar el enlace.");
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "No se pudo analizar el enlace.");
 
     info = data;
     duration = Number(data.duration) || 0;
@@ -162,40 +156,13 @@ $("clip-url-form").addEventListener("submit", async (e) => {
 const dropzone = $("clip-dropzone");
 const fileInput = $("clip-file-input");
 
-dropzone.addEventListener("click", () => fileInput.click());
-dropzone.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") fileInput.click();
-});
-
-["dragenter", "dragover"].forEach((ev) =>
-  dropzone.addEventListener(ev, (e) => {
-    e.preventDefault();
-    dropzone.classList.add("dragover");
-  })
-);
-
-["dragleave", "drop"].forEach((ev) =>
-  dropzone.addEventListener(ev, (e) => {
-    e.preventDefault();
-    dropzone.classList.remove("dragover");
-  })
-);
-
-dropzone.addEventListener("drop", (e) => {
-  const file = e.dataTransfer?.files?.[0];
-  if (file) handleFile(file);
-});
-
-fileInput.addEventListener("change", () => {
-  if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
-});
+linkDropzone(dropzone, fileInput, handleFile);
 
 function handleFile(file) {
   clearError();
   resetResult();
 
-  const name = (file.name || "").toLowerCase();
-  if (!ALLOWED.some((ext) => name.endsWith(ext))) {
+  if (!isAllowedVideo(file.name)) {
     showError("Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…");
     return;
   }
@@ -213,6 +180,9 @@ function handleFile(file) {
   probe.preload = "metadata";
   probe.muted = true;
   probe.src = localUrl;
+  probe.onerror = () => {
+    showError("No se pudo leer el archivo. ¿Está dañado o en un formato que el navegador no entiende?");
+  };
   probe.onloadedmetadata = () => {
     duration = isFinite(probe.duration) ? probe.duration : 0;
     if (!duration) {
@@ -285,7 +255,9 @@ function setupTrim(total, len) {
   start = 0;
   end = Math.max(1, Math.min(len, total));
   startRange.min = endRange.min = 0;
+  startNum.min = endNum.min = 0;
   startRange.max = endRange.max = Math.max(1, Math.floor(total));
+  startNum.max = endNum.max = Math.max(1, Math.floor(total));
   refreshTrim();
 }
 
@@ -368,8 +340,12 @@ const ASPECT_SIZES = {
 
 document.querySelectorAll(".clip-aspects .preset").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".clip-aspects .preset").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".clip-aspects .preset").forEach((b) => {
+      b.classList.remove("active");
+      b.setAttribute("aria-pressed", "false");
+    });
     btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
     aspect = btn.dataset.aspect;
     updatePreviewBox();
     updateHint();
@@ -427,6 +403,7 @@ $("clip-btn").addEventListener("click", () => {
   $("progress").classList.remove("hidden");
   $("pr-fill").style.width = "0%";
   $("pr-fill").classList.remove("indeterminate");
+  $("pr-track").setAttribute("aria-valuenow", "0");
   $("pr-percent").textContent = "0%";
   $("pr-status").textContent = mode === "file" ? "Subiendo el vídeo…" : "Analizando el enlace…";
   $("pr-detail").textContent = mode === "file" ? formatBytes(selectedFile.size) : "Preparando la descarga";
@@ -439,20 +416,24 @@ $("clip-btn").addEventListener("click", () => {
 
 async function createClipJob() {
   try {
-    const res = await fetch("/api/clips", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: $("clip-url").value.trim(),
-        start: Number(start.toFixed(2)),
-        end: Number(end.toFixed(2)),
-        aspect,
-        quality,
-        title: info?.title || null,
-      }),
-    });
+    const res = await fetchWithTimeout(
+      "/api/clips",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: $("clip-url").value.trim(),
+          start: Number(start.toFixed(2)),
+          end: Number(end.toFixed(2)),
+          aspect,
+          quality,
+          title: info?.title || null,
+        }),
+      },
+      60000
+    );
+    if (!res.ok) throw await errorFromResponse(res, "No se pudo iniciar el clip.");
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "No se pudo iniciar el clip.");
     jobId = data.id;
     pollJob();
   } catch (err) {
@@ -471,6 +452,7 @@ function uploadClip() {
 
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/clips/upload");
+  xhr.timeout = 10 * 60 * 1000;
 
   xhr.upload.onprogress = (e) => {
     if (!e.lengthComputable) return;
@@ -487,17 +469,22 @@ function uploadClip() {
         $("pr-status").textContent = "Recortando y reencuadrando…";
         pollJob();
         return;
-      } catch { /* respuesta ilegible */ }
+      } catch {
+        /* respuesta ilegible */
+      }
     }
     let msg = `No se pudo crear el clip (error ${xhr.status || "de red"}).`;
     try {
       const data = JSON.parse(xhr.responseText);
       if (data.detail) msg = data.detail;
-    } catch { /* sin cuerpo JSON */ }
+    } catch {
+      /* sin cuerpo JSON */
+    }
     failClip(msg);
   };
 
   xhr.onerror = () => failClip("No se pudo enviar el vídeo al servidor. Revisa tu conexión.");
+  xhr.ontimeout = () => failClip("La subida tardó demasiado. Prueba con un vídeo más pequeño.");
   xhr.send(form);
 }
 
@@ -507,65 +494,73 @@ function failClip(msg) {
   showError(msg);
 }
 
-function pollJob() {
-  clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    let job;
-    try {
-      const res = await fetch(`/api/clips/${jobId}`);
-      if (!res.ok) throw new Error("no disponible");
-      job = await res.json();
-    } catch {
-      return; // fallo puntual: se reintenta en el siguiente ciclo
-    }
+async function pollJob() {
+  const runId = ++pollRunId;
+  try {
+    const job = await pollJobBase({
+      intervalMs: 700,
+      fetcher: async () => {
+        const res = await fetch(`/api/clips/${jobId}`);
+        if (!res.ok) throw new Error("no disponible");
+        return res.json();
+      },
+      onUpdate: (j) => {
+        if (runId === pollRunId) updateClipProgress(j);
+      },
+    });
+    if (runId !== pollRunId) return;
 
-    const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
-    const fill = $("pr-fill");
-    $("pr-status").textContent = job.message || "Creando el clip…";
-
-    // Cuando yt-dlp descarga un fragmento de un directo no siempre puede informar
-    // del avance: en ese caso se muestra una barra animada con el tiempo transcurrido.
-    if (job.status === "downloading" && pct < 0.5) {
-      if (!fill.classList.contains("indeterminate")) {
-        fill.classList.add("indeterminate");
-        fill.style.width = "";
-      }
-      const elapsed = Math.max(0, Math.round((Date.now() - jobStartedAt) / 1000));
-      $("pr-percent").textContent = "…";
-      $("pr-detail").textContent =
-        `${fmtClock(elapsed)} descargando el fragmento` +
-        (elapsed > 20 ? " · en directos largos esta parte tarda un poco" : "");
-    } else {
-      fill.classList.remove("indeterminate");
-      fill.style.width = `${pct}%`;
-      $("pr-percent").textContent = `${pct.toFixed(0)}%`;
-
-      if (job.status === "downloading") {
-        const parts = [];
-        if (job.downloaded) parts.push(`${formatBytes(job.downloaded)}${job.total ? ` / ${formatBytes(job.total)}` : ""}`);
-        if (job.speed) parts.push(`${formatBytes(job.speed)}/s`);
-        if (job.eta) parts.push(`faltan ${fmtClock(job.eta)}`);
-        $("pr-detail").textContent = parts.join(" · ") || "Descargando solo el fragmento…";
-      } else if (job.status === "transforming") {
-        $("pr-detail").textContent = "Recodificando en vertical · esto es lo que más tarda";
-      }
-    }
-
-    if (job.status === "finished") {
-      clearInterval(pollTimer);
-      finishClip(job);
-    } else if (job.status === "error") {
-      clearInterval(pollTimer);
+    if (job.status === "finished") finishClip(job);
+    else if (job.status === "error") {
       $("progress").classList.add("hidden");
       $("clip-btn").disabled = false;
       showError(job.error || "No se pudo crear el clip.");
     } else if (job.status === "cancelled") {
-      clearInterval(pollTimer);
       $("progress").classList.add("hidden");
       $("clip-btn").disabled = false;
       showToast("Clip cancelado");
     }
-  }, 700);
+  } catch (err) {
+    if (runId !== pollRunId) return;
+    $("progress").classList.add("hidden");
+    $("clip-btn").disabled = false;
+    showError(err.message);
+  }
+}
+
+function updateClipProgress(job) {
+  const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
+  const fill = $("pr-fill");
+  $("pr-status").textContent = job.message || "Creando el clip…";
+
+  // Cuando yt-dlp descarga un fragmento de un directo no siempre puede informar
+  // del avance: en ese caso se muestra una barra animada con el tiempo transcurrido.
+  if (job.status === "downloading" && pct < 0.5) {
+    if (!fill.classList.contains("indeterminate")) {
+      fill.classList.add("indeterminate");
+      fill.style.width = "";
+    }
+    const elapsed = Math.max(0, Math.round((Date.now() - jobStartedAt) / 1000));
+    $("pr-percent").textContent = "…";
+    $("pr-detail").textContent =
+      `${fmtClock(elapsed)} descargando el fragmento` +
+      (elapsed > 20 ? " · en directos largos esta parte tarda un poco" : "");
+  } else {
+    fill.classList.remove("indeterminate");
+    fill.style.width = `${pct}%`;
+    $("pr-percent").textContent = `${pct.toFixed(0)}%`;
+    $("pr-track").setAttribute("aria-valuenow", String(Math.round(pct)));
+
+    if (job.status === "downloading") {
+      const parts = [];
+      if (job.downloaded) parts.push(`${formatBytes(job.downloaded)}${job.total ? ` / ${formatBytes(job.total)}` : ""}`);
+      if (job.speed) parts.push(`${formatBytes(job.speed)}/s`);
+      if (job.eta) parts.push(`faltan ${fmtClock(job.eta)}`);
+      $("pr-detail").textContent = parts.join(" · ") || "Descargando solo el fragmento…";
+    } else if (job.status === "transforming") {
+      $("pr-detail").textContent = "Recodificando en vertical · esto es lo que más tarda";
+    }
+  }
 }
 
 $("pr-cancel").addEventListener("click", async () => {
@@ -573,7 +568,9 @@ $("pr-cancel").addEventListener("click", async () => {
   $("pr-status").textContent = "Cancelando…";
   try {
     await fetch(`/api/clips/${jobId}/cancel`, { method: "POST" });
-  } catch { /* el sondeo detectará el estado final */ }
+  } catch {
+    /* el sondeo detectará el estado final */
+  }
 });
 
 async function finishClip(job) {
@@ -581,20 +578,17 @@ async function finishClip(job) {
 
   let blob = null;
   try {
-    const res = await fetch(`/api/clips/${job.id}/file`);
+    const res = await fetchWithTimeout(`/api/clips/${job.id}/file`, {}, 60000);
     if (res.ok) blob = await res.blob();
-  } catch { /* se intentará descargar directo */ }
+  } catch {
+    /* se intentará descargar directo */
+  }
 
   $("progress").classList.add("hidden");
   $("clip-btn").disabled = false;
 
   if (!blob) {
-    const a = document.createElement("a");
-    a.href = `/api/clips/${job.id}/file`;
-    a.download = outName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    triggerDownload(`/api/clips/${job.id}/file`, outName);
     showToast("Descarga iniciada");
     return;
   }
@@ -614,13 +608,11 @@ async function finishClip(job) {
 }
 
 $("download-btn").addEventListener("click", () => {
-  if (!outUrl) return;
-  const a = document.createElement("a");
-  a.href = outUrl;
-  a.download = outName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  if (!outUrl) {
+    showToast("La descarga aún no está lista", { error: true });
+    return;
+  }
+  triggerDownload(outUrl, outName);
   showToast("Descargando el clip…");
 });
 
@@ -639,6 +631,8 @@ $("again-btn").addEventListener("click", () => {
 });
 
 function resetResult() {
+  // Invalida cualquier sondeo en curso.
+  pollRunId++;
   $("result").classList.add("hidden");
   $("out-preview").removeAttribute("src");
   if (outUrl) {
@@ -646,5 +640,4 @@ function resetResult() {
     outUrl = null;
   }
   jobId = null;
-  clearInterval(pollTimer);
 }
