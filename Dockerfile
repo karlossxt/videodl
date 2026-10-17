@@ -19,8 +19,14 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Usuario sin privilegios
-RUN useradd --create-home --uid 10001 appuser
+# Usuario sin privilegios.
+# Render monta los Secret Files en /etc/secrets y pertenecen al grupo 1000: si el
+# usuario de la app no está en ese grupo, no puede leerlos (aunque el archivo
+# exista) y /api/health muestra cookies:false. Se crea el grupo si la imagen base
+# no lo trae y se añade el usuario como grupo suplementario.
+RUN if getent group 1000 > /dev/null; then : ; else groupadd --gid 1000 appgroup; fi \
+    && useradd --create-home --uid 10001 appuser \
+    && usermod --append --groups 1000 appuser
 
 # Código de la aplicación
 COPY --chown=appuser:appuser main.py ./

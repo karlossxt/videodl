@@ -13,6 +13,7 @@ import contextlib
 import logging
 import os
 import shutil
+import stat as stat_module
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -149,17 +150,33 @@ cookies = CookieInfo()
 
 
 def _find_secret_file() -> str | None:
-    """Devuelve un cookies.txt subido como Secret File (/etc/secrets/...)."""
+    """Devuelve un cookies.txt subido como Secret File (/etc/secrets/...).
+
+    Usa ``stat`` en lugar de ``Path.is_file`` a propósito: ``is_file`` devuelve
+    False (sin avisar) cuando no hay permisos, lo que oculta el caso típico de
+    Docker en Render (usuario que no pertenece al grupo 1000).
+    """
     candidates = []
     with contextlib.suppress(OSError):
         candidates.extend(sorted(SECRETS_DIR.glob("*cookie*")))
     candidates.append(SECRETS_DIR / "cookies.txt")
+
+    if SECRETS_DIR.is_dir():
+        with contextlib.suppress(OSError):
+            names = sorted(p.name for p in SECRETS_DIR.iterdir())
+            if names:
+                logger.info("Secret Files en %s: %s", SECRETS_DIR, ", ".join(names))
+
     for candidate in candidates:
         try:
-            if candidate.is_file() and candidate.stat().st_size > 0:
-                return str(candidate)
-        except OSError:
+            info = candidate.stat()
+        except FileNotFoundError:
             continue
+        except OSError as exc:
+            logger.warning("No se pudo leer el Secret File %s: %s", candidate, exc)
+            continue
+        if stat_module.S_ISREG(info.st_mode) and info.st_size > 0:
+            return str(candidate)
     return None
 
 

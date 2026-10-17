@@ -29,6 +29,7 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 
 ### Arreglado
 - El filtro anti-SSRF bloqueaba **cualquier dominio**: `host_is_public` cortaba con `return` el caso de IP literal y nunca llegaba a resolver el DNS (solo funcionaban las IPs escritas directamente). Ahora solo se rechazan las IPs internas/privadas reales. Añadidas pruebas de regresión con dominios.
+- En la imagen Docker los Secret Files de Render no se podían leer (el usuario de la app no pertenecía al grupo `1000`), así que las cookies nunca se cargaban desde `/etc/secrets`. Ahora el usuario se añade a ese grupo y un fallo de permisos deja un aviso en los registros en lugar de silenciarse.
 - Un ffmpeg colgado ya no retiene un hilo para siempre (timeout de proceso).
 - Las descargas usan `socket_timeout` para no quedar colgadas.
 - `resolve_output` ignora archivos incompletos (`.part`, `.ytdl`).

@@ -265,12 +265,18 @@ Desde una IP de servidor (Render, Railway…) YouTube a veces responde
 navegador. La app las busca en este orden:
 
 1. **Secret File** montado en `/etc/secrets/cookies.txt`. En Render se sube desde
-   *Environment → Secret Files → Add file* con el nombre `cookies.txt`. **Es la vía
-   recomendada**: no hay que codificar nada y el secreto no viaja por el chat.
+   *Environment → Secret Files → Add Secret File* con el nombre `cookies.txt`. **Es la
+   vía recomendada**: no hay que codificar nada y el secreto no viaja por el chat.
 2. **`YTDLP_COOKIES_FILE`**: ruta a un `cookies.txt` que ya exista en el servidor.
 3. **`YTDLP_COOKIES`**: el contenido del archivo como texto.
 4. **`YTDLP_COOKIES_B64`**: el mismo contenido en Base64 (por si no puedes pegar
    texto multilínea).
+
+> **Nota para Docker:** los Secret Files de Render pertenecen al grupo `1000`. El
+> `Dockerfile` del proyecto añade el usuario de la app a ese grupo para poder
+> leerlos; si usas una imagen propia, haz lo mismo o los Secret Files no se
+> cargarán (`cookies:false`). La alternativa sin permisos es la variable de
+> entorno `YTDLP_COOKIES_B64`.
 
 Recomendaciones:
 
