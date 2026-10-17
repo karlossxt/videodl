@@ -1,14 +1,3 @@
-import pytest
-from fastapi.testclient import TestClient
-
-from main import app
-
-
-@pytest.fixture()
-def client():
-    return TestClient(app)
-
-
 def test_health_ok_without_sensitive_data(client):
     res = client.get("/api/health")
     assert res.status_code == 200

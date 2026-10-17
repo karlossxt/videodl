@@ -23,8 +23,12 @@ python -m uvicorn main:app --port 8000
 
 ```bash
 ruff check .     # estilo y errores comunes
-pytest           # pruebas
+pytest           # pruebas (las que dependen de ffmpeg se saltan si no está)
 ```
+
+`tests/test_e2e_ffmpeg.py` genera un vídeo con ffmpeg y recorre el compresor y el
+recortador de clips de principio a fin. Si no tienes ffmpeg instalado esas pruebas
+se saltan solas; el CI sí lo instala y las ejecuta.
 
 El código está organizado en el paquete `videodl/`:
 

@@ -7,6 +7,8 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 
 ### Añadido
 - Suite de pruebas con pytest (seguridad, utilidades, trabajos, API) y CI en GitHub Actions.
+- Pruebas de extremo a extremo con ffmpeg (`tests/test_e2e_ffmpeg.py`): generan un vídeo y recorren el compresor y el recortador de clips de principio a fin.
+- El CI también construye la imagen Docker y comprueba que el contenedor responde en `/api/health`.
 - Configuración de lint con ruff (`pyproject.toml`) y `.editorconfig`.
 - `SECURITY.md`, `CONTRIBUTING.md` y `.env.example`.
 - Logging estructurado en todo el backend.

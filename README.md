@@ -199,11 +199,14 @@ python -m pytest
 ruff check .
 ```
 
-Las pruebas usan el `TestClient` de FastAPI y **no necesitan ffmpeg ni conexión a
-internet**: los endpoints que dependen de ffmpeg se degradan correctamente cuando no
-está instalado y las pruebas verifican ese comportamiento. En `tests/` hay cobertura
-de la API, la seguridad (SSRF, rate limit), el `JobStore` y las utilidades. Consulta
-[`CONTRIBUTING.md`](CONTRIBUTING.md) para más detalles.
+Las pruebas usan el `TestClient` de FastAPI y **no necesitan conexión a internet**.
+La suite se ejecuta igualmente sin ffmpeg: las pruebas que lo necesitan
+(`tests/test_e2e_ffmpeg.py`, que generan un vídeo y recorren el compresor y el
+recortador de clips) se **saltan** automáticamente. El CI instala ffmpeg, así que
+allí se ejecutan todas. En `tests/` hay cobertura de la API, la seguridad (SSRF,
+rate limit), el `JobStore`, las utilidades y los pipelines con ffmpeg. El CI
+también construye la imagen Docker y comprueba que el contenedor responde en
+`/api/health`. Consulta [`CONTRIBUTING.md`](CONTRIBUTING.md) para más detalles.
 
 ## Despliegue
 

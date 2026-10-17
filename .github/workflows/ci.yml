@@ -28,3 +28,37 @@ jobs:
 
       - name: Tests (pytest)
         run: pytest
+
+  docker:
+    # Comprueba que la imagen de producción se construye y arranca de verdad.
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Construir la imagen
+        run: docker build -t videodl:ci .
+
+      - name: Arrancar y comprobar /api/health
+        run: |
+          docker run -d --name videodl -p 8000:8000 videodl:ci
+          ok=0
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ok" != "1" ]; then
+            echo "El contenedor no respondió a tiempo"
+            docker logs videodl
+            exit 1
+          fi
+          echo "Servicio sano:"
+          curl -fsS http://127.0.0.1:8000/api/health
+          echo
+
+      - name: Parar el contenedor
+        if: always()
+        run: docker rm -f videodl || true
