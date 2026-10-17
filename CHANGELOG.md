@@ -28,6 +28,7 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 - Las páginas HTML usan rutas absolutas, metadatos descriptivos y roles/etiquetas ARIA (pestañas, zonas de arrastre, barras de progreso y avisos) con foco visible y respeto por `prefers-reduced-motion`.
 
 ### Arreglado
+- El filtro anti-SSRF bloqueaba **cualquier dominio**: `host_is_public` cortaba con `return` el caso de IP literal y nunca llegaba a resolver el DNS (solo funcionaban las IPs escritas directamente). Ahora solo se rechazan las IPs internas/privadas reales. Añadidas pruebas de regresión con dominios.
 - Un ffmpeg colgado ya no retiene un hilo para siempre (timeout de proceso).
 - Las descargas usan `socket_timeout` para no quedar colgadas.
 - `resolve_output` ignora archivos incompletos (`.part`, `.ytdl`).

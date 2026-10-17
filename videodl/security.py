@@ -54,10 +54,13 @@ def host_is_public(host: str) -> bool:
         return False
 
     # Si ya es una IP literal, se comprueba directamente.
+    # Ojo: hay que usar ``ipaddress.ip_address`` aquí y no ``_ip_is_public``,
+    # porque esa auxiliar captura el ValueError y devuelve False, lo que haría
+    # que cualquier dominio se rechazara sin llegar a resolver el DNS.
     try:
-        return _ip_is_public(host)
+        return ipaddress.ip_address(host).is_global
     except ValueError:
-        pass
+        pass  # no es una IP literal: hay que resolver el dominio
 
     try:
         infos = socket.getaddrinfo(host, None)
