@@ -14,6 +14,8 @@ from .config import (
     FFMPEG_TIMEOUT_SECONDS,
     FFPROBE,
     FFPROBE_AVAILABLE,
+    YTDLP_EXTRACTOR_ARGS,
+    YTDLP_PROXY,
     YTDLP_SOCKET_TIMEOUT,
     cookies,
 )
@@ -92,6 +94,13 @@ def build_opts(
 
     if YTDLP_SOCKET_TIMEOUT > 0:
         opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
+
+    # Escape cuando la plataforma bloquea la IP del servidor (YouTube en la nube):
+    # salir por un proxy y/o elegir otro cliente de extracción.
+    if YTDLP_PROXY:
+        opts["proxy"] = YTDLP_PROXY
+    if YTDLP_EXTRACTOR_ARGS:
+        opts["extractor_args"] = YTDLP_EXTRACTOR_ARGS
 
     # Recorte de un fragmento (requiere ffmpeg para cortar con precisión)
     if FFMPEG_AVAILABLE and (start is not None or end is not None):

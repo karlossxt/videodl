@@ -6,13 +6,13 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [2.0.0]
 
 ### Añadido
-- Suite de pruebas con pytest (seguridad, utilidades, trabajos, API) y CI en GitHub Actions.
-- Pruebas de extremo a extremo con ffmpeg (`tests/test_e2e_ffmpeg.py`): generan un vídeo y recorren el compresor y el recortador de clips de principio a fin.
+- Suite de pruebas con pytest (seguridad, utilidades, trabajos, API) y CI en GitHub Actions.- Pruebas de extremo a extremo con ffmpeg (`tests/test_e2e_ffmpeg.py`): generan un vídeo y recorren el compresor y el recortador de clips de principio a fin.
 - El CI también construye la imagen Docker y comprueba que el contenedor responde en `/api/health`.
 - Configuración de lint con ruff (`pyproject.toml`) y `.editorconfig`.
 - `SECURITY.md`, `CONTRIBUTING.md` y `.env.example`.
 - Logging estructurado en todo el backend.
 - Protección anti-SSRF en todas las URLs y en la descarga de miniaturas.
+- `YTDLP_PROXY` (sacar las peticiones por un proxy) y `YTDLP_EXTRACTOR_ARGS` (elegir otro cliente de extracción) para cuando la plataforma bloquea la IP del servidor.
 - Rate limiting por IP y límite de trabajos concurrentes (`RATE_LIMIT_PER_MINUTE`, `MAX_CONCURRENT_JOBS`).
 - Cabeceras de seguridad y CSP configurables.
 - `HEALTHCHECK` en el Dockerfile y healthchecks/límites en Docker Compose.

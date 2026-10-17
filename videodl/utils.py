@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import shutil
 import tempfile
@@ -10,6 +11,8 @@ import unicodedata
 from collections.abc import Iterable
 from pathlib import Path
 
+logger = logging.getLogger("videodl.utils")
+
 
 def sanitize_filename(name: str) -> str:
     """Quita caracteres prohibidos en nombres de archivo (Windows incluido)."""
@@ -17,6 +20,41 @@ def sanitize_filename(name: str) -> str:
     name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", name)
     name = re.sub(r"\s+", " ", name).strip(" .")
     return name[:150] or "video"
+
+
+def parse_extractor_args(raw: str) -> dict[str, dict[str, list[str]]]:
+    """Convierte ``"youtube:player_client=tv,web"`` en el diccionario que espera yt-dlp.
+
+    Acepta el mismo formato que ``--extractor-args`` de la línea de comandos:
+    pares ``extractor:clave=valor`` separados por ``;`` y listas separadas por
+    comas. Permite elegir otro cliente de extracción (p. ej. cuando YouTube
+    bloquea el que se usa por defecto) sin tocar el código.
+    """
+    result: dict[str, dict[str, list[str]]] = {}
+    extractor: str | None = None
+    for chunk in (raw or "").split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if ":" in chunk:
+            extractor, _, chunk = chunk.partition(":")
+            extractor = extractor.strip().lower()
+            chunk = chunk.strip()
+            if extractor:
+                result.setdefault(extractor, {})
+        if not chunk:
+            continue
+        if extractor is None or "=" not in chunk:
+            logger.warning("Argumento de extractor ignorado: %r", chunk)
+            continue
+        key, _, value = chunk.partition("=")
+        key = key.strip()
+        values = [v.strip() for v in value.split(",") if v.strip()]
+        if not key or not values:
+            logger.warning("Argumento de extractor ignorado: %r", chunk)
+            continue
+        result[extractor][key] = values
+    return {name: args for name, args in result.items() if args}
 
 
 def human_size(n: int | None) -> str | None:

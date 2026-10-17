@@ -252,6 +252,7 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
   - Servidor: **`PORT`**, **`LOG_LEVEL`**, **`FORWARDED_ALLOW_IPS`** (IP del proxy de confianza para leer `X-Forwarded-For`; déjalo en `127.0.0.1` salvo que uses un proxy propio).
   - Límites: **`RATE_LIMIT_PER_MINUTE`** (peticiones por minuto y por IP, `0` = sin límite), **`MAX_CONCURRENT_JOBS`** (trabajos pesados simultáneos).
   - Vídeo: **`MAX_UPLOAD_MB`**, **`COMPRESS_MAX_TARGET_MB`**, **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`**, **`CLIP_PAD_SECONDS`** (margen de seguridad descargado de más en cada extremo para clavar el segundo exacto), **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope cuando el enlace no admite fragmentos), **`FFMPEG_TIMEOUT_SECONDS`** (mata codificaciones colgadas) y **`YTDLP_SOCKET_TIMEOUT`**.
+- yt-dlp y plataformas: **`YTDLP_PROXY`** (saca las peticiones por un proxy, útil si la plataforma bloquea la IP del servidor) y **`YTDLP_EXTRACTOR_ARGS`** (eliges otro cliente de extracción, con el formato de `--extractor-args`; por ejemplo `youtube:player_client=tv,web_safari`).
   - Seguridad: **`CORS_ORIGINS`** (orígenes permitidos separados por comas; vacío = mismo origen) y **`CONTENT_SECURITY_POLICY`** (CSP propia; vacío = se usa una por defecto sensata).
   - En servidores gratuitos con poca CPU conviene dejar `X264_PRESET` en `veryfast` o `ultrafast`.
 - **Seguridad**: la app valida las URLs (bloquea peticiones a direcciones internas/privadas para evitar SSRF), aplica un límite de peticiones por IP y de trabajos concurrentes, y envía cabeceras de seguridad (incluida una CSP por defecto). Consulta [`SECURITY.md`](SECURITY.md) para el modelo de amenazas y cómo reportar problemas.
@@ -292,6 +293,15 @@ Recomendaciones:
 
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.
+
+Aun **con** cookies, YouTube puede seguir rechazando la *IP del servidor* (los
+rangos de datacenter están muy vigilados). Si aparece el error *"Failed to extract
+any player response"*, hay dos salidas:
+
+- **`YTDLP_PROXY`**: sacar las peticiones por un proxy residencial es lo más fiable
+  desde la nube.
+- **`YTDLP_EXTRACTOR_ARGS=youtube:player_client=tv,web_safari`**: probar otro cliente
+  de extracción; a veces basta y no cuesta nada intentarlo.
 
 ## Aviso legal
 

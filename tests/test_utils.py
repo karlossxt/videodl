@@ -2,6 +2,7 @@ from videodl.utils import (
     centered_crop,
     even,
     human_size,
+    parse_extractor_args,
     sanitize_filename,
     time_tag,
 )
@@ -51,3 +52,24 @@ def test_centered_crop_stays_within_bounds():
         assert x >= 0 and y >= 0
         assert x + cw <= w
         assert y + ch <= h
+
+
+def test_parse_extractor_args_cliente_con_lista():
+    assert parse_extractor_args("youtube:player_client=tv,web_safari") == {
+        "youtube": {"player_client": ["tv", "web_safari"]}
+    }
+
+
+def test_parse_extractor_args_varios_argumentos_y_extractores():
+    assert parse_extractor_args("youtube:player_client=tv;po_token=web+abc; vimeo:key=1") == {
+        "youtube": {"player_client": ["tv"], "po_token": ["web+abc"]},
+        "vimeo": {"key": ["1"]},
+    }
+
+
+def test_parse_extractor_args_vacio_o_invalido():
+    assert parse_extractor_args("") == {}
+    assert parse_extractor_args("   ") == {}
+    # Sin extractor o sin "=" no hay nada que aplicar.
+    assert parse_extractor_args("player_client=tv") == {}
+    assert parse_extractor_args("youtube:") == {}

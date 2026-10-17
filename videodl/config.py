@@ -18,6 +18,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from .utils import parse_extractor_args
+
 logger = logging.getLogger("videodl.config")
 
 
@@ -113,6 +115,14 @@ CLIP_PAD_SECONDS = max(4, env_int("CLIP_PAD_SECONDS", 12, minimum=0))
 FFMPEG_TIMEOUT_SECONDS = env_int("FFMPEG_TIMEOUT_SECONDS", 3600, minimum=0)
 # Timeout de red para yt-dlp (evita descargas colgadas que nunca terminan).
 YTDLP_SOCKET_TIMEOUT = env_int("YTDLP_SOCKET_TIMEOUT", 30, minimum=0)
+# Proxy para todas las peticiones de yt-dlp. Útil cuando la IP del servidor está
+# bloqueada por la plataforma (p. ej. YouTube desde un datacenter). Ejemplos:
+# "http://usuario:clave@host:8080" o "socks5://host:1080".
+YTDLP_PROXY = env_str("YTDLP_PROXY")
+# Argumentos del extractor de yt-dlp, con el mismo formato que la opción
+# --extractor-args de la CLI: "youtube:player_client=tv,web_safari".
+# Permite elegir otro cliente de extracción sin tocar código.
+YTDLP_EXTRACTOR_ARGS = parse_extractor_args(env_str("YTDLP_EXTRACTOR_ARGS"))
 
 
 # ---------------------------------------------------------------------------
