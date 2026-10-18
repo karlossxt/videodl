@@ -4,6 +4,34 @@ from __future__ import annotations
 
 import re
 
+# YouTube rota cada cierto tiempo las cookies de la sesión exportada. yt-dlp lo
+# avisa con un WARNING («The provided YouTube account cookies are no longer
+# valid») y sigue como anónimo, así que el error que acaba viendo el usuario es
+# el anti-bot y parece un problema de configuración cuando en realidad es que el
+# fichero ya no autentica. Se recuerda el aviso para poder explicarlo.
+_AVISO_COOKIES_ROTADAS = "cookies are no longer valid"
+_cookies_rotadas = False
+
+
+def aviso_cookies_rotadas(mensaje: str) -> bool:
+    """¿Es el aviso de cookies rotadas de yt-dlp? Si lo es, se recuerda."""
+    global _cookies_rotadas
+    if _AVISO_COOKIES_ROTADAS in mensaje.lower():
+        _cookies_rotadas = True
+        return True
+    return False
+
+
+def cookies_rotadas() -> bool:
+    """¿Se ha detectado que YouTube invalidó las cookies de la sesión?"""
+    return _cookies_rotadas
+
+
+def olvidar_cookies_rotadas() -> None:
+    """Borra el recuerdo del aviso (al volver a cargar la configuración)."""
+    global _cookies_rotadas
+    _cookies_rotadas = False
+
 
 def clean_ytdlp_error(msg: str) -> str:
     """Muestra un mensaje más amigable, sin rutas locales ni ruido técnico."""
@@ -18,6 +46,14 @@ def clean_ytdlp_error(msg: str) -> str:
     if "age" in msg.lower() and "confirm" in msg.lower():
         return "El video tiene restricción de edad y no se puede descargar."
     if "Sign in" in msg or "login" in msg.lower():
+        if cookies_rotadas():
+            return (
+                "YouTube invalidó las cookies de tu sesión (las rota cada cierto "
+                "tiempo): el fichero es correcto, pero ya no autentica, así que la "
+                "descarga sale como anónima y YouTube responde con su comprobación "
+                "anti-bot. Vuelve a exportar cookies.txt con la sesión iniciada, "
+                "actualiza el Secret File y reintenta."
+            )
         return (
             "La plataforma exige iniciar sesión para servir este vídeo (en YouTube es "
             "su comprobación anti-bot, habitual desde servidores en la nube). Prueba "

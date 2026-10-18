@@ -353,6 +353,11 @@ Recomendaciones:
   sale el aviso anti-bot, es que no están llegando, han caducado o no traen sesión.
   Vuelve a exportarlas y actualiza el Secret File (o el despliegue) y espera a que
   Render reinicie el servicio.
+- **YouTube rota estas cookies cada cierto tiempo.** Cuando lo hace, el `cookies.txt`
+  sigue pareciendo correcto (trae `SID`, `__Secure-1PSID`…) pero ya no autentica, y
+  las descargas salen como anónimas con el aviso anti-bot. yt-dlp lo detecta y lo
+  avisa (`cookies are no longer valid`); la app lo recuerda y te lo dice en el
+  error para que **renueves** el fichero en lugar de buscarte la vida.
 - Comprueba el resultado en `/api/health`: `cookies` indica `true` si se cargaron,
   `cookies_count` cuántas hay y `cookies_session` si incluyen una sesión iniciada.
   En los registros del servidor (arranque) se indica desde dónde se cargaron
@@ -363,12 +368,14 @@ Recomendaciones:
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.
 
-Medido en Render (antes de añadir los PO tokens): con y sin cookies, con **todos**
-los clientes (`YTDLP_EXTRACTOR_ARGS=youtube:player_client=all`) y con la
-configuración de la v1, YouTube respondió con la comprobación anti-bot a 6 de 7
-vídeos probados; solo pasó el de control, el más popular. Elegir cliente no lo
-arregla: desde la nube hay que firmar las peticiones (PO tokens, ya incluidos) o
-salir con otra IP. Si aun así algún vídeo se resiste:
+Medido en Render, con la configuración actual (runtime de JavaScript, PO tokens
+incluidos, cookies «con sesión» pero rotadas): YouTube responde con su comprobación
+anti-bot a casi cualquier vídeo desde esa IP; solo pasó el de control, el más
+popular. Con y sin cookies, y con **todos** los clientes
+(`YTDLP_EXTRACTOR_ARGS=youtube:player_client=all`), el resultado fue el mismo: elegir
+cliente no lo arregla. Los PO tokens sí entran en juego (la extracción pasa de ~3 s a
+~13 s: ese es el tiempo de generarlos), pero por sí solos **no** levantan la
+comprobación desde la nube. Si algún vídeo se resiste con cookies frescas:
 
 - **`YTDLP_PROXY`**: sacar las peticiones por un proxy residencial. Es lo más fiable
   desde la nube (ojo: los proxies gratuitos fallan más de lo que ayudan).

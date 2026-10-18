@@ -38,6 +38,9 @@ def _limpiar_cookies():
     config.cookies.source = ""
     config.cookies.session = False
     config.cookies.count = 0
+    from videodl import errors
+
+    errors.olvidar_cookies_rotadas()
 
 
 @pytest.fixture()
@@ -191,3 +194,17 @@ def test_yt_dlp_cierra_sin_error_con_cookies_de_solo_lectura(
 
     with yt_dlp.YoutubeDL({"quiet": True, "cookiefile": config.cookies.file}):
         pass
+
+
+def test_recargar_las_cookies_olvida_el_aviso_de_rotacion(_sin_variables):
+    """Si se cambia el fichero de cookies, el aviso anterior deja de aplicar."""
+    from videodl import errors
+
+    errors.aviso_cookies_rotadas(
+        "[youtube] The provided YouTube account cookies are no longer valid."
+    )
+    assert errors.cookies_rotadas() is True
+
+    config.setup_cookies()
+
+    assert errors.cookies_rotadas() is False

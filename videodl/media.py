@@ -9,6 +9,7 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 
+from . import errors
 from .config import (
     FFMPEG_AVAILABLE,
     FFMPEG_TIMEOUT_SECONDS,
@@ -84,6 +85,9 @@ class _YtdlpLogger:
         self._log.info("%s", message)
 
     def warning(self, message: str) -> None:
+        # YouTube rota las cookies de la sesión exportada; yt-dlp lo avisa por
+        # aquí y conviene recordarlo para poder explicarlo si luego falla.
+        errors.aviso_cookies_rotadas(message)
         self._log.warning("%s", message)
 
     def error(self, message: str) -> None:

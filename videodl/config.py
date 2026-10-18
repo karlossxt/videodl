@@ -305,6 +305,12 @@ def setup_cookies() -> None:
     cookies.session = False
     cookies.count = 0
 
+    # Al (re)cargar las cookies se olvida el aviso de «cookies rotadas»: el
+    # fichero puede ser nuevo.
+    from . import errors
+
+    errors.olvidar_cookies_rotadas()
+
     # 1) Ruta personalizada
     path = env_str("YTDLP_COOKIES_FILE")
     if path and Path(path).is_file():

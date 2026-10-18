@@ -3,6 +3,25 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.1]
+
+### Añadido
+- **Diagnóstico de cookies rotadas.** YouTube invalida las cookies de la sesión
+  exportada cada cierto tiempo. Cuando eso pasa el `cookies.txt` sigue pareciendo
+  correcto (trae `SID`, `__Secure-1PSID`…), yt-dlp avisa con un WARNING («The
+  provided YouTube account cookies are no longer valid») y sigue como anónimo, así
+  que el usuario acababa viendo el genérico «configura cookies de una sesión
+  iniciada» cuando lo que tenía que hacer era **renovar** las que ya tenía. Ahora la
+  app recuerda ese aviso y el error lo explica. Gracias a esto se encontró la causa
+  real del bloqueo del servicio en producción: las cookies estaban rotadas.
+
+### Notas
+- Medido con la 2.2.0 ya desplegada: los PO tokens **sí** entran en juego (en el plan
+  gratuito la extracción pasa de ~3 s a ~13 s, que es el tiempo de generarlos), pero
+  por sí solos no levantan la comprobación anti-bot de YouTube desde la IP de
+  Render. Siguen haciendo falta cookies frescas o una IP residencial
+  (`YTDLP_PROXY`).
+
 ## [2.2.0]
 
 ### Añadido
