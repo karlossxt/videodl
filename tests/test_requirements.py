@@ -38,6 +38,30 @@ def test_yt_dlp_se_instala_con_runtime_javascript():
     )
 
 
+def test_proveedor_de_po_tokens_en_sincronia_con_la_imagen():
+    """El plugin y el script que instala el Dockerfile deben ser la misma versión.
+
+    El plugin rechaza las peticiones si la versión mayor no coincide con la del
+    script, así que una desincronización rompería las descargas de YouTube con un
+    error difícil de leer.
+    """
+    lineas = _lineas_de("bgutil-ytdlp-pot-provider")
+
+    assert len(lineas) == 1, f"requirements.txt debe pedir el plugin una sola vez: {lineas}"
+    declaracion = lineas[0]
+    assert "==" in declaracion, (
+        "el plugin de PO tokens va clavado a una versión exacta (la misma que "
+        f"BGUTIL_POT_VERSION en el Dockerfile): {declaracion!r}"
+    )
+    version = declaracion.split("==", 1)[1].strip()
+
+    dockerfile = (RAIZ / "Dockerfile").read_text(encoding="utf-8")
+    assert f"ARG BGUTIL_POT_VERSION={version}" in dockerfile, (
+        "el Dockerfile instala el script del proveedor con otra versión que la del "
+        f"plugin ({version}); el plugin devolvería un error de versiones"
+    )
+
+
 def test_dependencias_principales_presentes():
     """Un repaso rápido: los paquetes que la app importa deben estar declarados."""
     for paquete in ("fastapi", "uvicorn", "python-multipart", "segno"):

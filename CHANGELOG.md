@@ -3,6 +3,22 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.0]
+
+### Añadido
+- **PO tokens de YouTube: la imagen firma sus peticiones.** Se instala el proveedor
+  [`bgutil-ytdlp-pot-provider`](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)
+  2.0.2 en modo «script» sobre el Deno que ya traía `yt-dlp[default,deno]`. Es lo
+  que YouTube exige a las IPs de nube para servir buena parte de sus vídeos: sin
+  token responde con su comprobación anti-bot («Sign in to confirm you're not a
+  bot») por muchas cookies que se manden y sea cual sea el cliente elegido.
+  `videodl/pot.py` amplía el corte de 20 s del plugin con **`YTDLP_POT_TIMEOUT`**
+  (segundos; `0` desactiva el proveedor), pensando en el plan gratuito (0,1 CPU).
+- CI: la construcción de la imagen ya valida el montaje (el propio `RUN` ejecuta el
+  script del proveedor) y una prueba (`tests/test_requirements.py`) impide que se
+  desincronicen las versiones del plugin y del `Dockerfile`, porque el plugin
+  rechaza la petición si no coinciden.
+
 ## [2.1.3]
 
 ### Añadido

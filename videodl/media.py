@@ -20,8 +20,14 @@ from .config import (
     cookies,
 )
 from .jobs import JobStore
+from .pot import configure_pot_provider
 
 logger = logging.getLogger("videodl.media")
+
+# Se ajusta el proveedor de PO tokens antes de cualquier extracción (si está
+# instalado; si no, no hace nada). Sin él YouTube contesta con su comprobación
+# anti-bot desde una IP de nube, por muchas cookies que se manden.
+configure_pot_provider()
 
 # Sufijos de archivos incompletos que nunca deben servirse como resultado final.
 _TEMP_SUFFIXES = {".part", ".ytdl", ".temp", ".tmp"}
@@ -59,15 +65,41 @@ def format_selector(mode: str) -> str:
     return f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
 
 
+class _YtdlpLogger:
+    """Reenvía los mensajes de yt-dlp al registro de la app.
+
+    yt-dlp se ejecuta en modo silencioso y así se perdían avisos que explican los
+    fallos: clientes descartados por no admitir cookies, proveedores de PO tokens
+    rechazados, «esto es un experimento»… Los avisos y los errores salen con su
+    nivel (visibles con ``LOG_LEVEL=INFO``) y el resto a ``DEBUG`` para poder
+    seguir una extracción entera con ``LOG_LEVEL=DEBUG``.
+    """
+
+    _log = logging.getLogger("videodl.ytdlp")
+
+    def debug(self, message: str) -> None:
+        self._log.debug("%s", message)
+
+    def info(self, message: str) -> None:
+        self._log.info("%s", message)
+
+    def warning(self, message: str) -> None:
+        self._log.warning("%s", message)
+
+    def error(self, message: str) -> None:
+        self._log.error("%s", message)
+
+
 def connection_opts() -> dict:
     """Ajustes de conexión válidos para cualquier llamada a yt-dlp.
 
     Cookies, proxy y cliente de extracción: cuando la plataforma bloquea la IP
     del servidor (YouTube en la nube), sin esto ni el análisis ni la descarga
     funcionan. El ``cookiefile`` apunta siempre a una copia escribible porque
-    yt-dlp reescribe el fichero al cerrar.
+    yt-dlp reescribe el fichero al cerrar. También se le pasa un ``logger``: sin
+    él, yt-dlp se traga sus propios avisos y depurar un bloqueo es a ciegas.
     """
-    opts: dict = {}
+    opts: dict = {"logger": _YtdlpLogger()}
     if YTDLP_SOCKET_TIMEOUT > 0:
         opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
     if YTDLP_PROXY:

@@ -35,6 +35,27 @@ COPY --chown=appuser:appuser static ./static
 
 USER appuser
 
+# Proveedor de PO tokens de YouTube (bgutil) en modo «script», con el Deno que ya
+# instaló «yt-dlp[default,deno]». YouTube exige a las IPs de nube una prueba de
+# origen para servir buena parte de sus vídeos; sin ella responde con «Sign in to
+# confirm you're not a bot» por mucho que se manden cookies. Se instala en el HOME
+# del usuario porque es donde lo busca el plugin, y se deja su caché caliente
+# (DENO_DIR y el chequeo de versión) para que la primera descarga no compile nada.
+# La versión debe coincidir con la de requirements.txt.
+ARG BGUTIL_POT_VERSION=2.0.2
+ENV DENO_DIR=/home/appuser/.cache/deno
+RUN set -eux; \
+    mkdir -p /home/appuser/bgutil-ytdlp-pot-provider; \
+    curl -fsSL "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/archive/refs/tags/${BGUTIL_POT_VERSION}.tar.gz" \
+        | tar -xz --strip-components=1 -C /home/appuser/bgutil-ytdlp-pot-provider; \
+    cd /home/appuser/bgutil-ytdlp-pot-provider/server; \
+    deno install --allow-scripts=npm:canvas --frozen; \
+    deno run --allow-env --allow-net \
+        --allow-ffi=/home/appuser/bgutil-ytdlp-pot-provider/server/node_modules \
+        --allow-read=/home/appuser/.cache/bgutil-ytdlp-pot-provider,/home/appuser/bgutil-ytdlp-pot-provider/server/node_modules \
+        --allow-write=/home/appuser/.cache/bgutil-ytdlp-pot-provider \
+        src/generate_once.ts --version
+
 EXPOSE 8000
 
 # Comprueba que el servicio responde (Render/Railway usan /api/health; esto cubre

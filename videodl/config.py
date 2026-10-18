@@ -123,6 +123,11 @@ YTDLP_PROXY = env_str("YTDLP_PROXY")
 # --extractor-args de la CLI: "youtube:player_client=tv,web_safari".
 # Permite elegir otro cliente de extracción sin tocar código.
 YTDLP_EXTRACTOR_ARGS = parse_extractor_args(env_str("YTDLP_EXTRACTOR_ARGS"))
+# Segundos que se le dejan al proveedor de PO tokens (bgutil) para firmar una
+# petición a YouTube. El plugin corta a los 20 s que bastan en un PC normal; un
+# plan gratuito (0,1 CPU) puede tardar más, así que se amplía (0 = desactivar el
+# proveedor, útil para comparar sin él).
+YTDLP_POT_TIMEOUT = env_int("YTDLP_POT_TIMEOUT", 60, minimum=0)
 
 
 # ---------------------------------------------------------------------------

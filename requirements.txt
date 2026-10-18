@@ -12,3 +12,9 @@ segno==1.6.6
 # en cuanto hay cookies, elige los clientes web/tv que desde una IP de servidor
 # responden con «Sign in to confirm you're not a bot».
 yt-dlp[default,deno]>=2026.8.19
+# Proveedor de PO tokens de YouTube (bgutil): firma las peticiones para que
+# YouTube no conteste con su comprobación anti-bot desde una IP de nube. Se instala
+# el plugin (el script lo pone el Dockerfile, en modo Deno) y va clavado a la misma
+# versión que BGUTIL_POT_VERSION allí: si no coinciden, el plugin lo avisa y
+# rechaza la petición.
+bgutil-ytdlp-pot-provider==2.0.2

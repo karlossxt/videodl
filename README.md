@@ -285,16 +285,38 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 - Los archivos se descargan a una carpeta temporal y se borran en cuanto se envían al usuario. Al reiniciar el servicio se limpian los restos.
 - Usa la app solo para contenido propio o con licencia; respeta los términos de cada plataforma.
 
-### Cookies (opcional, para YouTube en la nube)
+### YouTube desde la nube (PO tokens, cookies y proxy)
 
-Desde una IP de servidor (Render, Railway…) YouTube a veces responde
-*"Sign in to confirm you're not a bot"*. La solución es darle a yt-dlp tus cookies de
-navegador. La app las busca en este orden:
+Desde una IP de servidor (Render, Railway…) YouTube responde *"Sign in to confirm
+you're not a bot"* a buena parte de sus vídeos: quiere una prueba de que hay una
+persona al otro lado. La app trae tres mecanismos y los usa en este orden:
 
-> **Nota técnica:** yt-dlp moderno necesita un *runtime* de JavaScript para YouTube.
-> La imagen instala `yt-dlp[default,deno]` (el solucionador `yt-dlp-ejs` y el
-> runtime `deno`); sin él la extracción se degrada y yt-dlp avisa de que faltarán
-> formatos. No lo quites al actualizar dependencias a mano.
+1. **PO tokens (automático, ya incluido).** La imagen instala el proveedor
+   [`bgutil-ytdlp-pot-provider`](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)
+   en modo «script» con el Deno que trae `yt-dlp[default,deno]`: firma cada petición
+   con un *PO token*, que es justo lo que YouTube exige a las IPs de nube. No hay
+   nada que configurar. El plugin corta la generación a los 20 s, poco para una CPU
+   modesta, así que la app amplía ese límite con `YTDLP_POT_TIMEOUT` (`0` desactiva
+   el proveedor, útil para comparar con y sin él).
+2. **Cookies** de una sesión iniciada: ayudan además con los vídeos que requieren
+   cuenta (edad, privados, suscripciones).
+3. **`YTDLP_PROXY`**: salir con otra IP (un proxy residencial).
+
+> **Nota técnica (runtime):** yt-dlp moderno necesita un *runtime* de JavaScript para
+> YouTube. La imagen instala `yt-dlp[default,deno]` (el solucionador `yt-dlp-ejs` y
+> el runtime `deno`); sin él la extracción se degrada y yt-dlp avisa de que faltarán
+> formatos. No lo quites al actualizar dependencias a mano: el proveedor de PO tokens
+> también lo aprovecha.
+
+> **Nota técnica (versiones):** el plugin de PO tokens y el script del proveedor
+> deben ser la misma versión. `requirements.txt` lo fija con `==` y el Dockerfile lo
+> instala con `BGUTIL_POT_VERSION`; una prueba
+> ([`tests/test_requirements.py`](tests/test_requirements.py)) impide que se
+> desincronicen.
+
+#### Cookies (opcional)
+
+La app las busca en este orden:
 
 1. **Secret File** montado en `/etc/secrets/cookies.txt`. En Render se sube desde
    *Environment → Secret Files → Add Secret File* con el nombre `cookies.txt`. **Es la
@@ -341,18 +363,17 @@ Recomendaciones:
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.
 
-Aun **con** cookies (y con sesión válida), YouTube puede seguir rechazando la *IP
-del servidor*: los rangos de datacenter están muy vigilados y hay vídeos que solo se
-sirven desde IPs residenciales. Medido en Render (servicio de pruebas, sin cookies y
-forzando `YTDLP_EXTRACTOR_ARGS=youtube:player_client=all`, es decir, todos los
-clientes): de 7 vídeos probados solo pasó el de control, el más popular; el resto
-recibió la comprobación anti-bot. Elegir cliente no lo arregla. Las salidas reales
-son:
+Medido en Render (antes de añadir los PO tokens): con y sin cookies, con **todos**
+los clientes (`YTDLP_EXTRACTOR_ARGS=youtube:player_client=all`) y con la
+configuración de la v1, YouTube respondió con la comprobación anti-bot a 6 de 7
+vídeos probados; solo pasó el de control, el más popular. Elegir cliente no lo
+arregla: desde la nube hay que firmar las peticiones (PO tokens, ya incluidos) o
+salir con otra IP. Si aun así algún vídeo se resiste:
 
 - **`YTDLP_PROXY`**: sacar las peticiones por un proxy residencial. Es lo más fiable
   desde la nube (ojo: los proxies gratuitos fallan más de lo que ayudan).
 - **Ejecutar la app en tu propio equipo**: desde una IP doméstica no hay
-  comprobación anti-bot ni hacen falta cookies ni proxy.
+  comprobación anti-bot ni hacen falta cookies, PO tokens ni proxy.
 
 ## Aviso legal
 
