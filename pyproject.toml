@@ -1,6 +1,6 @@
 [project]
 name = "videodl"
-version = "2.1.1"
+version = "2.1.2"
 description = "Suite de herramientas de vídeo: descarga, compresión y clips verticales."
 requires-python = ">=3.10"
 readme = "README.md"

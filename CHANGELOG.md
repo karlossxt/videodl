@@ -3,6 +3,22 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.1.2]
+
+### Arreglado
+- **YouTube vuelve a funcionar desde el servidor.** yt-dlp moderno exige un
+  **runtime de JavaScript** para YouTube, y lo pedíamos "pelado"
+  (`yt-dlp>=…`), sin los extras que lo traen. Sin él yt-dlp degrada la
+  extracción (avisa de que faltarán formatos) y, **en cuanto hay cookies**,
+  pasa a usar los clientes `web`/`tv`, que desde una IP de nube responden con
+  *«Sign in to confirm you're not a bot»*. Ahora se instala
+  `yt-dlp[default,deno]`: el extra `default` trae el solucionador
+  (`yt-dlp-ejs`) y `deno` el runtime (binario oficial, con rueda para Linux).
+  Esto explica el «en la v1 sí funcionaba»: aquella imagen llevaba una versión
+  más antigua de yt-dlp, anterior a este requisito.
+- Prueba nueva (`tests/test_requirements.py`) para que no se vuelva a dejar
+  yt-dlp sin los extras: el fallo solo aparecía al desplegar.
+
 ## [2.1.1]
 
 ### Arreglado

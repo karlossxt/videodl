@@ -291,6 +291,13 @@ Desde una IP de servidor (Render, Railway…) YouTube a veces responde
 *"Sign in to confirm you're not a bot"*. La solución es darle a yt-dlp tus cookies de
 navegador. La app las busca en este orden:
 
+> **Nota técnica:** yt-dlp moderno necesita un *runtime* de JavaScript para YouTube.
+> La imagen ya instala `yt-dlp[default,deno]` (el solucionador `yt-dlp-ejs` y el
+> runtime `deno`). Sin ellos yt-dlp degrada la extracción y, **en cuanto hay
+> cookies**, pasa a clientes que desde un servidor fallan con el aviso anti-bot
+> aunque las cookies sean válidas. Si actualizas dependencias a mano, no lo
+> quites.
+
 1. **Secret File** montado en `/etc/secrets/cookies.txt`. En Render se sube desde
    *Environment → Secret Files → Add Secret File* con el nombre `cookies.txt`. **Es la
    vía recomendada**: no hay que codificar nada y el secreto no viaja por el chat.

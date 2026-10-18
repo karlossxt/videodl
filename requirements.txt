@@ -6,4 +6,9 @@ python-multipart==0.0.32
 segno==1.6.6
 # yt-dlp cambia casi cada semana siguiendo a las plataformas: conviene dejarlo
 # abierto con un mínimo razonable y actualizarlo a propósito.
-yt-dlp>=2026.8.19
+# Los extras NO son opcionales para YouTube: `default` trae el solucionador
+# JavaScript (yt-dlp-ejs) y `deno` el runtime que lo ejecuta. Sin ellos, yt-dlp
+# moderno degrada la extracción de YouTube (avisa de que faltarán formatos) y,
+# en cuanto hay cookies, elige los clientes web/tv que desde una IP de servidor
+# responden con «Sign in to confirm you're not a bot».
+yt-dlp[default,deno]>=2026.8.19
