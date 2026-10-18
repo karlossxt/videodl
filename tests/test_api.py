@@ -7,9 +7,9 @@ def test_health_ok_without_sensitive_data(client):
     # contenido de las cookies. El *origen* sí se publica: es una etiqueta fija
     # («secret-file», «YTDLP_COOKIES_B64»…) y evita el lío de tener dos fuentes
     # configuradas y actualizar precisamente la que no se usa.
-    for leaked in ("cookies_error", "cookies_file", "env_b64_len", "env_raw_len"):
+    for leaked in ("cookies_error", "cookies_origin", "env_b64_len", "env_raw_len"):
         assert leaked not in body
-    # El diagnóstico de cookies es un booleano, un recuento y una etiqueta.
+    # El diagnóstico de cookies es un booleano, un recuento y etiquetas.
     assert body["cookies_session"] in (True, False)
     assert isinstance(body["cookies_count"], int)
     assert body["cookies_source"] in (
@@ -19,6 +19,8 @@ def test_health_ok_without_sensitive_data(client):
         "YTDLP_COOKIES",
         "YTDLP_COOKIES_B64",
     )
+    # Solo el nombre del fichero, nunca una ruta.
+    assert "/" not in body["cookies_file"] and "\\" not in body["cookies_file"]
     assert body["cookies_rotated"] in (True, False)
 
 

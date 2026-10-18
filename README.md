@@ -367,9 +367,10 @@ Recomendaciones:
 - Comprueba el resultado en `/api/health`: `cookies` (`true` si se cargaron),
   `cookies_count` (cuántas hay), `cookies_session` (si traen sesión iniciada),
   `cookies_source` (de dónde salieron: `secret-file`, `YTDLP_COOKIES_B64`…) y
-  `cookies_rotated` (`true` si la última extracción detectó que YouTube ya no las
-  acepta: renuévalas). Por seguridad, la app solo mira los **nombres** de las
-  cookies (nunca sus valores) y no publica ninguna ruta.
+  `cookies_file` (el **nombre** del fichero; con más de un Secret File, es el que hay
+  que actualizar) y `cookies_rotated` (`true` si la última extracción detectó que
+  YouTube ya no las acepta: renuévalas). Por seguridad, la app solo mira los
+  **nombres** de las cookies (nunca sus valores) y no publica ninguna ruta.
 
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.

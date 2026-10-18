@@ -68,6 +68,19 @@ def test_setup_cookies_desde_secret_file(tmp_path, monkeypatch, _sin_variables):
     assert config.cookies.error == ""
 
 
+def test_prefiere_el_secret_file_canonico(tmp_path, monkeypatch, _sin_variables):
+    """Con varios ficheros gana ``cookies.txt``, no el que caiga por orden alfabético."""
+    (tmp_path / "aaa-cookies-viejas.txt").write_text(COOKIES_ANONIMAS, encoding="utf-8")
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert config.cookies.origin is not None
+    assert Path(config.cookies.origin).name == "cookies.txt"
+    assert config.cookies.session is True
+
+
 def test_setup_cookies_avisa_si_no_hay_permisos(tmp_path, monkeypatch, caplog, _sin_variables):
     """Si el Secret File existe pero no se puede leer, se avisa (caso Docker)."""
     archivo = tmp_path / "cookies.txt"

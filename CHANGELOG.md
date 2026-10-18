@@ -3,6 +3,18 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.3]
+
+### Añadido
+- `/api/health` publica también el **nombre** del fichero de cookies
+  (`cookies_file`; nunca la ruta). Con más de un Secret File es lo que hace falta
+  para saber cuál se está usando y cuál hay que actualizar.
+
+### Cambiado
+- Si en `/etc/secrets` hay varios ficheros de cookies, se usa siempre `cookies.txt`.
+  Antes ganaba el primero por orden alfabético, de modo que añadir un fichero nuevo
+  (con otro nombre) podía cambiar cuál se usaba sin querer.
+
 ## [2.2.2]
 
 ### Corregido

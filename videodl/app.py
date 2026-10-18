@@ -8,6 +8,7 @@ import os
 import threading
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -148,6 +149,9 @@ def create_app() -> FastAPI:
             "cookies_session": cookies.session,
             "cookies_count": cookies.count,
             "cookies_source": cookies.source,
+            # Solo el nombre del fichero, nunca la ruta: es lo que hace falta para
+            # saber qué Secret File hay que actualizar si hay más de uno.
+            "cookies_file": Path(cookies.origin).name if cookies.origin else "",
             # Lo pone la última extracción: YouTube rota la sesión cada cierto
             # tiempo y, cuando lo hace, el mejor arreglo es volver a exportar.
             "cookies_rotated": errors.cookies_rotadas(),
