@@ -207,12 +207,35 @@ def _write_private_cookies(raw: str) -> str:
     return str(path)
 
 
+def _writable_copy(path: str) -> str | None:
+    """Copia las cookies a un fichero privado con permiso de escritura.
+
+    yt-dlp **reescribe** el ``cookiefile`` al terminar cada descarga. Los Secret
+    Files de Render se montan en solo lectura, así que sin esta copia la descarga
+    se completa, se queda sin reescribir el fichero y revienta al cerrar con un
+    ``PermissionError`` que además tapa el error real. Devolver ``None`` indica
+    que no se pudo leer el original.
+    """
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        logger.warning("No se pudieron leer las cookies de %s: %s", path, exc)
+        return None
+    if not raw.strip():
+        logger.warning("El fichero de cookies %s está vacío", path)
+    return _write_private_cookies(raw)
+
+
 def setup_cookies() -> None:
     """Localiza el cookies.txt opcional, en este orden:
 
     1. Ruta indicada en YTDLP_COOKIES_FILE.
     2. Un Secret File montado en /etc/secrets (cookies.txt).
     3. El contenido en YTDLP_COOKIES (texto) o YTDLP_COOKIES_B64 (Base64).
+
+    En los dos primeros casos se trabaja sobre una copia escribible (ver
+    ``_writable_copy``): yt-dlp reescribe el fichero al cerrar y el original
+    puede ser de solo lectura.
 
     Es totalmente opcional: sin cookies la app funciona igual.
     """
@@ -223,14 +246,22 @@ def setup_cookies() -> None:
     # 1) Ruta personalizada
     path = env_str("YTDLP_COOKIES_FILE")
     if path and Path(path).is_file():
-        cookies.file, cookies.source = path, "YTDLP_COOKIES_FILE"
+        copia = _writable_copy(path)
+        if copia is None:
+            cookies.error = f"no se pudo leer {path} (¿permisos de lectura?)"
+            return
+        cookies.file, cookies.source = copia, "YTDLP_COOKIES_FILE"
         logger.info("Cookies cargadas desde YTDLP_COOKIES_FILE (%s)", path)
         return
 
     # 2) Secret File (Render: /etc/secrets/cookies.txt)
     found = _find_secret_file()
     if found:
-        cookies.file, cookies.source = found, "secret-file"
+        copia = _writable_copy(found)
+        if copia is None:
+            cookies.error = f"no se pudo leer el Secret File {found} (¿permisos?)"
+            return
+        cookies.file, cookies.source = copia, "secret-file"
         logger.info("Cookies cargadas desde un Secret File (%s)", found)
         return
 

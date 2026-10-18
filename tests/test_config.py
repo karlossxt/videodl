@@ -40,7 +40,11 @@ def test_setup_cookies_desde_secret_file(tmp_path, monkeypatch, _sin_variables):
 
     config.setup_cookies()
 
-    assert config.cookies.file == str(archivo)
+    assert config.cookies.file is not None
+    # Nunca se usa el original: yt-dlp reescribe el fichero al cerrar y el
+    # Secret File de Render es de solo lectura.
+    assert config.cookies.file != str(archivo)
+    assert Path(config.cookies.file).read_text(encoding="utf-8") == COOKIES_OK
     assert config.cookies.source == "secret-file"
     assert config.cookies.error == ""
 
@@ -97,3 +101,47 @@ def test_setup_cookies_sin_nada_es_valido(monkeypatch, _sin_variables):
 
     assert config.cookies.file is None
     assert config.cookies.source == ""
+
+
+def test_cookies_de_solo_lectura_se_copian_a_un_fichero_escribible(
+    tmp_path, monkeypatch, _sin_variables
+):
+    """yt-dlp reescribe el ``cookiefile`` al cerrar cada descarga.
+
+    Con un fichero de solo lectura (el Secret File de Render) la descarga se
+    completaba y se perdía al final con un ``PermissionError``.
+    """
+    original = tmp_path / "cookies.txt"
+    original.write_text(COOKIES_OK, encoding="utf-8")
+    original.chmod(0o400)
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(original))
+
+    config.setup_cookies()
+
+    assert config.cookies.file is not None
+    assert config.cookies.file != str(original)
+    copia = Path(config.cookies.file)
+    assert copia.read_text(encoding="utf-8") == COOKIES_OK
+    # La copia sí se puede reescribir: es justo lo que hará yt-dlp.
+    copia.write_text(COOKIES_OK, encoding="utf-8")
+    assert config.cookies.source == "YTDLP_COOKIES_FILE"
+
+
+def test_yt_dlp_cierra_sin_error_con_cookies_de_solo_lectura(
+    tmp_path, monkeypatch, _sin_variables
+):
+    """Regresión del fallo real: cerrar yt-dlp no debe lanzar ``PermissionError``.
+
+    Reproduce el caso de producción: cookies en un fichero de solo lectura,
+    descarga completa y, al salir del ``with``, yt-dlp intenta guardarlas.
+    """
+    import yt_dlp
+
+    original = tmp_path / "cookies.txt"
+    original.write_text(COOKIES_OK, encoding="utf-8")
+    original.chmod(0o400)
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(original))
+    config.setup_cookies()
+
+    with yt_dlp.YoutubeDL({"quiet": True, "cookiefile": config.cookies.file}):
+        pass

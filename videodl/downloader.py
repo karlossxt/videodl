@@ -18,7 +18,7 @@ from starlette.background import BackgroundTask
 
 from .config import FFMPEG_AVAILABLE
 from .errors import clean_ytdlp_error
-from .media import build_opts, resolve_output
+from .media import build_opts, info_opts, resolve_output
 from .models import DownloadRequest, InfoRequest, JobRequest, SubtitleRequest
 from .runtime import job_limiter
 from .security import ensure_public_url, fetch_image
@@ -144,8 +144,9 @@ async def video_info(req: InfoRequest):
     ensure_public_url(req.url)
 
     def _extract():
-        opts = {"quiet": True, "no_warnings": True, "noplaylist": True, "skip_download": True}
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        # Las mismas opciones de conexión que la descarga: YouTube exige sesión
+        # también para leer los metadatos cuando la petición viene de un servidor.
+        with yt_dlp.YoutubeDL(info_opts()) as ydl:
             return ydl.extract_info(req.url.strip(), download=False)
 
     try:
@@ -381,10 +382,7 @@ async def download_subtitles(req: SubtitleRequest):
     tmpdir = Path(tempfile.mkdtemp(prefix="videodl_sub_"))
 
     opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "skip_download": True,
+        **info_opts(),
         "writesubtitles": True,
         "writeautomaticsub": True,
         "subtitleslangs": [req.lang],

@@ -70,4 +70,39 @@ def test_security_headers_present(client):
 def test_unknown_job_returns_404(client):
     assert client.get("/api/jobs/nope").status_code == 404
     assert client.get("/api/compress/nope").status_code == 404
+
+
+def test_analysis_sends_configured_cookies(client, monkeypatch):
+    """El análisis tiene que mandar las cookies, no solo la descarga.
+
+    Era la causa del aviso anti-bot al pulsar «Analizar» en el servidor: el
+    endpoint iba sin ``cookiefile`` aunque hubiera cookies configuradas.
+    """
+    from videodl import downloader
+    from videodl.config import cookies
+
+    captured: dict = {}
+
+    class FakeYDL:
+        def __init__(self, opts):
+            captured.update(opts)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def extract_info(self, url, download=False):
+            return {"title": "prueba", "formats": [], "subtitles": {}}
+
+    monkeypatch.setattr(downloader, "ensure_public_url", lambda url: None)
+    monkeypatch.setattr(downloader.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(cookies, "file", "C:/privado/cookies.txt")
+
+    res = client.post("/api/info", json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+
+    assert res.status_code == 200
+    assert captured["cookiefile"] == "C:/privado/cookies.txt"
+    assert captured["skip_download"] is True
     assert client.get("/api/clips/nope").status_code == 404

@@ -3,6 +3,16 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.1.1]
+
+### Arreglado
+- **Las descargas con cookies ya no se pierden al terminar.** yt-dlp reescribe el fichero de cookies al cerrar cada descarga; si ese fichero es de solo lectura (Render monta así los Secret Files en `/etc/secrets`) saltaba un `PermissionError` que tiraba una descarga ya completada y, además, tapaba el error real (el usuario veía un genérico «Error inesperado durante la descarga»). Ahora se trabaja siempre sobre una copia privada con permiso de escritura, tanto para un Secret File como para `YTDLP_COOKIES_FILE`.
+- **El análisis («Analizar») y los subtítulos ya mandan las cookies**, el proxy y el cliente de extracción. Antes iban sin nada de eso, así que desde el servidor YouTube respondía con el aviso anti-bot aunque hubiera cookies configuradas: el análisis era justo lo que fallaba.
+- 6 pruebas nuevas: la copia escribible de las cookies, el cierre de yt-dlp sin `PermissionError`, y que el análisis salga con `cookiefile`.
+
+### Cambiado
+- `media.connection_opts()` centraliza cookies, proxy, tiempo de espera y cliente de extracción; lo usan igual el análisis, los subtítulos y las descargas.
+
 ## [2.1.0]
 
 ### Añadido

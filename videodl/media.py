@@ -59,6 +59,41 @@ def format_selector(mode: str) -> str:
     return f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
 
 
+def connection_opts() -> dict:
+    """Ajustes de conexión válidos para cualquier llamada a yt-dlp.
+
+    Cookies, proxy y cliente de extracción: cuando la plataforma bloquea la IP
+    del servidor (YouTube en la nube), sin esto ni el análisis ni la descarga
+    funcionan. El ``cookiefile`` apunta siempre a una copia escribible porque
+    yt-dlp reescribe el fichero al cerrar.
+    """
+    opts: dict = {}
+    if YTDLP_SOCKET_TIMEOUT > 0:
+        opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
+    if YTDLP_PROXY:
+        opts["proxy"] = YTDLP_PROXY
+    if YTDLP_EXTRACTOR_ARGS:
+        opts["extractor_args"] = YTDLP_EXTRACTOR_ARGS
+    if cookies.file:
+        opts["cookiefile"] = cookies.file
+    return opts
+
+
+def info_opts() -> dict:
+    """Opciones para analizar una URL (o bajar subtítulos) sin descargar vídeo.
+
+    Incluye las cookies: el análisis pasa por la misma puerta que la descarga, así
+    que si el vídeo exige sesión también hay que mandarlas al leerlo.
+    """
+    return {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "skip_download": True,
+        **connection_opts(),
+    }
+
+
 def build_opts(
     mode: str,
     tmpdir: Path,
@@ -92,15 +127,8 @@ def build_opts(
         ),
     }
 
-    if YTDLP_SOCKET_TIMEOUT > 0:
-        opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
-
-    # Escape cuando la plataforma bloquea la IP del servidor (YouTube en la nube):
-    # salir por un proxy y/o elegir otro cliente de extracción.
-    if YTDLP_PROXY:
-        opts["proxy"] = YTDLP_PROXY
-    if YTDLP_EXTRACTOR_ARGS:
-        opts["extractor_args"] = YTDLP_EXTRACTOR_ARGS
+    # Cookies, proxy y cliente de extracción: ver connection_opts().
+    opts.update(connection_opts())
 
     # Recorte de un fragmento (requiere ffmpeg para cortar con precisión)
     if FFMPEG_AVAILABLE and (start is not None or end is not None):
@@ -114,8 +142,6 @@ def build_opts(
 
     if progress_hook is not None:
         opts["progress_hooks"] = [progress_hook]
-    if cookies.file:
-        opts["cookiefile"] = cookies.file
     return opts
 
 

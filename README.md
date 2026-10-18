@@ -305,12 +305,22 @@ navegador. La app las busca en este orden:
 > cargarán (`cookies:false`). La alternativa sin permisos es la variable de
 > entorno `YTDLP_COOKIES_B64`.
 
+> **Nota sobre el fichero:** yt-dlp **reescribe** el `cookies.txt` al cerrar cada
+> descarga, así que la app trabaja siempre sobre una **copia privada con permiso de
+> escritura** (en `.videodl_cookies/`, dentro del directorio temporal). De este modo
+> un Secret File de solo lectura no rompe la descarga justo al terminar y tu archivo
+> original no se modifica nunca.
+
 Recomendaciones:
 
 - Exporta las cookies con una extensión tipo *Get cookies.txt LOCALLY*, en formato
   **Netscape** (la primera línea suele ser `# Netscape HTTP Cookie File`).
 - Usa una **cuenta secundaria** de YouTube: si esa cuenta cae en un control
   anti-bot, no pierdes la principal.
+- Las cookies se usan para **analizar y para descargar**: si al pulsar *Analizar*
+  sale el aviso anti-bot, es que no están llegando o han caducado. Vuelve a
+  exportarlas y actualiza el Secret File (o el despliegue) y espera a que Render
+  reinicie el servicio.
 - Comprueba el resultado: el campo `cookies` de `/api/health` indica `true` si se
   cargaron. En los registros del servidor (arranque) se indica desde dónde
   (`YTDLP_COOKIES_FILE`, Secret File, `YTDLP_COOKIES` o `YTDLP_COOKIES_B64`);
