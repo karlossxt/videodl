@@ -19,7 +19,10 @@ services:
         value: veryfast
       - key: CLIP_MAX_SECONDS
         value: "300"
+      # El plan gratuito tiene 0.1 CPU: varias codificaciones a la vez se
+      # estorban entre ellas y disparan los tiempos. 2 es un equilibrio
+      # razonable; con 1 la cola se alarga demasiado.
       - key: MAX_CONCURRENT_JOBS
-        value: "4"
+        value: "2"
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
