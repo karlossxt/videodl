@@ -38,6 +38,8 @@ def _limpiar_cookies():
     config.cookies.source = ""
     config.cookies.session = False
     config.cookies.count = 0
+    config.cookies.origin = None
+    config.cookies.raw = None
     from videodl import errors
 
     errors.olvidar_cookies_rotadas()
@@ -206,5 +208,63 @@ def test_recargar_las_cookies_olvida_el_aviso_de_rotacion(_sin_variables):
     assert errors.cookies_rotadas() is True
 
     config.setup_cookies()
+
+    assert errors.cookies_rotadas() is False
+
+
+def test_refrescar_cookies_recupera_el_original(tmp_path, monkeypatch, _sin_variables):
+    """yt-dlp reescribe la copia al cerrar: hay que rehacerla antes de cada uso.
+
+    Regresión: si YouTube rota la sesión, yt-dlp guarda el tarro ya sin las
+    cookies de sesión. Sin refrescar, la primera extracción tras el arranque
+    usaba tus cookies y **todas las siguientes** iban como anónimas.
+    """
+    original = tmp_path / "cookies.txt"
+    original.write_text(COOKIES_CON_SESION, encoding="utf-8")
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(original))
+    config.setup_cookies()
+
+    copia = Path(config.cookies.file)
+    assert copia.read_text(encoding="utf-8") == COOKIES_CON_SESION
+
+    # Lo que hace yt-dlp al cerrar: guarda el tarro, que ya perdió la sesión.
+    copia.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+
+    assert config.refresh_cookies() is True
+    assert copia.read_text(encoding="utf-8") == COOKIES_CON_SESION
+
+
+def test_refrescar_cookies_desde_variable_de_entorno(monkeypatch, _sin_variables):
+    """El origen también puede ser una variable: se recuerda su contenido."""
+    monkeypatch.setenv("YTDLP_COOKIES", COOKIES_CON_SESION)
+    config.setup_cookies()
+
+    copia = Path(config.cookies.file)
+    copia.write_text("", encoding="utf-8")
+
+    assert config.refresh_cookies() is True
+    # El contenido de la variable se normaliza al cargarlo (sin espacios sobrantes).
+    assert copia.read_text(encoding="utf-8") == COOKIES_CON_SESION.strip()
+
+
+def test_refrescar_cookies_sin_cookies_no_falla(_sin_variables):
+    config.setup_cookies()
+
+    assert config.cookies.file is None
+    assert config.refresh_cookies() is False
+
+
+def test_refrescar_cookies_olvida_el_aviso_de_rotacion(tmp_path, monkeypatch, _sin_variables):
+    from videodl import errors
+
+    original = tmp_path / "cookies.txt"
+    original.write_text(COOKIES_CON_SESION, encoding="utf-8")
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(original))
+    config.setup_cookies()
+
+    errors.aviso_cookies_rotadas(
+        "[youtube] The provided YouTube account cookies are no longer valid."
+    )
+    config.refresh_cookies()
 
     assert errors.cookies_rotadas() is False

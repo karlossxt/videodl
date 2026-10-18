@@ -3,12 +3,23 @@ def test_health_ok_without_sensitive_data(client):
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
-    # No debe filtrar configuración sensible.
-    for leaked in ("cookies_source", "cookies_error", "env_b64_len", "env_raw_len"):
+    # No debe filtrar datos sensibles: ni rutas, ni errores, ni longitudes del
+    # contenido de las cookies. El *origen* sí se publica: es una etiqueta fija
+    # («secret-file», «YTDLP_COOKIES_B64»…) y evita el lío de tener dos fuentes
+    # configuradas y actualizar precisamente la que no se usa.
+    for leaked in ("cookies_error", "cookies_file", "env_b64_len", "env_raw_len"):
         assert leaked not in body
-    # El diagnóstico de cookies es solo un booleano y un recuento.
+    # El diagnóstico de cookies es un booleano, un recuento y una etiqueta.
     assert body["cookies_session"] in (True, False)
     assert isinstance(body["cookies_count"], int)
+    assert body["cookies_source"] in (
+        "",
+        "YTDLP_COOKIES_FILE",
+        "secret-file",
+        "YTDLP_COOKIES",
+        "YTDLP_COOKIES_B64",
+    )
+    assert body["cookies_rotated"] in (True, False)
 
 
 def test_health_alias(client):

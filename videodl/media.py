@@ -19,6 +19,7 @@ from .config import (
     YTDLP_PROXY,
     YTDLP_SOCKET_TIMEOUT,
     cookies,
+    refresh_cookies,
 )
 from .jobs import JobStore
 from .pot import configure_pot_provider
@@ -104,6 +105,10 @@ def connection_opts() -> dict:
     él, yt-dlp se traga sus propios avisos y depurar un bloqueo es a ciegas.
     """
     opts: dict = {"logger": _YtdlpLogger()}
+    # Antes de cada extracción se rehace la copia de cookies: yt-dlp reescribe el
+    # fichero al cerrar y, si YouTube rota la sesión, guarda el tarro ya sin ella
+    # (la copia se degradaba sola y las siguientes descargas iban sin sesión).
+    refresh_cookies()
     if YTDLP_SOCKET_TIMEOUT > 0:
         opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
     if YTDLP_PROXY:

@@ -3,6 +3,23 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.2]
+
+### Corregido
+- **La copia de cookies se degradaba sola.** yt-dlp reescribe el `cookiefile` al
+  cerrar cada extracción y, cuando YouTube rota la sesión, guarda el tarro ya sin
+  ella. La copia privada de la app se escribía una sola vez, al arrancar, así que
+  bastaba con que una extracción perdiera la sesión para que **todas las
+  siguientes** fueran anónimas sin avisar (yt-dlp solo avisa cuando nota que la
+  pierde por el camino). Ahora la copia se rehace desde el original antes de cada
+  extracción.
+
+### Añadido
+- `/api/health` dice de dónde salen las cookies (`cookies_source`) y si la última
+  extracción vio que YouTube ya no las acepta (`cookies_rotated`). Con dos orígenes
+  configurados a la vez es fácil actualizar el que no se usa; ahora se ve en un
+  vistazo. Sigue sin publicarse ninguna ruta ni el contenido.
+
 ## [2.2.1]
 
 ### Añadido

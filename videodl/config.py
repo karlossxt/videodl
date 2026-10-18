@@ -15,6 +15,7 @@ import os
 import shutil
 import stat as stat_module
 import tempfile
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -160,6 +161,9 @@ class CookieInfo:
     número de cookies, nunca sus valores). Sirven para detectar el fallo más
     común: exportar las cookies con la sesión de YouTube cerrada, con lo que
     yt-dlp navega como anónimo y la plataforma sigue pidiendo verificación.
+
+    ``origin``/``raw`` recuerdan de dónde salieron para poder rehacer la copia de
+    trabajo antes de cada extracción (ver ``refresh_cookies``).
     """
 
     file: str | None = None
@@ -167,9 +171,14 @@ class CookieInfo:
     source: str = ""
     session: bool = False
     count: int = 0
+    origin: str | None = None
+    raw: str | None = None
 
 
 cookies = CookieInfo()
+
+# Serializa la reescritura de la copia de trabajo (varias extracciones a la vez).
+_cookies_lock = threading.Lock()
 
 # Cookies que solo aparecen si se exportó con la cuenta de YouTube iniciada.
 # Si no hay ninguna, el fichero no aporta sesión: yt-dlp navegará como anónimo.
@@ -286,6 +295,40 @@ def _writable_copy(path: str) -> str | None:
     return _write_private_cookies(raw)
 
 
+def refresh_cookies() -> bool:
+    """Vuelve a dejar la copia de trabajo igual al origen. Devuelve si lo hizo.
+
+    yt-dlp **reescribe** el ``cookiefile`` al cerrar cada extracción, y cuando
+    YouTube rota la sesión guarda el tarro ya sin ella. Sin rehacer la copia, la
+    primera petición tras el arranque usaría tus cookies y todas las siguientes
+    irían sin sesión (y sin querer: yt-dlp solo avisa cuando nota que las pierde
+    por el camino). Por eso se refresca antes de cada extracción.
+    """
+    if not cookies.file:
+        return False
+
+    with _cookies_lock:
+        try:
+            if cookies.origin:
+                raw = Path(cookies.origin).read_text(encoding="utf-8")
+            elif cookies.raw is not None:
+                raw = cookies.raw
+            else:
+                return False
+        except OSError as exc:
+            logger.warning("No se pudieron releer las cookies de %s: %s", cookies.origin, exc)
+            return False
+
+        cookies.file = _write_private_cookies(raw)
+
+    # Cada extracción parte de la copia original: el aviso de «cookies rotadas»
+    # que se recuerde a partir de aquí habla de esta extracción.
+    from . import errors
+
+    errors.olvidar_cookies_rotadas()
+    return True
+
+
 def setup_cookies() -> None:
     """Localiza el cookies.txt opcional, en este orden:
 
@@ -304,6 +347,8 @@ def setup_cookies() -> None:
     cookies.source = ""
     cookies.session = False
     cookies.count = 0
+    cookies.origin = None
+    cookies.raw = None
 
     # Al (re)cargar las cookies se olvida el aviso de «cookies rotadas»: el
     # fichero puede ser nuevo.
@@ -319,6 +364,7 @@ def setup_cookies() -> None:
             cookies.error = f"no se pudo leer {path} (¿permisos de lectura?)"
             return
         cookies.file, cookies.source = copia, "YTDLP_COOKIES_FILE"
+        cookies.origin = path
         logger.info("Cookies cargadas desde YTDLP_COOKIES_FILE (%s)", path)
         return
 
@@ -330,6 +376,7 @@ def setup_cookies() -> None:
             cookies.error = f"no se pudo leer el Secret File {found} (¿permisos?)"
             return
         cookies.file, cookies.source = copia, "secret-file"
+        cookies.origin = found
         logger.info("Cookies cargadas desde un Secret File (%s)", found)
         return
 
@@ -363,6 +410,7 @@ def setup_cookies() -> None:
     try:
         cookies.file = _write_private_cookies(raw)
         cookies.source = source
+        cookies.raw = raw
         _check_session(raw, source)
         logger.info("Cookies cargadas desde %s", source)
     except OSError as exc:

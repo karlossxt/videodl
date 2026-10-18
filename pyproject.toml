@@ -1,7 +1,7 @@
 [project]
 name = "videodl"
-version = "2.2.1"
-description = "Suite de herramientas de vídeo: descarga, compresión y clips verticales."
+version = "2.2.2"
+description = "Suite de herramientas de vÃ­deo: descarga, compresiÃ³n y clips verticales."
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
@@ -27,7 +27,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM"]
 ignore = [
-    "E501",  # la longitud de línea la controla el formateador
+    "E501",  # la longitud de lÃ­nea la controla el formateador
     "B008",  # FastAPI usa llamadas en los valores por defecto (File(...), Form(...))
 ]
 

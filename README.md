@@ -333,10 +333,12 @@ La app las busca en este orden:
 > entorno `YTDLP_COOKIES_B64`.
 
 > **Nota sobre el fichero:** yt-dlp **reescribe** el `cookies.txt` al cerrar cada
-> descarga, así que la app trabaja siempre sobre una **copia privada con permiso de
-> escritura** (en `.videodl_cookies/`, dentro del directorio temporal). De este modo
-> un Secret File de solo lectura no rompe la descarga justo al terminar y tu archivo
-> original no se modifica nunca.
+> descarga y, cuando YouTube rota la sesión, guarda el tarro ya sin ella. Por eso la
+> app trabaja siempre sobre una **copia privada con permiso de escritura** (en
+> `.videodl_cookies/`, dentro del directorio temporal) que **rehace desde el original
+> antes de cada extracción**. Así un Secret File de solo lectura no rompe la descarga
+> justo al terminar, tu archivo original no se modifica nunca y una copia degradada
+> no se queda envenenando las descargas siguientes.
 
 Recomendaciones:
 
@@ -358,12 +360,16 @@ Recomendaciones:
   las descargas salen como anónimas con el aviso anti-bot. yt-dlp lo detecta y lo
   avisa (`cookies are no longer valid`); la app lo recuerda y te lo dice en el
   error para que **renueves** el fichero en lugar de buscarte la vida.
-- Comprueba el resultado en `/api/health`: `cookies` indica `true` si se cargaron,
-  `cookies_count` cuántas hay y `cookies_session` si incluyen una sesión iniciada.
-  En los registros del servidor (arranque) se indica desde dónde se cargaron
-  (`YTDLP_COOKIES_FILE`, Secret File, `YTDLP_COOKIES` o `YTDLP_COOKIES_B64`); sube
-  el nivel con `LOG_LEVEL=INFO`. Por seguridad, la app solo mira los **nombres** de
-  las cookies (nunca sus valores) y no publica el origen del fichero.
+- Configura **un solo origen** de cookies (en Render, el Secret File es el más
+  cómodo). Si defines dos a la vez, la app usa el primero de esta lista y el otro
+  queda ignorado: es la forma más rápida de perder media hora actualizando
+  precisamente el que no se usa.
+- Comprueba el resultado en `/api/health`: `cookies` (`true` si se cargaron),
+  `cookies_count` (cuántas hay), `cookies_session` (si traen sesión iniciada),
+  `cookies_source` (de dónde salieron: `secret-file`, `YTDLP_COOKIES_B64`…) y
+  `cookies_rotated` (`true` si la última extracción detectó que YouTube ya no las
+  acepta: renuévalas). Por seguridad, la app solo mira los **nombres** de las
+  cookies (nunca sus valores) y no publica ninguna ruta.
 
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.

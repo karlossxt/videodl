@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__
+from . import __version__, errors
 from .clips import router as clips_router
 from .compressor import router as compressor_router
 from .config import (
@@ -141,10 +141,16 @@ def create_app() -> FastAPI:
             "max_upload_mb": MAX_UPLOAD_MB,
             "cookies": bool(cookies.file),
             # Diagnóstico sin filtrar secretos: si las cookies traen una sesión
-            # iniciada y cuántas son. Un fichero sin sesión se comporta como si
-            # no hubiera cookies, y es el fallo más difícil de ver desde fuera.
+            # iniciada, cuántas son y de dónde salieron. Un fichero sin sesión se
+            # comporta como si no hubiera cookies, y es el fallo más difícil de ver
+            # desde fuera (sobre todo cuando se configuran dos orígenes a la vez y
+            # el que se actualiza no es el que se usa).
             "cookies_session": cookies.session,
             "cookies_count": cookies.count,
+            "cookies_source": cookies.source,
+            # Lo pone la última extracción: YouTube rota la sesión cada cierto
+            # tiempo y, cuando lo hace, el mejor arreglo es volver a exportar.
+            "cookies_rotated": errors.cookies_rotadas(),
         }
 
     app.include_router(downloader_router)
