@@ -3,19 +3,39 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.1.3]
+
+### Añadido
+- **Diagnóstico de cookies en `/api/health`**: `cookies_session` (si el fichero
+  trae una sesión de YouTube iniciada) y `cookies_count`. El arranque avisa
+  además por logging cuando las cookies cargadas no incluyen ninguna cookie de
+  sesión (`SID`, `__Secure-1PSID`…). Es el fallo que más se cuela al depurar
+  YouTube: el fichero es válido, la app lo carga, pero yt-dlp navega como
+  anónimo y la plataforma sigue pidiendo verificación. Solo se leen **nombres**
+  de cookies, nunca sus valores.
+
+### Cambiado
+- El mensaje de error anti-bot ya no promete que configurar cookies lo arregle:
+  pide cookies **con sesión iniciada** y ofrece el proxy (`YTDLP_PROXY`) como
+  alternativa, porque hay vídeos que YouTube no sirve a IPs de nube.
+
+### Investigado (sin cambios de código)
+- **La v1 no se rompió: es YouTube.** Medido desde Render con el servicio de
+  pruebas (sin cookies, con `YTDLP_EXTRACTOR_ARGS=youtube:player_client=all` y
+  también sin el runtime de JavaScript, como la v1): de 7 vídeos probados solo
+  pasó el de control, muy popular; el resto recibió la comprobación anti-bot,
+  incluido el que fallaba. Elegir cliente no cambia nada, así que desde la nube
+  hacen falta cookies **con sesión** o un proxy residencial.
+
 ## [2.1.2]
 
-### Arreglado
-- **YouTube vuelve a funcionar desde el servidor.** yt-dlp moderno exige un
-  **runtime de JavaScript** para YouTube, y lo pedíamos "pelado"
-  (`yt-dlp>=…`), sin los extras que lo traen. Sin él yt-dlp degrada la
-  extracción (avisa de que faltarán formatos) y, **en cuanto hay cookies**,
-  pasa a usar los clientes `web`/`tv`, que desde una IP de nube responden con
-  *«Sign in to confirm you're not a bot»*. Ahora se instala
-  `yt-dlp[default,deno]`: el extra `default` trae el solucionador
-  (`yt-dlp-ejs`) y `deno` el runtime (binario oficial, con rueda para Linux).
-  Esto explica el «en la v1 sí funcionaba»: aquella imagen llevaba una versión
-  más antigua de yt-dlp, anterior a este requisito.
+### Cambiado
+- **yt-dlp se instala con su runtime de JavaScript** (`yt-dlp[default,deno]`: el
+  solucionador `yt-dlp-ejs` y el runtime `deno`). yt-dlp moderno lo exige para
+  YouTube: sin él la extracción se degrada y avisa de que faltarán formatos. Se
+  añadió investigando el «en la v1 sí funcionaba» (aquella imagen llevaba una
+  versión anterior a este requisito). **No era la causa** del aviso anti-bot
+  desde la nube, que se aclaró en 2.1.3.
 - Prueba nueva (`tests/test_requirements.py`) para que no se vuelva a dejar
   yt-dlp sin los extras: el fallo solo aparecía al desplegar.
 

@@ -140,6 +140,11 @@ def create_app() -> FastAPI:
             "clip_max_seconds": CLIP_MAX_SECONDS,
             "max_upload_mb": MAX_UPLOAD_MB,
             "cookies": bool(cookies.file),
+            # Diagnóstico sin filtrar secretos: si las cookies traen una sesión
+            # iniciada y cuántas son. Un fichero sin sesión se comporta como si
+            # no hubiera cookies, y es el fallo más difícil de ver desde fuera.
+            "cookies_session": cookies.session,
+            "cookies_count": cookies.count,
         }
 
     app.include_router(downloader_router)

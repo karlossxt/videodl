@@ -14,6 +14,18 @@ import pytest
 from videodl import config
 
 COOKIES_OK = "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tx\n"
+# Exportado con la sesión cerrada: válido, pero no identifica a nadie.
+COOKIES_ANONIMAS = (
+    "# Netscape HTTP Cookie File\n"
+    ".youtube.com\tTRUE\t/\tFALSE\t0\tVISITOR_INFO1_LIVE\tabc\n"
+    ".youtube.com\tTRUE\t/\tFALSE\t0\tPREF\tf6=400\n"
+)
+# Las cookies de sesión van con #HttpOnly_ delante del dominio.
+COOKIES_CON_SESION = (
+    "# Netscape HTTP Cookie File\n"
+    "#HttpOnly_.youtube.com\tTRUE\t/\tTRUE\t0\t__Secure-1PSID\tsecreto\n"
+    ".youtube.com\tTRUE\t/\tFALSE\t0\tPREF\tf6=400\n"
+)
 SECRETS_INEXISTENTE = Path("videodl-secrets-que-no-existen")
 
 
@@ -24,6 +36,8 @@ def _limpiar_cookies():
     config.cookies.file = None
     config.cookies.error = ""
     config.cookies.source = ""
+    config.cookies.session = False
+    config.cookies.count = 0
 
 
 @pytest.fixture()
@@ -101,6 +115,38 @@ def test_setup_cookies_sin_nada_es_valido(monkeypatch, _sin_variables):
 
     assert config.cookies.file is None
     assert config.cookies.source == ""
+
+
+def test_cookies_sin_sesion_lo_avisan(tmp_path, monkeypatch, caplog, _sin_variables):
+    """Un cookies.txt exportado con la sesión cerrada no aporta nada.
+
+    Es el fallo que más se cuela: el fichero es válido y la app lo carga, pero
+    yt-dlp navega como anónimo y YouTube sigue pidiendo verificación desde la
+    nube. Desde fuera parece que «las cookies no funcionan».
+    """
+    archivo = tmp_path / "cookies.txt"
+    archivo.write_text(COOKIES_ANONIMAS, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    with caplog.at_level(logging.WARNING, logger="videodl.config"):
+        config.setup_cookies()
+
+    assert config.cookies.file is not None
+    assert config.cookies.session is False
+    assert config.cookies.count == 2
+    assert "no incluyen ninguna cookie de sesión" in caplog.text
+
+
+def test_cookies_con_sesion_se_detectan(tmp_path, monkeypatch, _sin_variables):
+    """Las cookies de sesión son HttpOnly: hay que mirar tras el ``#HttpOnly_``."""
+    archivo = tmp_path / "cookies.txt"
+    archivo.write_text(COOKIES_CON_SESION, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert config.cookies.session is True
+    assert config.cookies.count == 2
 
 
 def test_cookies_de_solo_lectura_se_copian_a_un_fichero_escribible(

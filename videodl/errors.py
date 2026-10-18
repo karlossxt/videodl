@@ -20,9 +20,10 @@ def clean_ytdlp_error(msg: str) -> str:
     if "Sign in" in msg or "login" in msg.lower():
         return (
             "La plataforma exige iniciar sesión para servir este vídeo (en YouTube es "
-            "su comprobación anti-bot, habitual desde servidores en la nube). El "
-            "administrador debe configurar cookies: consulta la sección «Cookies» del "
-            "README."
+            "su comprobación anti-bot, habitual desde servidores en la nube). Prueba "
+            "con cookies exportadas con la sesión iniciada (sección «Cookies» del "
+            "README); si ya las tienes, enruta las descargas por un proxy "
+            "(YTDLP_PROXY): algunos vídeos no se pueden servir desde la nube."
         )
     if "429" in msg or "Too Many Requests" in msg or "rate limit" in msg.lower():
         return "La plataforma limitó temporalmente las peticiones. Espera un momento e inténtalo de nuevo."

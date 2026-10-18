@@ -149,14 +149,67 @@ SECRETS_DIR = Path("/etc/secrets")
 
 @dataclass
 class CookieInfo:
-    """Ruta al cookies.txt activo, origen y posible error de carga."""
+    """Ruta al cookies.txt activo, origen, posible error y si trae sesión.
+
+    ``session``/``count`` describen lo que hay dentro del fichero (nombres y
+    número de cookies, nunca sus valores). Sirven para detectar el fallo más
+    común: exportar las cookies con la sesión de YouTube cerrada, con lo que
+    yt-dlp navega como anónimo y la plataforma sigue pidiendo verificación.
+    """
 
     file: str | None = None
     error: str = ""
     source: str = ""
+    session: bool = False
+    count: int = 0
 
 
 cookies = CookieInfo()
+
+# Cookies que solo aparecen si se exportó con la cuenta de YouTube iniciada.
+# Si no hay ninguna, el fichero no aporta sesión: yt-dlp navegará como anónimo.
+_SESSION_COOKIE_NAMES = frozenset({
+    "SID", "HSID", "SSID", "APISID", "SAPISID",
+    "__Secure-1PSID", "__Secure-3PSID", "LOGIN_INFO",
+})
+
+
+def _cookie_names(raw: str) -> set[str]:
+    """Nombres de las cookies del fichero (nunca sus valores).
+
+    En el formato Netscape el nombre ocupa la sexta columna. Las cookies
+    ``HttpOnly`` —entre ellas las de la sesión, ``__Secure-1PSID``— llevan el
+    prefijo ``#HttpOnly_`` delante del dominio, así que hay que mirarlas antes
+    de descartar las líneas que empiezan por ``#``.
+    """
+    names: set[str] = set()
+    for line in raw.splitlines():
+        line = line.strip()
+        if line.startswith("#HttpOnly_"):
+            line = line[len("#HttpOnly_"):]
+        elif not line or line.startswith("#"):
+            continue
+        fields = line.split("\t")
+        if len(fields) >= 7:
+            names.add(fields[5].strip())
+    return names
+
+
+def _check_session(raw: str, shown: str) -> None:
+    """Anota si las cookies traen sesión y avisa si no es así."""
+    names = _cookie_names(raw)
+    cookies.session = bool(names & _SESSION_COOKIE_NAMES)
+    cookies.count = len(names)
+    if cookies.session:
+        logger.info("Cookies con sesión de YouTube (%d cookies) desde %s", len(names), shown)
+        return
+    logger.warning(
+        "Las cookies de %s no incluyen ninguna cookie de sesión (%d en total): "
+        "se enviarán como anónimas y la plataforma seguirá pidiendo verificación "
+        "desde el servidor. Exporta cookies.txt con la cuenta de YouTube iniciada.",
+        shown,
+        len(names),
+    )
 
 
 def _find_secret_file() -> str | None:
@@ -223,6 +276,8 @@ def _writable_copy(path: str) -> str | None:
         return None
     if not raw.strip():
         logger.warning("El fichero de cookies %s está vacío", path)
+    else:
+        _check_session(raw, path)
     return _write_private_cookies(raw)
 
 
@@ -242,6 +297,8 @@ def setup_cookies() -> None:
     cookies.file = None
     cookies.error = ""
     cookies.source = ""
+    cookies.session = False
+    cookies.count = 0
 
     # 1) Ruta personalizada
     path = env_str("YTDLP_COOKIES_FILE")
@@ -295,6 +352,7 @@ def setup_cookies() -> None:
     try:
         cookies.file = _write_private_cookies(raw)
         cookies.source = source
+        _check_session(raw, source)
         logger.info("Cookies cargadas desde %s", source)
     except OSError as exc:
         cookies.file = None

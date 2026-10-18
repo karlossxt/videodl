@@ -292,11 +292,9 @@ Desde una IP de servidor (Render, Railway…) YouTube a veces responde
 navegador. La app las busca en este orden:
 
 > **Nota técnica:** yt-dlp moderno necesita un *runtime* de JavaScript para YouTube.
-> La imagen ya instala `yt-dlp[default,deno]` (el solucionador `yt-dlp-ejs` y el
-> runtime `deno`). Sin ellos yt-dlp degrada la extracción y, **en cuanto hay
-> cookies**, pasa a clientes que desde un servidor fallan con el aviso anti-bot
-> aunque las cookies sean válidas. Si actualizas dependencias a mano, no lo
-> quites.
+> La imagen instala `yt-dlp[default,deno]` (el solucionador `yt-dlp-ejs` y el
+> runtime `deno`); sin él la extracción se degrada y yt-dlp avisa de que faltarán
+> formatos. No lo quites al actualizar dependencias a mano.
 
 1. **Secret File** montado en `/etc/secrets/cookies.txt`. En Render se sube desde
    *Environment → Secret Files → Add Secret File* con el nombre `cookies.txt`. **Es la
@@ -320,31 +318,41 @@ navegador. La app las busca en este orden:
 
 Recomendaciones:
 
-- Exporta las cookies con una extensión tipo *Get cookies.txt LOCALLY*, en formato
+- Exporta las cookies **con la sesión de YouTube iniciada**. Es el error más común:
+  si el `cookies.txt` se exporta sin haber entrado en la cuenta, no identifica a
+  nadie y YouTube sigue tratándote como anónimo. La app lo detecta: si faltan las
+  cookies de sesión (`SID`, `__Secure-1PSID`…) lo avisa en el arranque y
+  `/api/health` devuelve `"cookies_session": false`.
+- Exporta el fichero con una extensión tipo *Get cookies.txt LOCALLY*, en formato
   **Netscape** (la primera línea suele ser `# Netscape HTTP Cookie File`).
 - Usa una **cuenta secundaria** de YouTube: si esa cuenta cae en un control
   anti-bot, no pierdes la principal.
 - Las cookies se usan para **analizar y para descargar**: si al pulsar *Analizar*
-  sale el aviso anti-bot, es que no están llegando o han caducado. Vuelve a
-  exportarlas y actualiza el Secret File (o el despliegue) y espera a que Render
-  reinicie el servicio.
-- Comprueba el resultado: el campo `cookies` de `/api/health` indica `true` si se
-  cargaron. En los registros del servidor (arranque) se indica desde dónde
-  (`YTDLP_COOKIES_FILE`, Secret File, `YTDLP_COOKIES` o `YTDLP_COOKIES_B64`);
-  sube el nivel con `LOG_LEVEL=INFO`. Por seguridad, `/api/health` ya no expone
-  el origen ni el número de líneas de las cookies.
+  sale el aviso anti-bot, es que no están llegando, han caducado o no traen sesión.
+  Vuelve a exportarlas y actualiza el Secret File (o el despliegue) y espera a que
+  Render reinicie el servicio.
+- Comprueba el resultado en `/api/health`: `cookies` indica `true` si se cargaron,
+  `cookies_count` cuántas hay y `cookies_session` si incluyen una sesión iniciada.
+  En los registros del servidor (arranque) se indica desde dónde se cargaron
+  (`YTDLP_COOKIES_FILE`, Secret File, `YTDLP_COOKIES` o `YTDLP_COOKIES_B64`); sube
+  el nivel con `LOG_LEVEL=INFO`. Por seguridad, la app solo mira los **nombres** de
+  las cookies (nunca sus valores) y no publica el origen del fichero.
 
 Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
 desde IPs de centro de datos.
 
-Aun **con** cookies, YouTube puede seguir rechazando la *IP del servidor* (los
-rangos de datacenter están muy vigilados). Si aparece el error *"Failed to extract
-any player response"*, hay dos salidas:
+Aun **con** cookies (y con sesión válida), YouTube puede seguir rechazando la *IP
+del servidor*: los rangos de datacenter están muy vigilados y hay vídeos que solo se
+sirven desde IPs residenciales. Medido en Render (servicio de pruebas, sin cookies y
+forzando `YTDLP_EXTRACTOR_ARGS=youtube:player_client=all`, es decir, todos los
+clientes): de 7 vídeos probados solo pasó el de control, el más popular; el resto
+recibió la comprobación anti-bot. Elegir cliente no lo arregla. Las salidas reales
+son:
 
-- **`YTDLP_PROXY`**: sacar las peticiones por un proxy residencial es lo más fiable
-  desde la nube.
-- **`YTDLP_EXTRACTOR_ARGS=youtube:player_client=tv,web_safari`**: probar otro cliente
-  de extracción; a veces basta y no cuesta nada intentarlo.
+- **`YTDLP_PROXY`**: sacar las peticiones por un proxy residencial. Es lo más fiable
+  desde la nube (ojo: los proxies gratuitos fallan más de lo que ayudan).
+- **Ejecutar la app en tu propio equipo**: desde una IP doméstica no hay
+  comprobación anti-bot ni hacen falta cookies ni proxy.
 
 ## Aviso legal
 

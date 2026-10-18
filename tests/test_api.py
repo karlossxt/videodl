@@ -6,6 +6,9 @@ def test_health_ok_without_sensitive_data(client):
     # No debe filtrar configuración sensible.
     for leaked in ("cookies_source", "cookies_error", "env_b64_len", "env_raw_len"):
         assert leaked not in body
+    # El diagnóstico de cookies es solo un booleano y un recuento.
+    assert body["cookies_session"] in (True, False)
+    assert isinstance(body["cookies_count"], int)
 
 
 def test_health_alias(client):
