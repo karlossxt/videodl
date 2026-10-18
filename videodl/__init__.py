@@ -12,6 +12,6 @@ El paquete está dividido en módulos pequeños y con una única responsabilidad
   app       -> creación de la aplicación FastAPI
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = ["__version__"]

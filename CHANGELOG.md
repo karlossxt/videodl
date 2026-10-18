@@ -3,6 +3,19 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.1.0]
+
+### Añadido
+- **Generador de enlaces de WhatsApp** (`/link-whatsapp` y `/generador-enlace-whatsapp`): crea el enlace `wa.me` con el mensaje ya escrito, con plantillas de mensaje, opción de enlace sin número fijo, copia del enlace, apertura directa, compartición, botón HTML y **descarga del código QR**.
+- Endpoint `POST /api/whatsapp/qr`, que dibuja el código QR (PNG) de un enlace de WhatsApp. Solo acepta enlaces de `wa.me` / `whatsapp.com`, así que no sirve como generador de QR genérico.
+- Dependencia `segno` (Python puro, sin binarios) para dibujar el QR.
+- 21 pruebas nuevas del generador: página, validación del enlace y código QR.
+- El enlace de WhatsApp aparece ya en la navegación de todas las páginas y la tarjeta del directorio pasa de «Muy pronto» a «Disponible».
+
+### Cambiado
+- La versión pasa a 2.1.0.
+- `static/common.js` gana la reutilización de `api()` y del manejo de errores desde el nuevo generador.
+
 ## [2.0.0]
 
 ### Añadido

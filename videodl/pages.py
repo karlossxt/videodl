@@ -29,3 +29,10 @@ async def page_herramientas():
 async def page_clips():
     """Página del recortador de clips verticales."""
     return FileResponse(STATIC_DIR / "clips.html")
+
+
+@router.get("/link-whatsapp")
+@router.get("/generador-enlace-whatsapp")
+async def page_whatsapp():
+    """Página del generador de enlaces de WhatsApp con código QR."""
+    return FileResponse(STATIC_DIR / "whatsapp.html")

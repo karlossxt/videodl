@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de enlaces de WhatsApp con mensaje y código QR — VideoDL</title>
+  <meta name="description" content="Crea gratis un enlace de WhatsApp (wa.me) con el mensaje ya escrito y descárgalo como código QR. Perfecto para negocios: tus clientes te escriben con un solo toque, sin agendar tu número." />
+  <meta name="theme-color" content="#0b0f19" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>" />
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <nav class="toolnav" aria-label="Navegación principal">
+    <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
+    <div class="toolnav-links">
+      <a href="/">Descargar vídeos</a>
+      <a href="/comprimir-video-whatsapp">Comprimir</a>
+      <a href="/recortar-clip-vertical">Clips verticales</a>
+      <a href="/link-whatsapp" class="active" aria-current="page">Enlace de WhatsApp</a>
+      <a href="/herramientas">Herramientas</a>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Generador de enlaces de WhatsApp</h1>
+      <p class="hero-sub">
+        Crea un enlace directo a tu chat con el mensaje ya escrito. Ideal para tu web,
+        tus redes sociales o un código QR en el mostrador. Gratis y sin registro.
+      </p>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <!-- ============ 1. NÚMERO ============ -->
+    <div class="section-head">
+      <h3>Paso 1 · ¿A qué número quieres que te escriban?</h3>
+      <span class="muted-small">Con prefijo internacional, sin el +</span>
+    </div>
+
+    <div class="wa-form">
+      <label class="option-field" for="wa-country">
+        <span>País</span>
+        <select id="wa-country">
+          <option value="34" selected>🇪🇸 España (+34)</option>
+          <option value="52">🇲🇽 México (+52)</option>
+          <option value="54">🇦🇷 Argentina (+54)</option>
+          <option value="57">🇨🇴 Colombia (+57)</option>
+          <option value="51">🇵🇪 Perú (+51)</option>
+          <option value="56">🇨🇱 Chile (+56)</option>
+          <option value="58">🇻🇪 Venezuela (+58)</option>
+          <option value="593">🇪🇨 Ecuador (+593)</option>
+          <option value="591">🇧🇴 Bolivia (+591)</option>
+          <option value="595">🇵🇾 Paraguay (+595)</option>
+          <option value="598">🇺🇾 Uruguay (+598)</option>
+          <option value="502">🇬🇹 Guatemala (+502)</option>
+          <option value="503">🇸🇻 El Salvador (+503)</option>
+          <option value="504">🇭🇳 Honduras (+504)</option>
+          <option value="505">🇳🇮 Nicaragua (+505)</option>
+          <option value="506">🇨🇷 Costa Rica (+506)</option>
+          <option value="507">🇵🇦 Panamá (+507)</option>
+          <option value="53">🇨🇺 Cuba (+53)</option>
+          <option value="1809">🇩🇴 Rep. Dominicana (+1 809)</option>
+          <option value="1787">🇵🇷 Puerto Rico (+1 787)</option>
+          <option value="1">🇺🇸 Estados Unidos / Canadá (+1)</option>
+          <option value="55">🇧🇷 Brasil (+55)</option>
+          <option value="351">🇵🇹 Portugal (+351)</option>
+          <option value="39">🇮🇹 Italia (+39)</option>
+          <option value="33">🇫🇷 Francia (+33)</option>
+          <option value="49">🇩🇪 Alemania (+49)</option>
+          <option value="44">🇬🇧 Reino Unido (+44)</option>
+          <option value="212">🇲🇦 Marruecos (+212)</option>
+          <option value="86">🇨🇳 China (+86)</option>
+          <option value="91">🇮🇳 India (+91)</option>
+        </select>
+      </label>
+
+      <label class="option-field" for="wa-number">
+        <span>Tu número de WhatsApp</span>
+        <div class="wa-phone">
+          <input
+            type="tel"
+            id="wa-prefix"
+            class="wa-prefix mono"
+            value="34"
+            inputmode="numeric"
+            maxlength="5"
+            aria-label="Prefijo del país"
+          />
+          <input
+            type="tel"
+            id="wa-number"
+            class="wa-number mono"
+            inputmode="tel"
+            autocomplete="off"
+            placeholder="600 123 456"
+            aria-label="Número de teléfono"
+          />
+        </div>
+      </label>
+    </div>
+
+    <label class="wa-check">
+      <input type="checkbox" id="wa-any" />
+      <span>Sin número fijo: dejo que cada persona elija a quién escribir</span>
+    </label>
+
+    <!-- ============ 2. MENSAJE ============ -->
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 2 · El mensaje que aparecerá escrito</h3>
+      <span id="wa-counter" class="muted-small mono">0 / 700</span>
+    </div>
+
+    <textarea
+      id="wa-message"
+      class="wa-textarea"
+      rows="4"
+      maxlength="700"
+      placeholder="Hola, quiero información sobre…"
+      aria-label="Mensaje que se escribirá automáticamente"
+    ></textarea>
+
+    <div class="wa-templates" id="wa-templates" role="group" aria-label="Plantillas de mensaje">
+      <button type="button" class="wa-chip" data-msg="Hola, quiero información sobre tus servicios.">Información</button>
+      <button type="button" class="wa-chip" data-msg="Hola, quiero hacer un pedido.">Hacer un pedido</button>
+      <button type="button" class="wa-chip" data-msg="Hola, quiero reservar una cita.">Reservar cita</button>
+      <button type="button" class="wa-chip" data-msg="Hola, tengo una duda.">Resolver una duda</button>
+      <button type="button" class="wa-chip" data-msg="Hola, ¿me pasas precios y disponibilidad?">Pedir precios</button>
+      <button type="button" class="wa-chip wa-chip-clear" data-msg="">Vaciar</button>
+    </div>
+
+    <!-- ============ RESULTADO ============ -->
+    <section id="wa-result" class="result">
+      <div class="section-head">
+        <h3>Tu enlace de WhatsApp</h3>
+        <span id="wa-status" class="status-live" role="status" aria-live="polite"><i aria-hidden="true"></i> Escribe tu número</span>
+      </div>
+
+      <div class="wa-output">
+        <div class="wa-link-row">
+          <input
+            type="text"
+            id="wa-link"
+            class="wa-link mono"
+            readonly
+            spellcheck="false"
+            aria-label="Enlace generado"
+          />
+          <button type="button" id="wa-copy" class="primary-btn">📋 Copiar</button>
+        </div>
+
+        <div class="wa-actions">
+          <button type="button" id="wa-open" class="download-btn">💬 Abrir en WhatsApp</button>
+          <button type="button" id="wa-share" class="soft-btn">📤 Compartir</button>
+          <button type="button" id="wa-html" class="soft-btn">&lt;/&gt; Copiar botón HTML</button>
+          <button type="button" id="wa-qr-download" class="soft-btn">⬇ Descargar QR</button>
+        </div>
+
+        <div class="wa-qr-wrap">
+          <div class="wa-qr-box">
+            <img id="wa-qr" alt="Código QR del enlace de WhatsApp" width="260" height="260" />
+            <span id="wa-qr-empty" class="wa-qr-empty">El código QR aparecerá aquí</span>
+          </div>
+          <div class="wa-qr-info">
+            <h4>Úsalo en un código QR</h4>
+            <p>
+              Imprímelo en el mostrador, en un cartel o en la carta del restaurante:
+              quien lo escanee abrirá WhatsApp contigo y el mensaje ya estará escrito.
+            </p>
+            <p id="wa-qr-hint" class="muted-small">
+              El QR se genera en el servidor a partir del enlace y no se guarda.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTENIDO SEO ============ -->
+    <section class="seo-block">
+      <h2>¿Cómo crear un enlace de WhatsApp?</h2>
+      <ol class="steps">
+        <li><strong>Escribe tu número</strong> con el prefijo de tu país (sin el signo +).</li>
+        <li><strong>Redacta el mensaje</strong> que quieres que te envíen, o elige una plantilla.</li>
+        <li><strong>Copia el enlace</strong> y pégalo donde quieras: tu web, Instagram, TikTok, un botón…</li>
+        <li><strong>Descarga el código QR</strong> si lo prefieres para imprimir.</li>
+      </ol>
+
+      <h2>Ejemplos de enlace</h2>
+      <table class="limits-table">
+        <thead>
+          <tr><th>Qué quieres</th><th>Enlace que se genera</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Chat con un número concreto</td><td class="mono">https://wa.me/34600123456</td></tr>
+          <tr><td>Con mensaje ya escrito</td><td class="mono">https://wa.me/34600123456?text=Hola</td></tr>
+          <tr><td>Sin número fijo</td><td class="mono">https://wa.me/?text=Hola</td></tr>
+          <tr><td>Grupo o canal</td><td class="mono">https://chat.whatsapp.com/…</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Hace falta tener mi número agendado?</summary>
+        <p>No. El enlace abre directamente el chat con ese número aunque la persona no lo
+        tenga guardado en su agenda. Si el número no existe o no tiene WhatsApp, WhatsApp
+        mostrará un aviso al abrirlo.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cuánto cuesta y caduca el enlace?</summary>
+        <p>Nada y nunca. Es un enlace normal de WhatsApp: no hay registro, ni cuota, ni
+        fecha de caducidad. Puedes usarlo tantas veces como quieras.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Por qué el número va sin el signo + ni ceros delante?</summary>
+        <p>Es el formato que espera WhatsApp: prefijo del país y número, todo junto y solo
+        con dígitos. Si pegas el número con +, espacios o guiones, se limpian solos.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con mis datos?</summary>
+        <p>El enlace se construye en tu propio navegador: tu número y tu mensaje no se
+        envían a ningún sitio mientras escribes. Solo si pides el código QR se manda el
+        enlace ya montado al servidor, se convierte en imagen y se descarta sin guardarlo.</p>
+      </details>
+      <details class="faq">
+        <summary>El código QR no se lee bien, ¿qué hago?</summary>
+        <p>Cuanto más largo sea el mensaje, más denso es el QR. Si vas a imprimirlo,
+        usa un mensaje corto (una o dos líneas) y descárgalo en grande: se lee mucho mejor.</p>
+      </details>
+    </section>
+
+    <div class="tool-cross">
+      <p>¿Te llegan vídeos que no puedes abrir? 🎬</p>
+      <a class="primary-btn" href="/comprimir-video-whatsapp">Comprimir un vídeo para WhatsApp →</a>
+    </div>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <footer class="footer">
+    <p>🔗 Generador de enlaces de WhatsApp gratis · VideoDL</p>
+    <p>Usa solo números que sean tuyos o para los que tengas permiso.</p>
+  </footer>
+
+  <script src="common.js"></script>
+  <script src="whatsapp.js"></script>
+</body>
+</html>

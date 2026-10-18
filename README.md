@@ -2,7 +2,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/karlossxt/videodl)
 
-Suite de herramientas de video con interfaz web. Pega el enlace de un video y descárgalo en tu equipo en la calidad que quieras, sube un archivo para comprimirlo y enviarlo por WhatsApp o Discord, o recorta un clip vertical listo para TikTok, Reels y Shorts.
+Suite de herramientas de video con interfaz web. Pega el enlace de un video y descárgalo en tu equipo en la calidad que quieras, sube un archivo para comprimirlo y enviarlo por WhatsApp o Discord, recorta un clip vertical listo para TikTok, Reels y Shorts, o crea un enlace de WhatsApp con mensaje y código QR.
 
 > 🌐 **Demo en vivo:** https://videodl-6md8.onrender.com
 > *(plan gratuito: si lleva un rato sin usarse, la primera visita puede tardar ~50 s en despertar)*
@@ -16,6 +16,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 | `/` | **Descargar video y audio** de casi cualquier plataforma: MP4 en cualquier resolución, MP3, subtítulos, miniatura, recortes y cola en lote. |
 | `/comprimir-video-whatsapp` | **Comprimir video** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
 | `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) de Twitch, Kick, YouTube o de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
+| `/link-whatsapp` | **Generar un enlace de WhatsApp** (`wa.me`) con el mensaje ya escrito para tu web o tus redes, y descargarlo como **código QR** listo para imprimir. |
 | `/herramientas` | Directorio con todas las herramientas del sitio. |
 
 ## Características
@@ -31,6 +32,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 - 🗜️ **Compresor de video**: sube un archivo y redúcelo al tamaño objetivo (WhatsApp, Discord, Telegram, correo o MB personalizados). Calcula el bitrate disponible, baja la resolución solo cuando hace falta y, si el video ya cabe, lo entrega **sin recodificar**.
 - 🎚️ **Modo "priorizar calidad"**: recodifica con CRF sin forzar el tamaño objetivo, útil para bajar resolución sin destrozar la imagen.
 - ✂️ **Clips verticales para TikTok / Reels / Shorts**: pega un directo (VOD) o un clip de Twitch, Kick, YouTube… y descarga **solo los segundos que elijas** ya reencuadrados en 9:16. Incluye recorte centrado, fondo desenfocado para no perder los laterales, cuadrado 1:1 y hasta 5 minutos de clip.
+- 🔗 **Generador de enlaces de WhatsApp**: crea un enlace `wa.me` con el mensaje ya escrito (con plantillas), cópialo como botón HTML o descárgalo como **código QR** para imprimir. El enlace se monta en tu navegador; al servidor solo va el enlace para dibujar el QR.
 - 🖥️ **Interfaz web** oscura y responsive, sin dependencias de frameworks en el frontend.
 - 📋 Botón **Pegar** desde el portapapeles para analizar al instante.
 - ✅ Mensajes de error claros en español (video privado, restringido, URL no soportada, etc.).
@@ -118,6 +120,27 @@ un pequeño margen de seguridad que después se recorta al segundo exacto): un c
 H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
 `CLIP_MAX_SECONDS` (300 s por defecto).
 
+### Crear un enlace de WhatsApp
+
+En **🔗 Enlace de WhatsApp** (o entrando en <http://127.0.0.1:8000/link-whatsapp>)
+puedes generar el clásico enlace *click to chat*:
+
+1. Escribe tu número con el prefijo de tu país (si lo pegas con `+`, espacios o
+   guiones se limpia solo).
+2. Redacta el mensaje que quieres recibir, o elige una plantilla.
+3. Copia el enlace, pruébalo, compártelo o descárgalo como **código QR**.
+
+El enlace se monta en tu navegador, así que tu número y tu mensaje no salen de tu
+equipo mientras escribes; solo al pedir el código QR se manda el enlace ya montado
+al servidor, se convierte en imagen y se descarta sin guardarlo.
+
+```
+https://wa.me/<prefijo><numero>?text=<mensaje>
+```
+
+Si marcas **Sin número fijo** se genera `https://wa.me/?text=…`, que deja que cada
+persona elija el contacto al que escribir.
+
 ## Estructura del proyecto
 
 ```
@@ -131,6 +154,7 @@ H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
 │   ├── downloader.py        # Rutas de descarga (/api/info, /api/jobs…)
 │   ├── compressor.py        # Rutas del compresor (/api/compress…)
 │   ├── clips.py             # Rutas del recortador (/api/clips…)
+│   ├── whatsapp.py          # Generador de enlaces de WhatsApp (/api/whatsapp/qr)
 │   ├── media.py             # Envoltorios de ffmpeg/ffprobe y opciones de yt-dlp
 │   ├── pages.py, paths.py   # Páginas HTML y resolución segura de archivos
 │   ├── models.py, errors.py # Esquemas de petición y errores legibles
@@ -139,6 +163,7 @@ H.264 + AAC en MP4, sin marca de agua. Duración máxima configurable con
 │   ├── index.html / app.js          # Descargador universal
 │   ├── comprimir.html / comprimir.js# Compresor para WhatsApp / Discord
 │   ├── clips.html / clips.js        # Recortador de clips verticales
+│   ├── whatsapp.html / whatsapp.js  # Generador de enlaces de WhatsApp
 │   ├── herramientas.html            # Directorio de herramientas
 │   ├── common.js                    # Utilidades JS compartidas (window.VD)
 │   └── style.css                    # Estilos (compartidos)
@@ -183,6 +208,7 @@ y los archivos de plataforma sigan funcionando; también puedes arrancar con
 | `GET` | `/api/clips/{id}` | Estado y progreso: `status` (`downloading` \| `transforming`), `percent`, `downloaded`, `speed`, `eta`, `width`, `height`, `duration`, `output_size`, `filename`. |
 | `GET` | `/api/clips/{id}/file` | Descarga el clip terminado (libera los recursos al enviarlo). |
 | `POST` | `/api/clips/{id}/cancel` | Cancela un clip en curso. |
+| `POST` | `/api/whatsapp/qr` | Devuelve el **código QR** (PNG) de un enlace de WhatsApp. Cuerpo: `{ "link": "https://wa.me/34600123456?text=Hola" }`. Solo acepta enlaces de `wa.me` / `whatsapp.com` (no es un generador de QR genérico). |
 
 > El frontend usa `/api/jobs` para mostrar la barra de progreso en vivo. `/api/download` se mantiene para usos programáticos o scripts.
 >

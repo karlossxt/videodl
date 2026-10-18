@@ -34,6 +34,7 @@ from .paths import STATIC_DIR
 from .runtime import rate_limiter
 from .stores import active_tmpdirs, cleanup_all
 from .utils import sweep_temp_dirs
+from .whatsapp import router as whatsapp_router
 
 logger = logging.getLogger("videodl.app")
 
@@ -144,6 +145,7 @@ def create_app() -> FastAPI:
     app.include_router(downloader_router)
     app.include_router(compressor_router)
     app.include_router(clips_router)
+    app.include_router(whatsapp_router)
     app.include_router(pages_router)
 
     # Los archivos estáticos van al final para que la API tenga prioridad.

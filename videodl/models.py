@@ -41,3 +41,9 @@ class ClipRequest(BaseModel):
     aspect: str = "vertical"  # vertical | vertical-blur | square | original
     quality: str = "media"  # alta | media | baja
     title: str | None = None
+
+
+class WhatsAppQrRequest(BaseModel):
+    """Enlace de WhatsApp que hay que convertir en código QR."""
+
+    link: str = Field(..., min_length=12, max_length=1500)

@@ -1,6 +1,9 @@
 fastapi==0.143.3
 uvicorn[standard]==0.54.0
 python-multipart==0.0.32
+# segno es Python puro (sin dependencias nativas) y se usa solo para dibujar el
+# código QR del generador de enlaces de WhatsApp.
+segno==1.6.6
 # yt-dlp cambia casi cada semana siguiendo a las plataformas: conviene dejarlo
 # abierto con un mínimo razonable y actualizarlo a propósito.
 yt-dlp>=2026.8.19
