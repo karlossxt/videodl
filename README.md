@@ -344,9 +344,12 @@ La app las busca en este orden:
 > **Reddit:** desde 2026 exige sesión incluso para ver el vídeo, así que sin cookies
 > no hay nada que hacer (yt-dlp responde *"Account authentication is required"*).
 > Exporta las cookies de `reddit.com` con la sesión iniciada y súbelas como Secret
-> File (`reddit.txt`, por ejemplo). Si aun así falla con *"Your IP address is unable
+> File (`reddit.txt`, por ejemplo). Antes de subirlo, comprueba que el `.txt` contiene
+> `reddit_session`: si no aparece, ese navegador **no** tenía la sesión de Reddit
+> abierta aunque sí la de YouTube. Si aun así falla con *"Your IP address is unable
 > to access the Reddit API"*, es que Reddit bloquea la IP del servidor y hace falta un
-> proxy (`YTDLP_PROXY`).
+> proxy (`YTDLP_PROXY`). El error que devuelve la app concreta cuál de los casos es
+> (sin cookies de esa web, sin sesión, sesión caducada o sesión rechazada por la IP).
 
 > **Nota para Docker:** los Secret Files de Render pertenecen al grupo `1000`. El
 > `Dockerfile` del proyecto añade el usuario de la app a ese grupo para poder
