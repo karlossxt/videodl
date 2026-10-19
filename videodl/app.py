@@ -156,6 +156,10 @@ def create_app() -> FastAPI:
             # Solo el nombre del fichero, nunca la ruta: es lo que hace falta para
             # saber qué Secret File hay que actualizar si hay más de uno.
             "cookies_file": cookie_file_names(),
+            # Ficheros de cookies que existen pero no se pudieron usar, con el
+            # motivo. Solo se listan los que *parecen* cookies: así un tarro en un
+            # formato raro no se pierde en silencio, y no se publican otros secretos.
+            "cookies_ignored": cookies.ignored,
             # Lo pone la última extracción: YouTube rota la sesión cada cierto
             # tiempo y, cuando lo hace, el mejor arreglo es volver a exportar.
             "cookies_rotated": errors.cookies_rotadas(),

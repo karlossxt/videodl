@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import importlib.util
+import json
 import logging
 import os
 import shutil
@@ -184,6 +185,7 @@ class CookieInfo:
     origin: str | None = None
     raw: str | None = None
     extras: list[str] = field(default_factory=list)
+    ignored: list[str] = field(default_factory=list)
 
 
 cookies = CookieInfo()
@@ -320,36 +322,120 @@ def _find_secret_file() -> str | None:
     return None
 
 
-def _looks_like_cookie_jar(path: Path) -> bool:
-    """¿El fichero es un ``cookies.txt`` en formato Netscape? (por contenido)
+def _json_to_netscape(raw: str) -> str | None:
+    """Convierte una exportación JSON de cookies al formato Netscape.
 
-    Se mira el contenido y no el nombre a propósito: un tarro de Reddit se llamará
-    ``reddit.txt`` y no tiene por qué llevar «cookie» en el nombre.
+    Cookie-Editor y EditThisCookie exportan una lista de objetos, y yt-dlp solo
+    entiende Netscape. Se acepta igual: los campos son estándar y así no se
+    descarta un tarro perfectamente válido por el envoltorio del exportador.
     """
     try:
+        data = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if isinstance(data, dict):
+        data = data.get("cookies") or data.get("Cookies")
+    if not isinstance(data, list) or not data:
+        return None
+
+    lines = ["# Netscape HTTP Cookie File"]
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        domain = str(item.get("domain") or "").strip()
+        name = str(item.get("name") or "").strip()
+        if not domain or not name:
+            continue
+        expira = item.get("expirationDate") or item.get("expires") or 0
+        try:
+            expira = int(float(expira))
+        except (TypeError, ValueError):
+            expira = 0
+        # Un tabulador o un salto de línea romperían las columnas del tarro.
+        value = (
+            str(item.get("value") or "")
+            .replace("\t", "")
+            .replace("\r", "")
+            .replace("\n", "")
+        )
+        prefijo = "#HttpOnly_" if item.get("httpOnly") else ""
+        subdominios = "FALSE" if item.get("hostOnly") else "TRUE"
+        ruta = str(item.get("path") or "/")
+        secure = "TRUE" if item.get("secure") else "FALSE"
+        lines.append(
+            f"{prefijo}{domain}\t{subdominios}\t{ruta}\t{secure}\t{expira}\t{name}\t{value}"
+        )
+    return "\n".join(lines) + "\n" if len(lines) > 1 else None
+
+
+def _jar_text(raw: str) -> str | None:
+    """El tarro en formato Netscape, venga ya así o como exportación JSON."""
+    if any(_cookie_key(line) is not None for line in raw.splitlines()):
+        return raw
+    return _json_to_netscape(raw)
+
+
+def _cookie_hint(texto: str) -> bool:
+    """¿El contenido *parece* cookies aunque no se puedan leer como tales?
+
+    Se usa para avisar de un tarro mal exportado sin listar en ``/api/health``
+    cualquier otro secreto (una clave de API, por ejemplo).
+    """
+    bajo = texto[:2000].lower()
+    return "netscape" in bajo or ("domain" in bajo and "name" in bajo)
+
+
+def _cookie_jar_problem(path: Path) -> str | None:
+    """``None`` si el fichero sirve como tarro, ``""`` si no es cookies, o el motivo.
+
+    ``stat`` en lugar de ``Path.is_file`` a propósito: ``is_file`` devuelve False
+    (sin avisar) cuando no hay permisos, y así el fichero desaparece sin dejar
+    rastro.
+    """
+    try:
+        info = path.stat()
+    except OSError as exc:
+        return f"no se puede leer ({exc.strerror or exc})"
+    if not stat_module.S_ISREG(info.st_mode):
+        return ""
+    if info.st_size == 0:
+        return "está vacío"
+    try:
         texto = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return False
-    return any(_cookie_key(line) is not None for line in texto.splitlines())
+    except OSError as exc:
+        return f"no se puede leer ({exc.strerror or exc})"
+    if _jar_text(texto) is not None:
+        return None
+    if _cookie_hint(texto):
+        return "tiene un formato desconocido (se espera Netscape o JSON de cookies)"
+    return ""
 
 
-def _extra_cookie_files(primary: str) -> list[str]:
+def _extra_cookie_files(primary: str) -> tuple[list[str], list[str]]:
     """Otros tarros de cookies del directorio de secretos.
 
     Render admite varios Secret Files, así que lo natural es tener uno por
     plataforma (``cookies.txt`` para YouTube, ``reddit.txt`` para Reddit…). Se
     unen al principal sin pisarlo (ver ``_merge_cookie_jars``).
+
+    Devuelve ``(extras, ignorados)``. Los ignorados llevan el motivo: sin eso,
+    un tarro en un formato raro o sin permisos desaparece sin dejar rastro y
+    parece que la subida no llegó.
     """
     extras: list[str] = []
+    ignorados: list[str] = []
     if not SECRETS_DIR.is_dir():
-        return extras
+        return extras, ignorados
     with contextlib.suppress(OSError):
         for candidate in sorted(SECRETS_DIR.iterdir()):
-            if str(candidate) == primary or not candidate.is_file():
+            if str(candidate) == primary:
                 continue
-            if _looks_like_cookie_jar(candidate):
+            motivo = _cookie_jar_problem(candidate)
+            if motivo is None:
                 extras.append(str(candidate))
-    return extras
+            elif motivo:
+                ignorados.append(f"{candidate.name}: {motivo}")
+    return extras, ignorados
 
 
 def cookie_file_names() -> str:
@@ -447,28 +533,42 @@ def cookie_status(url: str) -> CookieStatus:
     return estado
 
 
-
 def _read_cookie_files(path: str, extras: list[str]) -> tuple[str, list[str]] | None:
     """Lee el tarro principal y los extras ya unidos.
 
     Devuelve ``(contenido, extras leídos)`` o ``None`` si el principal no se pudo
     leer. Un extra ilegible solo se avisa: se pierde ese sitio, no la descarga.
+    Los ficheros en JSON se convierten a Netscape al leerlos (ver ``_jar_text``).
     """
     try:
-        raw = Path(path).read_text(encoding="utf-8")
+        raw_leido = Path(path).read_text(encoding="utf-8")
     except OSError as exc:
         logger.warning("No se pudieron leer las cookies de %s: %s", path, exc)
         return None
+
+    if raw_leido.strip():
+        convertido = _jar_text(raw_leido)
+        if convertido is None:
+            logger.warning("El fichero de cookies %s no tiene cookies reconocibles", path)
+            return None
+        raw = convertido
+    else:
+        raw = raw_leido
 
     leidos: list[str] = []
     textos: list[str] = []
     for extra in extras:
         try:
-            textos.append(Path(extra).read_text(encoding="utf-8"))
+            texto = Path(extra).read_text(encoding="utf-8")
         except OSError as exc:
             logger.warning("No se pudo leer el fichero de cookies %s: %s", extra, exc)
-        else:
-            leidos.append(extra)
+            continue
+        convertido = _jar_text(texto)
+        if convertido is None:
+            logger.warning("El fichero de cookies %s no tiene cookies reconocibles", extra)
+            continue
+        textos.append(convertido)
+        leidos.append(extra)
 
     return _merge_cookie_jars(raw, textos), leidos
 
@@ -574,6 +674,7 @@ def setup_cookies() -> None:
     cookies.origin = None
     cookies.raw = None
     cookies.extras = []
+    cookies.ignored = []
 
     # Al (re)cargar las cookies se olvida el aviso de «cookies rotadas»: el
     # fichero puede ser nuevo.
@@ -596,7 +697,7 @@ def setup_cookies() -> None:
     # 2) Secret File (Render: /etc/secrets/cookies.txt)
     found = _find_secret_file()
     if found:
-        extras = _extra_cookie_files(found)
+        extras, ignorados = _extra_cookie_files(found)
         copia = _writable_copy(found, extras)
         if copia is None:
             cookies.error = f"no se pudo leer el Secret File {found} (¿permisos?)"
@@ -604,6 +705,13 @@ def setup_cookies() -> None:
         cookies.file, cookies.source = copia, "secret-file"
         cookies.origin = found
         cookies.extras = extras
+        cookies.ignored = ignorados
+        for motivo in ignorados:
+            logger.warning(
+                "Secret File de cookies ignorado (%s). Debe ser un tarro Netscape "
+                "o un JSON de cookies.",
+                motivo,
+            )
         logger.info("Cookies cargadas desde un Secret File (%s)", found)
         return
 
@@ -625,14 +733,17 @@ def setup_cookies() -> None:
         cookies.error = f"sin datos ({source} vacía o no definida)"
         return
 
-    # El formato Netscape de cookies.txt usa tabuladores como separador.
-    if "\t" not in raw:
+    # El formato Netscape de cookies.txt usa tabuladores como separador; también
+    # vale una exportación JSON (Cookie-Editor, EditThisCookie), que se convierte.
+    convertido = _jar_text(raw)
+    if convertido is None:
         cookies.error = (
             f"{source} no parece un cookies.txt válido "
-            f"(formato Netscape, {len(raw)} caracteres)"
+            f"(formato Netscape o JSON, {len(raw)} caracteres)"
         )
         logger.warning("Cookies: %s", cookies.error)
         return
+    raw = convertido
 
     try:
         cookies.file = _write_private_cookies(raw)

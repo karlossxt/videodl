@@ -3,6 +3,21 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.7]
+
+### Añadido
+- Los Secret Files de cookies en **JSON** (Cookie-Editor, EditThisCookie) se
+  convierten al formato Netscape al cargarlos, igual que ya se hacía con
+  `YTDLP_COOKIES` y `YTDLP_COOKIES_B64`. Antes se ignoraban **en silencio**: el
+  tarro estaba subido y parecía que la subida no había llegado.
+- `/api/health` publica `cookies_ignored`: tarros que existen pero no se pudieron
+  usar, con el motivo (formato desconocido, vacío, sin permisos). Solo lista
+  ficheros que *parecen* cookies, nunca otros secretos.
+
+### Corregido
+- Los ficheros extra se descubren con `stat` en vez de `Path.is_file()`, que
+  devuelve `False` sin avisar cuando falta permiso de lectura.
+
 ## [2.2.6]
 
 ### Añadido

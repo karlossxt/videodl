@@ -333,9 +333,10 @@ La app las busca en este orden:
    vía recomendada**: no hay que codificar nada y el secreto no viaja por el chat.
    Puedes añadir **más de un Secret File** (por ejemplo `reddit.txt` con la sesión de
    Reddit): la app los une en una sola copia de trabajo. Se detectan por su contenido
-   (formato Netscape), no por el nombre, así que `reddit.txt` vale igual. Ante una
-   cookie repetida manda siempre `cookies.txt`, de modo que añadir ficheros solo
-   puede aportar sitios nuevos, nunca cambiar los que ya funcionaban.
+   (formato Netscape o JSON de Cookie-Editor), no por el nombre, así que `reddit.txt`
+   vale igual. Ante una cookie repetida manda siempre `cookies.txt`, de modo que añadir
+   ficheros solo puede aportar sitios nuevos, nunca cambiar los que ya funcionaban. Si
+   un fichero no se puede leer, `/api/health` lo dice en `cookies_ignored`.
 2. **`YTDLP_COOKIES_FILE`**: ruta a un `cookies.txt` que ya exista en el servidor.
 3. **`YTDLP_COOKIES`**: el contenido del archivo como texto.
 4. **`YTDLP_COOKIES_B64`**: el mismo contenido en Base64 (por si no puedes pegar
@@ -373,7 +374,9 @@ Recomendaciones:
   cookies de sesión (`SID`, `__Secure-1PSID`…) lo avisa en el arranque y
   `/api/health` devuelve `"cookies_session": false`.
 - Exporta el fichero con una extensión tipo *Get cookies.txt LOCALLY*, en formato
-  **Netscape** (la primera línea suele ser `# Netscape HTTP Cookie File`).
+  **Netscape** (la primera línea suele ser `# Netscape HTTP Cookie File`). También se
+  acepta el **JSON** de *Cookie-Editor* o *EditThisCookie*: la app lo convierte al
+  cargarlo.
 - Usa una **cuenta secundaria** de YouTube: si esa cuenta cae en un control
   anti-bot, no pierdes la principal.
 - Las cookies se usan para **analizar y para descargar**: si al pulsar *Analizar*

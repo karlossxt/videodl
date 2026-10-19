@@ -21,6 +21,8 @@ def test_health_ok_without_sensitive_data(client):
     )
     # Solo el nombre del fichero, nunca una ruta.
     assert "/" not in body["cookies_file"] and "\\" not in body["cookies_file"]
+    # Tarros que existen pero no se pudieron usar, con el motivo (sin rutas).
+    assert isinstance(body["cookies_ignored"], list)
     assert body["cookies_rotated"] in (True, False)
     # Si falta curl-cffi, TikTok y otras webs que exigen impersonación fallan.
     assert body["impersonation"] in (True, False)

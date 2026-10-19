@@ -6,6 +6,7 @@ legible si el usuario de la app no está en el grupo 1000.
 """
 
 import base64
+import json
 import logging
 from pathlib import Path
 
@@ -36,6 +37,31 @@ COOKIES_REDDIT = (
     ".reddit.com\tTRUE\t/\tFALSE\t0\tloid\tabc\n"
 )
 
+# Cookie-Editor y EditThisCookie exportan JSON en vez de Netscape.
+COOKIES_REDDIT_JSON = json.dumps(
+    [
+        {
+            "domain": ".reddit.com",
+            "expirationDate": 4102444800,
+            "hostOnly": False,
+            "httpOnly": True,
+            "name": "reddit_session",
+            "path": "/",
+            "secure": True,
+            "value": "secreto",
+        },
+        {
+            "domain": ".reddit.com",
+            "hostOnly": False,
+            "httpOnly": False,
+            "name": "loid",
+            "path": "/",
+            "secure": True,
+            "value": "abc",
+        },
+    ]
+)
+
 
 @pytest.fixture(autouse=True)
 def _limpiar_cookies():
@@ -49,6 +75,7 @@ def _limpiar_cookies():
     config.cookies.origin = None
     config.cookies.raw = None
     config.cookies.extras = []
+    config.cookies.ignored = []
     from videodl import errors
 
     errors.olvidar_cookies_rotadas()
@@ -348,6 +375,56 @@ def test_ignora_los_secret_files_que_no_son_cookies(tmp_path, monkeypatch, _sin_
     assert config.cookies.extras == []
     contenido = Path(config.cookies.file).read_text(encoding="utf-8")
     assert "token" not in contenido
+    # Un JSON que no es de cookies no se anuncia: no es un tarro mal exportado.
+    assert config.cookies.ignored == []
+
+
+def test_acepta_un_tarro_en_json(tmp_path, monkeypatch, _sin_variables):
+    """Cookie-Editor exporta JSON: se convierte en vez de ignorarlo en silencio."""
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT_JSON, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert [Path(extra).name for extra in config.cookies.extras] == ["reddit.txt"]
+    assert config.cookies.ignored == []
+    contenido = Path(config.cookies.file).read_text(encoding="utf-8")
+    # HttpOnly conserva el prefijo y la sesión se reconoce igual.
+    assert "#HttpOnly_.reddit.com" in contenido
+    estado = config.cookie_status("https://www.reddit.com/comments/1x9yenj/")
+    assert estado.total == 2
+    assert estado.session is True
+
+
+def test_avisa_de_un_tarro_que_no_se_puede_leer(
+    tmp_path, monkeypatch, caplog, _sin_variables
+):
+    """Un tarro a medias no se usa, pero deja de desaparecer sin dejar rastro."""
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "roto.txt").write_text(
+        "# Netscape HTTP Cookie File\nbasura sin columnas\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    with caplog.at_level(logging.WARNING):
+        config.setup_cookies()
+
+    assert config.cookies.extras == []
+    assert config.cookies.ignored == [
+        "roto.txt: tiene un formato desconocido (se espera Netscape o JSON de cookies)"
+    ]
+    assert "roto.txt" in caplog.text
+
+
+def test_acepta_json_en_la_variable_de_entorno(monkeypatch, _sin_variables):
+    monkeypatch.setenv("YTDLP_COOKIES", COOKIES_REDDIT_JSON)
+
+    config.setup_cookies()
+
+    assert config.cookies.source == "YTDLP_COOKIES"
+    assert config.cookies.count == 2
+    assert config.cookie_status("https://www.reddit.com/x").session is True
 
 
 def test_refrescar_cookies_vuelve_a_unir_principal_y_extras(

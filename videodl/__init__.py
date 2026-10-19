@@ -12,6 +12,6 @@ El paquete estÃ¡ dividido en mÃ³dulos pequeÃ±os y con una Ãºnica respons
   app       -> creaciÃ³n de la aplicaciÃ³n FastAPI
 """
 
-__version__ = "2.2.6"
+__version__ = "2.2.7"
 
 __all__ = ["__version__"]
