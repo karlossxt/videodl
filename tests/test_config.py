@@ -319,6 +319,21 @@ def test_refrescar_cookies_olvida_el_aviso_de_rotacion(tmp_path, monkeypatch, _s
     assert errors.cookies_rotadas() is False
 
 
+def test_un_solo_tarro_con_otro_nombre_tambien_vale(tmp_path, monkeypatch, _sin_variables):
+    """Si el único Secret File es reddit.txt, se usa igual: no exige cookies.txt."""
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert config.cookies.source == "secret-file"
+    assert Path(config.cookies.origin).name == "reddit.txt"
+    assert config.cookies.ignored == []
+    assert config.cookie_status("https://www.reddit.com/comments/1x9yenj/") == (
+        config.CookieStatus(total=2, session=True)
+    )
+
+
 def test_une_varios_secret_files_de_cookies(tmp_path, monkeypatch, _sin_variables):
     """Un Secret File por plataforma: YouTube y Reddit conviven en la copia.
 

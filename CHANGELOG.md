@@ -3,6 +3,14 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.8]
+
+### Corregido
+- Un **único Secret File con otro nombre** no se detectaba: si el servicio tenía
+  solo `reddit.txt` (sin «cookie» en el nombre y sin `cookies.txt`), la app
+  arrancaba **sin ninguna cookie**. Ahora, cuando no hay `cookies.txt`, también se
+  reconoce por su contenido, así que un tarro de Reddit puede ser el único fichero.
+
 ## [2.2.7]
 
 ### Añadido

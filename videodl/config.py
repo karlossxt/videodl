@@ -288,20 +288,27 @@ def _check_session(raw: str, shown: str) -> None:
 
 
 def _find_secret_file() -> str | None:
-    """Devuelve un cookies.txt subido como Secret File (/etc/secrets/...).
+    """Devuelve un tarro de cookies subido como Secret File (/etc/secrets/...).
 
     Se busca el nombre canónico (``cookies.txt``) **antes** que cualquier otro que
     contenga «cookie»: si alguien añade un fichero nuevo sin borrar el viejo, el
-    orden decide cuál se usa y más vale que sea el de siempre. Usa ``stat`` en lugar
-    de ``Path.is_file`` a propósito: ``is_file`` devuelve False (sin avisar) cuando
-    no hay permisos, lo que oculta el caso típico de Docker en Render (usuario que
-    no pertenece al grupo 1000).
+    orden decide cuál se usa y más vale que sea el de siempre. Después valen los
+    que lo son **por su contenido**: `reddit.txt` como único Secret File no lleva
+    «cookie» en el nombre y aun así es un tarro perfectamente válido.
+
+    Usa ``stat`` en lugar de ``Path.is_file`` a propósito: ``is_file`` devuelve
+    False (sin avisar) cuando no hay permisos, lo que oculta el caso típico de
+    Docker en Render (usuario que no pertenece al grupo 1000).
     """
     candidates = [SECRETS_DIR / "cookies.txt"]
     with contextlib.suppress(OSError):
         candidates.extend(
             p for p in sorted(SECRETS_DIR.glob("*cookie*")) if p.name != "cookies.txt"
         )
+    with contextlib.suppress(OSError):
+        for candidate in sorted(SECRETS_DIR.iterdir()):
+            if candidate not in candidates and _cookie_jar_problem(candidate) is None:
+                candidates.append(candidate)
 
     if SECRETS_DIR.is_dir():
         with contextlib.suppress(OSError):
