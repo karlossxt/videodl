@@ -37,15 +37,19 @@ def clean_ytdlp_error(msg: str) -> str:
     """Muestra un mensaje más amigable, sin rutas locales ni ruido técnico."""
     msg = msg.split("\n")[0]
     msg = re.sub(r"^ERROR:\s*", "", msg)
+    low = msg.lower()
     if "Unsupported URL" in msg:
         return "Esta URL no es compatible con ninguna plataforma soportada."
-    if "Private video" in msg or "private" in msg.lower():
+    if "Private video" in msg or "private" in low:
         return "El video es privado y no se puede descargar."
-    if "Video unavailable" in msg or "unavailable" in msg.lower():
+    if "Video unavailable" in msg or "unavailable" in low:
         return "El video no está disponible (puede haber sido eliminado o restringido)."
-    if "age" in msg.lower() and "confirm" in msg.lower():
+    # Ojo: no basta con buscar "age", porque aparece en palabras como "webpage" y
+    # marcaba como restricción de edad cualquier fallo genérico (el aviso de yt-dlp
+    # termina en "Confirm you are on the latest version").
+    if "age-restricted" in low or "age restricted" in low or "confirm your age" in low:
         return "El video tiene restricción de edad y no se puede descargar."
-    if "Sign in" in msg or "login" in msg.lower():
+    if "Sign in" in msg or "login" in low:
         if cookies_rotadas():
             return (
                 "YouTube invalidó las cookies de tu sesión (las rota cada cierto "
@@ -61,6 +65,6 @@ def clean_ytdlp_error(msg: str) -> str:
             "README); si ya las tienes, enruta las descargas por un proxy "
             "(YTDLP_PROXY): algunos vídeos no se pueden servir desde la nube."
         )
-    if "429" in msg or "Too Many Requests" in msg or "rate limit" in msg.lower():
+    if "429" in msg or "Too Many Requests" in msg or "rate limit" in low:
         return "La plataforma limitó temporalmente las peticiones. Espera un momento e inténtalo de nuevo."
     return f"No se pudo procesar la URL: {msg[:200]}"

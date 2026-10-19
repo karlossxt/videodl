@@ -23,6 +23,7 @@ from .config import (
     CORS_ORIGINS,
     FFMPEG_AVAILABLE,
     FFPROBE_AVAILABLE,
+    IMPERSONATION_AVAILABLE,
     MAX_UPLOAD_MB,
     RATE_LIMIT_PER_MINUTE,
     configure_logging,
@@ -138,6 +139,9 @@ def create_app() -> FastAPI:
             "ffprobe": FFPROBE_AVAILABLE,
             "compressor": FFMPEG_AVAILABLE and FFPROBE_AVAILABLE,
             "clips": FFMPEG_AVAILABLE and FFPROBE_AVAILABLE,
+            # Impersonación de navegador (curl-cffi). Si es false, TikTok y otras
+            # webs que la exigen fallan con un error genérico de respuesta.
+            "impersonation": IMPERSONATION_AVAILABLE,
             "clip_max_seconds": CLIP_MAX_SECONDS,
             "max_upload_mb": MAX_UPLOAD_MB,
             "cookies": bool(cookies.file),

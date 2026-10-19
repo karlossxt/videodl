@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import contextlib
+import importlib.util
 import logging
 import os
 import shutil
@@ -49,6 +50,12 @@ FFMPEG_AVAILABLE = _ffmpeg_path is not None
 FFPROBE_AVAILABLE = _ffprobe_path is not None
 FFMPEG = _ffmpeg_path or "ffmpeg"
 FFPROBE = _ffprobe_path or "ffprobe"
+
+# Impersonación de navegador: la exigen plataformas como TikTok para no rechazar
+# la petición. yt-dlp la aporta con el extra "curl-cffi" (está en requirements.txt),
+# que es independiente del runtime de JavaScript: deno resuelve la firma de
+# YouTube y curl-cffi imita al navegador en el resto de webs.
+IMPERSONATION_AVAILABLE = importlib.util.find_spec("curl_cffi") is not None
 
 
 # ---------------------------------------------------------------------------

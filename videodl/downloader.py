@@ -166,12 +166,18 @@ async def video_info(req: InfoRequest):
         acodec = f.get("acodec") or "none"
         height = f.get("height")
         if vcodec != "none" and height:
+            # La etiqueta usa el lado corto: en vídeo vertical yt-dlp da
+            # height=1920 para un 1080x1920, y "1920p" confunde (parece reescalado).
+            # El modo de descarga sigue usando `height`, que es el campo contra el
+            # que filtra yt-dlp.
+            sides = [d for d in (f.get("width"), height) if isinstance(d, int) and d > 0]
+            label_side = min(sides) if sides else height
             entry = qualities.get(height)
             size = human_size(f.get("filesize") or f.get("filesize_approx"))
             if entry is None or (size and not entry.get("size")):
                 qualities[height] = {
                     "height": height,
-                    "label": f"{height}p" + (f" {f.get('fps')}fps" if (f.get("fps") or 0) >= 50 else ""),
+                    "label": f"{label_side}p" + (f" {f.get('fps')}fps" if (f.get("fps") or 0) >= 50 else ""),
                     "ext": f.get("ext"),
                     "size": size,
                 }

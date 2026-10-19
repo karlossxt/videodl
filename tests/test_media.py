@@ -23,6 +23,18 @@ def test_build_opts_basico(tmp_path, _sin_ajustes_ytdlp):
     assert "extractor_args" not in opts
 
 
+def test_format_selector_mantiene_la_prioridad_en_video_horizontal(_sin_ajustes_ytdlp):
+    selector = media.format_selector("video-720")
+    assert selector.startswith("bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]")
+    assert selector.endswith("/best")
+
+
+def test_format_selector_prueba_el_ancho_en_video_vertical(_sin_ajustes_ytdlp):
+    """En un 1080x1920 yt-dlp da height=1920, así que filtrando solo por altura no
+    encaja ningún formato y se acababa bajando el mejor."""
+    assert "bestvideo[width<=720]" in media.format_selector("video-720")
+
+
 def test_build_opts_incluye_proxy_y_extractor_args(tmp_path, monkeypatch, _sin_ajustes_ytdlp):
     """Las variables de entorno llegan hasta las opciones de yt-dlp."""
     monkeypatch.setattr(media, "YTDLP_PROXY", "http://usuario:clave@proxy:8080")

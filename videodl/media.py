@@ -57,14 +57,26 @@ def format_selector(mode: str) -> str:
             else "best[ext=mp4]/best"
         )
     height = mode.split("-", 1)[1]
-    if FFMPEG_AVAILABLE:
-        return (
-            f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]"
-            f"/bestvideo[height<={height}]+bestaudio"
-            f"/best[height<={height}][ext=mp4]/best[height<={height}]"
-            f"/best"
-        )
-    return f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
+    # En vídeo vertical (TikTok, Reels, Shorts) yt-dlp da la altura como el lado
+    # largo (un 1080x1920 tiene height=1920), así que "height<=720" no encaja con
+    # ningún formato y se acababa descargando el mejor. Se prueban también los
+    # formatos cuyo ancho cabe en el límite; para vídeo horizontal no cambia nada
+    # porque las primeras alternativas ya resuelven.
+    branches: list[str] = []
+    for dim in ("height", "width"):
+        if FFMPEG_AVAILABLE:
+            branches += [
+                f"bestvideo[{dim}<={height}][ext=mp4]+bestaudio[ext=m4a]",
+                f"bestvideo[{dim}<={height}]+bestaudio",
+                f"best[{dim}<={height}][ext=mp4]",
+                f"best[{dim}<={height}]",
+            ]
+        else:
+            branches += [
+                f"best[{dim}<={height}][ext=mp4]",
+                f"best[{dim}<={height}]",
+            ]
+    return "/".join([*branches, "best"])
 
 
 class _YtdlpLogger:

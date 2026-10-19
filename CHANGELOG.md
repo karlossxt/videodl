@@ -3,6 +3,29 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.4]
+
+### Corregido
+- **TikTok no descargaba nada**, y el mensaje que aparecía («El video tiene
+  restricción de edad») no tenía nada que ver con la causa. Eran tres fallos
+  distintos:
+  - Faltaba el extra `curl-cffi` de yt-dlp, que aporta la **impersonación de
+    navegador**; sin él TikTok responde *"Unexpected response from webpage
+    request"*. Es independiente del runtime de JavaScript que necesita YouTube.
+  - El traductor de errores buscaba «age» y «Confirm» en el texto, y el aviso de
+    yt-dlp contiene «webp**age** request» y «Confirm you are on the latest
+    version»: **cualquier** fallo genérico se explicaba como restricción de edad.
+    Ahora solo se detectan los mensajes reales de restricción de edad.
+  - En **vídeo vertical** (TikTok, Reels, Shorts) la calidad se etiquetaba con el
+    lado largo —un 1080x1920 aparecía como «1920p»— y el selector filtraba solo por
+    altura, así que en un vertical `height<=720` no encajaba con ningún formato y
+    se acababa descargando el mejor. La etiqueta pasa a usar el lado corto
+    («1080p») y el selector también prueba por ancho.
+
+### Añadido
+- `/api/health` publica `impersonation` (si `curl-cffi` está instalado), para saber
+  de un vistazo si las webs que exigen impersonación van a funcionar.
+
 ## [2.2.3]
 
 ### Añadido

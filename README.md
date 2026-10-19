@@ -308,6 +308,12 @@ persona al otro lado. La app trae tres mecanismos y los usa en este orden:
 > formatos. No lo quites al actualizar dependencias a mano: el proveedor de PO tokens
 > también lo aprovecha.
 
+> **Nota técnica (impersonación):** otras webs exigen que la petición se parezca a
+> la de un navegador real. De eso se encarga el extra `curl-cffi` (por eso yt-dlp se
+> instala como `yt-dlp[default,deno,curl-cffi]`), que es independiente del runtime de
+> JavaScript. Sin él **TikTok** responde *"Unexpected response from webpage request"*
+> y la descarga falla. `/api/health` publica si está disponible (`impersonation`).
+
 > **Nota técnica (versiones):** el plugin de PO tokens y el script del proveedor
 > deben ser la misma versión. `requirements.txt` lo fija con `==` y el Dockerfile lo
 > instala con `BGUTIL_POT_VERSION`; una prueba

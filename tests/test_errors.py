@@ -18,6 +18,22 @@ def test_age_restriction():
     assert "edad" in msg or "iniciar sesión" in msg
 
 
+def test_age_restriction_con_guion():
+    assert "edad" in clean_ytdlp_error("ERROR: This video is age-restricted")
+
+
+def test_error_generico_no_se_confunde_con_restriccion_de_edad():
+    """El aviso de yt-dlp contiene «webpage» (lleva «age») y «Confirm», así que
+    antes cualquier fallo genérico se traducía como restricción de edad."""
+    msg = clean_ytdlp_error(
+        "ERROR: [TikTok] 123: Unexpected response from webpage request; please report "
+        "this issue on https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the "
+        "appropriate issue template. Confirm you are on the latest version using yt-dlp -U"
+    )
+    assert "edad" not in msg
+    assert "No se pudo procesar la URL" in msg
+
+
 def test_rate_limit():
     assert "limitó" in clean_ytdlp_error("ERROR: HTTP Error 429: Too Many Requests")
 
