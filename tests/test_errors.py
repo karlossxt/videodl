@@ -166,7 +166,21 @@ def test_la_pista_avisa_de_que_el_tarro_no_trae_sesion(tmp_path, monkeypatch):
 
     msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
 
-    assert "ninguna parece de sesión" in msg.lower()
+    assert "ninguna es de sesión" in msg.lower()
+
+
+def test_la_pista_avisa_de_que_la_sesion_caduco(tmp_path, monkeypatch):
+    """La cookie está, pero caducada: parece configurada y no autentica nada."""
+    _usar_tarro(
+        monkeypatch,
+        tmp_path,
+        "# Netscape HTTP Cookie File\n"
+        "#HttpOnly_.reddit.com\tTRUE\t/\tTRUE\t1000000000\treddit_session\tvieja\n",
+    )
+
+    msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
+
+    assert "caducada" in msg.lower()
 
 
 def test_la_pista_cuenta_las_cookies_con_sesion(tmp_path, monkeypatch):
@@ -174,7 +188,7 @@ def test_la_pista_cuenta_las_cookies_con_sesion(tmp_path, monkeypatch):
 
     msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
 
-    assert "2 cookies de esta web con sesión" in msg
+    assert "2 cookies de esta web con sesión vigente" in msg
 
 
 def test_la_pista_no_se_añade_a_errores_que_no_son_de_sesion(tmp_path, monkeypatch):

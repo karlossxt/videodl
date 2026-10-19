@@ -17,6 +17,7 @@ import shutil
 import stat as stat_module
 import tempfile
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -219,8 +220,8 @@ def _cookie_names(raw: str) -> set[str]:
     return names
 
 
-def _cookie_key(line: str) -> tuple[str, str, str] | None:
-    """Clave (dominio, ruta, nombre) de una línea del tarro, o ``None`` si no es una cookie."""
+def _cookie_fields(line: str) -> list[str] | None:
+    """Columnas de una línea de cookie en formato Netscape, o ``None`` si no lo es."""
     if line.startswith("#HttpOnly_"):
         line = line[len("#HttpOnly_"):]
     elif not line or line.startswith("#"):
@@ -228,7 +229,15 @@ def _cookie_key(line: str) -> tuple[str, str, str] | None:
     fields = line.split("\t")
     if len(fields) < 7:
         return None
-    return fields[0].strip(), fields[2].strip(), fields[5].strip()
+    return [field.strip() for field in fields]
+
+
+def _cookie_key(line: str) -> tuple[str, str, str] | None:
+    """Clave (dominio, ruta, nombre) de una línea del tarro, o ``None`` si no es una cookie."""
+    campos = _cookie_fields(line)
+    if campos is None:
+        return None
+    return campos[0], campos[2], campos[5]
 
 
 def _merge_cookie_jars(primary: str, extras: list[str]) -> str:
@@ -353,41 +362,90 @@ def cookie_file_names() -> str:
 # Nombres que suelen delatar una cookie de sesión fuera de YouTube
 # (``reddit_session``, ``sessionid``, ``auth_token``…). Solo orientan el mensaje
 # de error; no deciden si la cookie se envía o no.
-_SESSION_HINTS = ("session", "sid", "auth", "token", "login")
+_SESSION_HINTS = ("session", "auth", "login")
+
+# Cookie que solo existe con la cuenta iniciada, por web conocida. Se prefiere
+# esto a adivinar por el nombre: ``session_tracker`` o ``token_v2`` de Reddit
+# existen también sin cuenta, y hacían creer que el tarro traía sesión.
+_SESSION_COOKIES = {
+    "reddit.com": frozenset({"reddit_session"}),
+    "youtube.com": _SESSION_COOKIE_NAMES,
+}
 
 
-def cookie_status(url: str) -> tuple[int, bool]:
-    """Cookies de esa web en la copia de trabajo y si alguna parece de sesión.
+@dataclass
+class CookieStatus:
+    """Qué hay de una web en la copia de trabajo (solo dominios y nombres).
 
-    Distingue los tres fallos de autenticación que se confunden entre sí: no
-    tener cookies de esa web, tenerlas exportadas sin sesión (se navega como
-    anónimo) o tenerlas con sesión y que aun así las rechace (IP de servidor).
-    Solo se miran dominios y nombres: nunca los valores.
+    ``session`` es «hay una cookie de sesión vigente» y ``expired``, «la hay pero
+    caducó». Se separan porque llevan a arreglos distintos: volver a exportar el
+    tarro o cambiar de IP.
     """
+
+    total: int = 0
+    session: bool = False
+    expired: bool = False
+
+
+def _session_names(host: str) -> frozenset[str] | None:
+    """Nombres de las cookies de sesión de esa web, si se conocen."""
+    for dominio, nombres in _SESSION_COOKIES.items():
+        if host == dominio or host.endswith("." + dominio):
+            return nombres
+    return None
+
+
+def _is_expired(expira: str) -> bool:
+    """¿La cookie caducó? ``0`` es una cookie de sesión: dura mientras la sesión."""
+    try:
+        marca = int(float(expira))
+    except ValueError:
+        return False
+    return marca > 0 and marca <= time.time()
+
+
+def cookie_status(url: str) -> CookieStatus:
+    """Cookies de esa web en la copia de trabajo y si traen sesión vigente.
+
+    Distingue los fallos de autenticación que se confunden entre sí: no tener
+    cookies de esa web, tenerlas exportadas sin sesión (se navega como anónimo),
+    tenerlas con una sesión ya caducada o tenerlas vigentes y que aun así las
+    rechacen (IP de servidor). Solo se miran dominios, nombres y caducidad: nunca
+    los valores.
+    """
+    estado = CookieStatus()
     if not cookies.file:
-        return 0, False
+        return estado
     host = (urlsplit(url).hostname or "").lower()
     if not host:
-        return 0, False
+        return estado
     try:
         raw = Path(cookies.file).read_text(encoding="utf-8")
     except OSError:
-        return 0, False
+        return estado
 
-    total = 0
-    sesion = False
+    nombres_sesion = _session_names(host)
     for line in raw.splitlines():
-        key = _cookie_key(line)
-        if key is None:
+        campos = _cookie_fields(line)
+        if campos is None:
             continue
-        dominio, _, nombre = key
-        dominio = dominio.lstrip(".").lower()
+        dominio = campos[0].lstrip(".").lower()
         if not dominio or not (host == dominio or host.endswith("." + dominio)):
             continue
-        total += 1
-        if nombre == "reddit_session" or any(p in nombre.lower() for p in _SESSION_HINTS):
-            sesion = True
-    return total, sesion
+        estado.total += 1
+        nombre = campos[5]
+        if nombres_sesion is None:
+            es_sesion = any(p in nombre.lower() for p in _SESSION_HINTS)
+        else:
+            es_sesion = nombre in nombres_sesion
+        if not es_sesion:
+            continue
+        if _is_expired(campos[4]):
+            estado.expired = True
+        else:
+            estado.session = True
+    return estado
+
 
 
 def _read_cookie_files(path: str, extras: list[str]) -> tuple[str, list[str]] | None:

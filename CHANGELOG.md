@@ -8,12 +8,13 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ### Añadido
 - Los errores de sesión dicen ahora **qué pasa con las cookies de esa web** en vez
   de un «añade cookies» que no distingue nada: si no hay ningún tarro de esa
-  plataforma, si lo hay pero se exportó sin la cuenta iniciada (ninguna cookie
-  parece de sesión) o si la trae con sesión y aun así la rechazan (suele ser la IP
-  del servidor). Se ve en `/api/info` y en el error del trabajo, y no expone
-  valores de cookies: solo cuántas hay y de qué web.
-- `config.cookie_status(url)`: número de cookies de esa web en la copia de trabajo
-  y si alguna parece de sesión.
+  plataforma, si lo hay pero se exportó sin la cuenta iniciada, si la sesión está
+  caducada (yt-dlp no envía cookies caducadas, así que parece configurado y no
+  autentica) o si la trae vigente y aun así la rechazan (suele ser la IP del
+  servidor). Se ve en `/api/info` y en el error del trabajo, y no expone valores
+  de cookies: solo cuántas hay, de qué web y si caducaron.
+- `config.cookie_status(url)`: cuántas cookies hay de esa web en la copia de
+  trabajo y si traen sesión vigente o caducada.
 
 ## [2.2.5]
 

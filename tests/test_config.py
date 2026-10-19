@@ -394,9 +394,13 @@ def test_cookie_status_cuenta_cada_web_por_separado(tmp_path, monkeypatch, _sin_
     monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
     config.setup_cookies()
 
-    assert config.cookie_status("https://www.reddit.com/comments/1x9yenj/") == (2, True)
-    assert config.cookie_status("https://www.youtube.com/watch?v=x") == (2, True)
-    assert config.cookie_status("https://vimeo.com/1") == (0, False)
+    assert config.cookie_status("https://www.reddit.com/comments/1x9yenj/") == config.CookieStatus(
+        total=2, session=True
+    )
+    assert config.cookie_status("https://www.youtube.com/watch?v=x") == config.CookieStatus(
+        total=2, session=True
+    )
+    assert config.cookie_status("https://vimeo.com/1") == config.CookieStatus()
 
 
 def test_cookie_status_ve_que_falta_la_sesion(tmp_path, monkeypatch, _sin_variables):
@@ -406,11 +410,48 @@ def test_cookie_status_ve_que_falta_la_sesion(tmp_path, monkeypatch, _sin_variab
     monkeypatch.setenv("YTDLP_COOKIES_FILE", str(archivo))
     config.setup_cookies()
 
-    assert config.cookie_status("https://www.youtube.com/watch?v=x") == (2, False)
+    assert config.cookie_status("https://www.youtube.com/watch?v=x") == config.CookieStatus(
+        total=2
+    )
+
+
+def test_cookie_status_ve_la_sesion_caducada(tmp_path, monkeypatch, _sin_variables):
+    """yt-dlp no envía cookies caducadas: parecen sesión pero no autentican nada."""
+    archivo = tmp_path / "cookies.txt"
+    archivo.write_text(
+        "# Netscape HTTP Cookie File\n"
+        "#HttpOnly_.reddit.com\tTRUE\t/\tTRUE\t1000000000\treddit_session\tvieja\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(archivo))
+    config.setup_cookies()
+
+    estado = config.cookie_status("https://www.reddit.com/comments/1x9yenj/")
+
+    assert estado.total == 1
+    assert estado.expired is True
+    assert estado.session is False
+
+
+def test_cookie_status_no_confunde_rastreadores_con_sesion(
+    tmp_path, monkeypatch, _sin_variables
+):
+    """Reddit pone ``session_tracker`` y ``token_v2`` también sin cuenta."""
+    archivo = tmp_path / "cookies.txt"
+    archivo.write_text(
+        "# Netscape HTTP Cookie File\n"
+        ".reddit.com\tTRUE\t/\tFALSE\t0\tsession_tracker\tabc\n"
+        ".reddit.com\tTRUE\t/\tFALSE\t0\ttoken_v2\tabc\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(archivo))
+    config.setup_cookies()
+
+    assert config.cookie_status("https://www.reddit.com/x") == config.CookieStatus(total=2)
 
 
 def test_cookie_status_sin_cookies_cargadas(_sin_variables):
     config.setup_cookies()
 
     assert config.cookies.file is None
-    assert config.cookie_status("https://www.reddit.com/x") == (0, False)
+    assert config.cookie_status("https://www.reddit.com/x") == config.CookieStatus()

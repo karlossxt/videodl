@@ -109,21 +109,26 @@ def _pista_cookies(detalle: str, msg: str, url: str) -> str:
 
     from .config import cookie_status
 
-    total, sesion = cookie_status(url)
-    if not total:
+    estado = cookie_status(url)
+    if not estado.total:
         pista = (
             "Ahora mismo no hay ninguna cookie de esta web cargada: falta su "
             "fichero (uno por plataforma, p. ej. reddit.txt)."
         )
-    elif not sesion:
+    elif estado.expired:
         pista = (
-            f"Hay {_cuantas(total)} de esta web, pero ninguna parece de sesión: "
+            f"Hay {_cuantas(estado.total)} de esta web, pero su cookie de sesión "
+            "está caducada: vuelve a exportarlas con la cuenta iniciada."
+        )
+    elif not estado.session:
+        pista = (
+            f"Hay {_cuantas(estado.total)} de esta web, pero ninguna es de sesión: "
             "se exportaron sin la cuenta iniciada."
         )
     else:
         pista = (
-            f"Hay {_cuantas(total)} de esta web con sesión; si aun así falla, la "
-            "plataforma está rechazando la sesión desde esta IP."
+            f"Hay {_cuantas(estado.total)} de esta web con sesión vigente; si aun "
+            "así falla, la plataforma está rechazando la sesión desde esta IP."
         )
     return f"{detalle} {pista}"
 
