@@ -67,4 +67,17 @@ def clean_ytdlp_error(msg: str) -> str:
         )
     if "429" in msg or "Too Many Requests" in msg or "rate limit" in low:
         return "La plataforma limitó temporalmente las peticiones. Espera un momento e inténtalo de nuevo."
+    if "unable to access the reddit api" in low:
+        return (
+            "Reddit bloquea la IP del servidor para su API, así que ni con cookies "
+            "válidas se puede: hay que salir por un proxy residencial "
+            "(`YTDLP_PROXY`). Consulta las secciones «Cookies» y «Proxy» del README."
+        )
+    if "authentication is required" in low:
+        return (
+            "Esta plataforma ya no sirve los vídeos a quien no tenga la sesión "
+            "iniciada (Reddit cerró su API pública). El administrador debe añadir "
+            "cookies de esa web exportadas con la sesión abierta: consulta la "
+            "sección «Cookies» del README."
+        )
     return f"No se pudo procesar la URL: {msg[:200]}"

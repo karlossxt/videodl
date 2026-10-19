@@ -322,15 +322,31 @@ persona al otro lado. La app trae tres mecanismos y los usa en este orden:
 
 #### Cookies (opcional)
 
+Sirven para dos cosas: pasar la comprobación anti-bot de YouTube desde la nube y
+entrar en plataformas que ya no sirven vídeos a los anónimos (**Reddit**, por
+ejemplo, cerró su API pública). Cada web recibe solo las cookies de su dominio.
+
 La app las busca en este orden:
 
 1. **Secret File** montado en `/etc/secrets/cookies.txt`. En Render se sube desde
    *Environment → Secret Files → Add Secret File* con el nombre `cookies.txt`. **Es la
    vía recomendada**: no hay que codificar nada y el secreto no viaja por el chat.
+   Puedes añadir **más de un Secret File** (por ejemplo `reddit.txt` con la sesión de
+   Reddit): la app los une en una sola copia de trabajo. Se detectan por su contenido
+   (formato Netscape), no por el nombre, así que `reddit.txt` vale igual. Ante una
+   cookie repetida manda siempre `cookies.txt`, de modo que añadir ficheros solo
+   puede aportar sitios nuevos, nunca cambiar los que ya funcionaban.
 2. **`YTDLP_COOKIES_FILE`**: ruta a un `cookies.txt` que ya exista en el servidor.
 3. **`YTDLP_COOKIES`**: el contenido del archivo como texto.
 4. **`YTDLP_COOKIES_B64`**: el mismo contenido en Base64 (por si no puedes pegar
    texto multilínea).
+
+> **Reddit:** desde 2026 exige sesión incluso para ver el vídeo, así que sin cookies
+> no hay nada que hacer (yt-dlp responde *"Account authentication is required"*).
+> Exporta las cookies de `reddit.com` con la sesión iniciada y súbelas como Secret
+> File (`reddit.txt`, por ejemplo). Si aun así falla con *"Your IP address is unable
+> to access the Reddit API"*, es que Reddit bloquea la IP del servidor y hace falta un
+> proxy (`YTDLP_PROXY`).
 
 > **Nota para Docker:** los Secret Files de Render pertenecen al grupo `1000`. El
 > `Dockerfile` del proyecto añade el usuario de la app a ese grupo para poder
@@ -366,20 +382,22 @@ Recomendaciones:
   las descargas salen como anónimas con el aviso anti-bot. yt-dlp lo detecta y lo
   avisa (`cookies are no longer valid`); la app lo recuerda y te lo dice en el
   error para que **renueves** el fichero en lugar de buscarte la vida.
-- Configura **un solo origen** de cookies (en Render, el Secret File es el más
-  cómodo). Si defines dos a la vez, la app usa el primero de esta lista y el otro
-  queda ignorado: es la forma más rápida de perder media hora actualizando
-  precisamente el que no se usa.
+- Puedes tener **varios Secret Files**, uno por plataforma (`cookies.txt` para
+  YouTube, `reddit.txt` para Reddit…): se unen solos. Fuera de los Secret Files, en
+  cambio, solo cuenta el primero de la lista de arriba (si defines a la vez
+  `YTDLP_COOKIES_FILE` y `YTDLP_COOKIES`, el segundo queda ignorado): es la forma más
+  rápida de perder media hora actualizando precisamente el que no se usa.
 - Comprueba el resultado en `/api/health`: `cookies` (`true` si se cargaron),
   `cookies_count` (cuántas hay), `cookies_session` (si traen sesión iniciada),
   `cookies_source` (de dónde salieron: `secret-file`, `YTDLP_COOKIES_B64`…) y
-  `cookies_file` (el **nombre** del fichero; con más de un Secret File, es el que hay
-  que actualizar) y `cookies_rotated` (`true` si la última extracción detectó que
-  YouTube ya no las acepta: renuévalas). Por seguridad, la app solo mira los
-  **nombres** de las cookies (nunca sus valores) y no publica ninguna ruta.
+  `cookies_file` (los **nombres** de los ficheros en uso, separados por comas; con
+  más de uno, es lo que dice cuál hay que actualizar) y `cookies_rotated` (`true` si la
+  última extracción detectó que YouTube ya no las acepta: renuévalas). Por seguridad,
+  la app solo mira los **nombres** de las cookies (nunca sus valores) y no publica
+  ninguna ruta.
 
-Sin cookies la app funciona exactamente igual; solo YouTube limita muchas descargas
-desde IPs de centro de datos.
+Sin cookies la app funciona exactamente igual; solo YouTube y Reddit limitan muchas
+descargas desde IPs de centro de datos.
 
 Medido en Render, con la configuración actual (runtime de JavaScript, PO tokens
 incluidos, cookies «con sesión» pero rotadas): YouTube responde con su comprobación

@@ -17,7 +17,7 @@ import shutil
 import stat as stat_module
 import tempfile
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .utils import parse_extractor_args
@@ -170,7 +170,8 @@ class CookieInfo:
     yt-dlp navega como anónimo y la plataforma sigue pidiendo verificación.
 
     ``origin``/``raw`` recuerdan de dónde salieron para poder rehacer la copia de
-    trabajo antes de cada extracción (ver ``refresh_cookies``).
+    trabajo antes de cada extracción (ver ``refresh_cookies``). ``extras`` son
+    otros tarros que se unen al principal (ver ``_merge_cookie_jars``).
     """
 
     file: str | None = None
@@ -180,6 +181,7 @@ class CookieInfo:
     count: int = 0
     origin: str | None = None
     raw: str | None = None
+    extras: list[str] = field(default_factory=list)
 
 
 cookies = CookieInfo()
@@ -214,6 +216,46 @@ def _cookie_names(raw: str) -> set[str]:
         if len(fields) >= 7:
             names.add(fields[5].strip())
     return names
+
+
+def _cookie_key(line: str) -> tuple[str, str, str] | None:
+    """Clave (dominio, ruta, nombre) de una línea del tarro, o ``None`` si no es una cookie."""
+    if line.startswith("#HttpOnly_"):
+        line = line[len("#HttpOnly_"):]
+    elif not line or line.startswith("#"):
+        return None
+    fields = line.split("\t")
+    if len(fields) < 7:
+        return None
+    return fields[0].strip(), fields[2].strip(), fields[5].strip()
+
+
+def _merge_cookie_jars(primary: str, extras: list[str]) -> str:
+    """Une varios ``cookies.txt`` en uno. Los extras nunca pisan al principal.
+
+    Las cookies van por dominio, así que un tarro de YouTube y otro de Reddit
+    conviven sin estorbarse: cada web recibe solo las suyas. Ante una cookie
+    repetida (mismo dominio, ruta y nombre) se conserva la del fichero principal,
+    de modo que añadir tarros solo puede aportar sitios nuevos, nunca cambiar los
+    que ya funcionaban.
+    """
+    lines = [line for line in primary.splitlines() if line.strip()]
+    vistas = {key for line in lines if (key := _cookie_key(line))}
+
+    for extra in extras:
+        for line in extra.splitlines():
+            if not line.strip():
+                continue
+            key = _cookie_key(line)
+            if key is None:
+                # Comentarios y cabeceras de los extras (el principal ya la trae).
+                continue
+            if key in vistas:
+                continue
+            vistas.add(key)
+            lines.append(line)
+
+    return "\n".join(lines) + "\n"
 
 
 def _check_session(raw: str, shown: str) -> None:
@@ -268,6 +310,70 @@ def _find_secret_file() -> str | None:
     return None
 
 
+def _looks_like_cookie_jar(path: Path) -> bool:
+    """¿El fichero es un ``cookies.txt`` en formato Netscape? (por contenido)
+
+    Se mira el contenido y no el nombre a propósito: un tarro de Reddit se llamará
+    ``reddit.txt`` y no tiene por qué llevar «cookie» en el nombre.
+    """
+    try:
+        texto = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return any(_cookie_key(line) is not None for line in texto.splitlines())
+
+
+def _extra_cookie_files(primary: str) -> list[str]:
+    """Otros tarros de cookies del directorio de secretos.
+
+    Render admite varios Secret Files, así que lo natural es tener uno por
+    plataforma (``cookies.txt`` para YouTube, ``reddit.txt`` para Reddit…). Se
+    unen al principal sin pisarlo (ver ``_merge_cookie_jars``).
+    """
+    extras: list[str] = []
+    if not SECRETS_DIR.is_dir():
+        return extras
+    with contextlib.suppress(OSError):
+        for candidate in sorted(SECRETS_DIR.iterdir()):
+            if str(candidate) == primary or not candidate.is_file():
+                continue
+            if _looks_like_cookie_jar(candidate):
+                extras.append(str(candidate))
+    return extras
+
+
+def cookie_file_names() -> str:
+    """Nombres de los ficheros de cookies en uso (nunca rutas), para diagnóstico."""
+    names = [Path(cookies.origin).name] if cookies.origin else []
+    names.extend(Path(extra).name for extra in cookies.extras)
+    return ", ".join(names)
+
+
+def _read_cookie_files(path: str, extras: list[str]) -> tuple[str, list[str]] | None:
+    """Lee el tarro principal y los extras ya unidos.
+
+    Devuelve ``(contenido, extras leídos)`` o ``None`` si el principal no se pudo
+    leer. Un extra ilegible solo se avisa: se pierde ese sitio, no la descarga.
+    """
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        logger.warning("No se pudieron leer las cookies de %s: %s", path, exc)
+        return None
+
+    leidos: list[str] = []
+    textos: list[str] = []
+    for extra in extras:
+        try:
+            textos.append(Path(extra).read_text(encoding="utf-8"))
+        except OSError as exc:
+            logger.warning("No se pudo leer el fichero de cookies %s: %s", extra, exc)
+        else:
+            leidos.append(extra)
+
+    return _merge_cookie_jars(raw, textos), leidos
+
+
 def _write_private_cookies(raw: str) -> str:
     """Escribe las cookies en un directorio privado (no en una ruta predecible).
 
@@ -285,7 +391,7 @@ def _write_private_cookies(raw: str) -> str:
     return str(path)
 
 
-def _writable_copy(path: str) -> str | None:
+def _writable_copy(path: str, extras: list[str] | None = None) -> str | None:
     """Copia las cookies a un fichero privado con permiso de escritura.
 
     yt-dlp **reescribe** el ``cookiefile`` al terminar cada descarga. Los Secret
@@ -293,16 +399,25 @@ def _writable_copy(path: str) -> str | None:
     se completa, se queda sin reescribir el fichero y revienta al cerrar con un
     ``PermissionError`` que además tapa el error real. Devolver ``None`` indica
     que no se pudo leer el original.
+
+    ``extras`` son otros tarros (un Secret File por plataforma) que se unen al
+    principal en la misma copia de trabajo.
     """
-    try:
-        raw = Path(path).read_text(encoding="utf-8")
-    except OSError as exc:
-        logger.warning("No se pudieron leer las cookies de %s: %s", path, exc)
+    leido = _read_cookie_files(path, extras or [])
+    if leido is None:
         return None
+    raw, leidos = leido
+
     if not raw.strip():
         logger.warning("El fichero de cookies %s está vacío", path)
     else:
         _check_session(raw, path)
+    if leidos:
+        logger.info(
+            "Cookies: %s junto con %s (cada web recibe solo las suyas)",
+            Path(path).name,
+            ", ".join(Path(extra).name for extra in leidos),
+        )
     return _write_private_cookies(raw)
 
 
@@ -319,15 +434,14 @@ def refresh_cookies() -> bool:
         return False
 
     with _cookies_lock:
-        try:
-            if cookies.origin:
-                raw = Path(cookies.origin).read_text(encoding="utf-8")
-            elif cookies.raw is not None:
-                raw = cookies.raw
-            else:
+        if cookies.origin:
+            leido = _read_cookie_files(cookies.origin, cookies.extras)
+            if leido is None:
                 return False
-        except OSError as exc:
-            logger.warning("No se pudieron releer las cookies de %s: %s", cookies.origin, exc)
+            raw, _ = leido
+        elif cookies.raw is not None:
+            raw = cookies.raw
+        else:
             return False
 
         cookies.file = _write_private_cookies(raw)
@@ -360,6 +474,7 @@ def setup_cookies() -> None:
     cookies.count = 0
     cookies.origin = None
     cookies.raw = None
+    cookies.extras = []
 
     # Al (re)cargar las cookies se olvida el aviso de «cookies rotadas»: el
     # fichero puede ser nuevo.
@@ -382,12 +497,14 @@ def setup_cookies() -> None:
     # 2) Secret File (Render: /etc/secrets/cookies.txt)
     found = _find_secret_file()
     if found:
-        copia = _writable_copy(found)
+        extras = _extra_cookie_files(found)
+        copia = _writable_copy(found, extras)
         if copia is None:
             cookies.error = f"no se pudo leer el Secret File {found} (¿permisos?)"
             return
         cookies.file, cookies.source = copia, "secret-file"
         cookies.origin = found
+        cookies.extras = extras
         logger.info("Cookies cargadas desde un Secret File (%s)", found)
         return
 

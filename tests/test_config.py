@@ -28,6 +28,14 @@ COOKIES_CON_SESION = (
 )
 SECRETS_INEXISTENTE = Path("videodl-secrets-que-no-existen")
 
+# Un tarro por plataforma: Reddit cerró su API a los anónimos, así que necesita
+# su propia sesión, independiente de la de YouTube.
+COOKIES_REDDIT = (
+    "# Netscape HTTP Cookie File\n"
+    "#HttpOnly_.reddit.com\tTRUE\t/\tTRUE\t0\treddit_session\tsecreto\n"
+    ".reddit.com\tTRUE\t/\tFALSE\t0\tloid\tabc\n"
+)
+
 
 @pytest.fixture(autouse=True)
 def _limpiar_cookies():
@@ -40,6 +48,7 @@ def _limpiar_cookies():
     config.cookies.count = 0
     config.cookies.origin = None
     config.cookies.raw = None
+    config.cookies.extras = []
     from videodl import errors
 
     errors.olvidar_cookies_rotadas()
@@ -281,3 +290,93 @@ def test_refrescar_cookies_olvida_el_aviso_de_rotacion(tmp_path, monkeypatch, _s
     config.refresh_cookies()
 
     assert errors.cookies_rotadas() is False
+
+
+def test_une_varios_secret_files_de_cookies(tmp_path, monkeypatch, _sin_variables):
+    """Un Secret File por plataforma: YouTube y Reddit conviven en la copia.
+
+    Las cookies van por dominio, así que no se estorban: cada web recibe solo las
+    suyas. Es lo que permite tener YouTube y Reddit a la vez en Render.
+    """
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert config.cookies.source == "secret-file"
+    assert Path(config.cookies.origin).name == "cookies.txt"
+    assert [Path(extra).name for extra in config.cookies.extras] == ["reddit.txt"]
+
+    contenido = Path(config.cookies.file).read_text(encoding="utf-8")
+    assert ".youtube.com" in contenido
+    assert ".reddit.com" in contenido
+    # Una sola cabecera: la del principal.
+    assert contenido.count("# Netscape HTTP Cookie File") == 1
+    # La sesión de YouTube sigue contando: los extras no la tapan.
+    assert config.cookies.session is True
+    assert config.cookies.count == 4
+
+
+def test_los_extras_no_pisan_al_fichero_principal(tmp_path, monkeypatch, _sin_variables):
+    """Ante una cookie repetida gana la del principal: añadir tarros solo suma."""
+    (tmp_path / "cookies.txt").write_text(
+        "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t0\tPREF\tBUENA\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "viejo.txt").write_text(
+        "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t0\tPREF\tMALA\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    contenido = Path(config.cookies.file).read_text(encoding="utf-8")
+    assert "BUENA" in contenido
+    assert "MALA" not in contenido
+
+
+def test_ignora_los_secret_files_que_no_son_cookies(tmp_path, monkeypatch, _sin_variables):
+    """Se detectan por contenido: una clave o un JSON no se mezclan."""
+    (tmp_path / "cookies.txt").write_text(COOKIES_OK, encoding="utf-8")
+    (tmp_path / "credenciales.json").write_text('{"token": "abc"}', encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+
+    config.setup_cookies()
+
+    assert config.cookies.extras == []
+    contenido = Path(config.cookies.file).read_text(encoding="utf-8")
+    assert "token" not in contenido
+
+
+def test_refrescar_cookies_vuelve_a_unir_principal_y_extras(
+    tmp_path, monkeypatch, _sin_variables
+):
+    """El refresco previo a cada extracción también reúne los dos tarros."""
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+    config.setup_cookies()
+
+    # Lo que hace yt-dlp al cerrar: reescribe la copia con lo que le queda.
+    Path(config.cookies.file).write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+
+    assert config.refresh_cookies() is True
+    contenido = Path(config.cookies.file).read_text(encoding="utf-8")
+    assert ".youtube.com" in contenido
+    assert ".reddit.com" in contenido
+
+
+def test_cookie_file_names_lista_los_nombres_nunca_rutas(
+    tmp_path, monkeypatch, _sin_variables
+):
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+    config.setup_cookies()
+
+    etiqueta = config.cookie_file_names()
+
+    assert etiqueta == "cookies.txt, reddit.txt"
+    assert "/" not in etiqueta and "\\" not in etiqueta

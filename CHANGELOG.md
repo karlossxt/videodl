@@ -3,6 +3,25 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.5]
+
+### Añadido
+- Admite **varios Secret Files de cookies a la vez**, uno por plataforma
+  (`cookies.txt` para YouTube, `reddit.txt` para Reddit…). Se detectan por su
+  contenido en formato Netscape y se unen en una sola copia de trabajo: las cookies
+  van por dominio, así que cada web recibe solo las suyas. Ante una cookie repetida
+  manda siempre `cookies.txt`, de modo que añadir tarros solo puede aportar sitios
+  nuevos. `/api/health` publica los nombres de todos en `cookies_file`
+  (`"cookies.txt, reddit.txt"`).
+
+### Corregido
+- **Reddit no descargaba nada** y el error que se veía era el mensaje crudo de
+  yt-dlp en inglés. Reddit cerró su API pública a los anónimos, así que exige una
+  sesión iniciada («Account authentication is required») **para cualquier vídeo**.
+  Ahora hay un mensaje que lo explica y dice qué hacer, y otro para cuando Reddit
+  bloquea la IP del servidor para su API (ahí las cookies no bastan: hace falta
+  `YTDLP_PROXY`).
+
 ## [2.2.4]
 
 ### Corregido
