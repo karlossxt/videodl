@@ -152,7 +152,9 @@ async def video_info(req: InfoRequest):
     try:
         info = await asyncio.to_thread(_extract)
     except yt_dlp.utils.DownloadError as e:
-        raise HTTPException(status_code=422, detail=clean_ytdlp_error(str(e))) from e
+        raise HTTPException(
+            status_code=422, detail=clean_ytdlp_error(str(e), req.url.strip())
+        ) from e
 
     # Si es una playlist, tomar solo el primer video
     if info.get("_type") == "playlist" and info.get("entries"):
@@ -221,7 +223,9 @@ async def download(req: DownloadRequest):
         info, filename = await asyncio.to_thread(_download)
     except yt_dlp.utils.DownloadError as e:
         rmtree_robust(tmpdir)
-        raise HTTPException(status_code=422, detail=clean_ytdlp_error(str(e))) from e
+        raise HTTPException(
+            status_code=422, detail=clean_ytdlp_error(str(e), req.url.strip())
+        ) from e
 
     path = resolve_output(tmpdir, filename)
     if path is None:
@@ -305,7 +309,9 @@ def _run_job(job_id, url, mode, title, start=None, end=None) -> None:
         downloads.update(job_id, status="cancelled", error="Descarga cancelada", tmpdir=None)
     except yt_dlp.utils.DownloadError as e:
         rmtree_robust(tmpdir)
-        downloads.update(job_id, status="error", error=clean_ytdlp_error(str(e)), tmpdir=None)
+        downloads.update(
+            job_id, status="error", error=clean_ytdlp_error(str(e), url), tmpdir=None
+        )
     except Exception:  # noqa: BLE001
         logger.exception("Error inesperado en la descarga %s", job_id)
         rmtree_robust(tmpdir)
@@ -404,7 +410,9 @@ async def download_subtitles(req: SubtitleRequest):
         await asyncio.to_thread(_run)
     except yt_dlp.utils.DownloadError as e:
         rmtree_robust(tmpdir)
-        raise HTTPException(status_code=422, detail=clean_ytdlp_error(str(e))) from e
+        raise HTTPException(
+            status_code=422, detail=clean_ytdlp_error(str(e), req.url.strip())
+        ) from e
 
     files = [p for p in tmpdir.iterdir() if p.is_file()]
     if not files:

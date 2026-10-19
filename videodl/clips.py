@@ -301,7 +301,9 @@ def _run_clip_job_url(job_id, url, start, end, aspect, quality, title) -> None:
         clips.update(job_id, status="cancelled", message="Cancelado", tmpdir=None)
     except yt_dlp.utils.DownloadError as exc:
         rmtree_robust(tmpdir)
-        clips.update(job_id, status="error", error=clean_ytdlp_error(str(exc)), tmpdir=None)
+        clips.update(
+            job_id, status="error", error=clean_ytdlp_error(str(exc), url), tmpdir=None
+        )
     except Cancelled:
         rmtree_robust(tmpdir)
         clips.update(job_id, status="cancelled", message="Cancelado", tmpdir=None)

@@ -3,6 +3,18 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.2.6]
+
+### Añadido
+- Los errores de sesión dicen ahora **qué pasa con las cookies de esa web** en vez
+  de un «añade cookies» que no distingue nada: si no hay ningún tarro de esa
+  plataforma, si lo hay pero se exportó sin la cuenta iniciada (ninguna cookie
+  parece de sesión) o si la trae con sesión y aun así la rechazan (suele ser la IP
+  del servidor). Se ve en `/api/info` y en el error del trabajo, y no expone
+  valores de cookies: solo cuántas hay y de qué web.
+- `config.cookie_status(url)`: número de cookies de esa web en la copia de trabajo
+  y si alguna parece de sesión.
+
 ## [2.2.5]
 
 ### Añadido

@@ -33,8 +33,18 @@ def olvidar_cookies_rotadas() -> None:
     _cookies_rotadas = False
 
 
-def clean_ytdlp_error(msg: str) -> str:
-    """Muestra un mensaje más amigable, sin rutas locales ni ruido técnico."""
+def clean_ytdlp_error(msg: str, url: str = "") -> str:
+    """Muestra un mensaje más amigable, sin rutas locales ni ruido técnico.
+
+    Si se pasa ``url`` y el fallo era de sesión, se añade qué falta exactamente
+    (ver ``_pista_cookies``), que es lo que de verdad ayuda cuando una plataforma
+    pide cuenta y no se sabe si el tarro llegó, si trae sesión o si la rechazan.
+    """
+    return _pista_cookies(_mensaje(msg), msg, url)
+
+
+def _mensaje(msg: str) -> str:
+    """Traducción del error de yt-dlp, sin la pista de cookies."""
     msg = msg.split("\n")[0]
     msg = re.sub(r"^ERROR:\s*", "", msg)
     low = msg.lower()
@@ -81,3 +91,44 @@ def clean_ytdlp_error(msg: str) -> str:
             "sección «Cookies» del README."
         )
     return f"No se pudo procesar la URL: {msg[:200]}"
+
+
+def _pista_cookies(detalle: str, msg: str, url: str) -> str:
+    """Concreta qué pasa con las cookies de esa web cuando piden sesión.
+
+    Sin esto, «añade cookies» no distingue los tres casos posibles y es fácil
+    subir un fichero que no cambia nada: sin cookies de esa web, con cookies pero
+    exportadas sin cuenta, o con sesión y aun así rechazadas por la IP.
+    """
+    if not url or cookies_rotadas():
+        return detalle
+
+    low = msg.lower()
+    if "authentication is required" not in low and "sign in" not in low:
+        return detalle
+
+    from .config import cookie_status
+
+    total, sesion = cookie_status(url)
+    if not total:
+        pista = (
+            "Ahora mismo no hay ninguna cookie de esta web cargada: falta su "
+            "fichero (uno por plataforma, p. ej. reddit.txt)."
+        )
+    elif not sesion:
+        pista = (
+            f"Hay {_cuantas(total)} de esta web, pero ninguna parece de sesión: "
+            "se exportaron sin la cuenta iniciada."
+        )
+    else:
+        pista = (
+            f"Hay {_cuantas(total)} de esta web con sesión; si aun así falla, la "
+            "plataforma está rechazando la sesión desde esta IP."
+        )
+    return f"{detalle} {pista}"
+
+
+def _cuantas(total: int) -> str:
+    """«1 cookie» / «37 cookies», para que la pista se lea en castellano."""
+    return "1 cookie" if total == 1 else f"{total} cookies"
+

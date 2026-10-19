@@ -19,6 +19,7 @@ import tempfile
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .utils import parse_extractor_args
 
@@ -347,6 +348,46 @@ def cookie_file_names() -> str:
     names = [Path(cookies.origin).name] if cookies.origin else []
     names.extend(Path(extra).name for extra in cookies.extras)
     return ", ".join(names)
+
+
+# Nombres que suelen delatar una cookie de sesión fuera de YouTube
+# (``reddit_session``, ``sessionid``, ``auth_token``…). Solo orientan el mensaje
+# de error; no deciden si la cookie se envía o no.
+_SESSION_HINTS = ("session", "sid", "auth", "token", "login")
+
+
+def cookie_status(url: str) -> tuple[int, bool]:
+    """Cookies de esa web en la copia de trabajo y si alguna parece de sesión.
+
+    Distingue los tres fallos de autenticación que se confunden entre sí: no
+    tener cookies de esa web, tenerlas exportadas sin sesión (se navega como
+    anónimo) o tenerlas con sesión y que aun así las rechace (IP de servidor).
+    Solo se miran dominios y nombres: nunca los valores.
+    """
+    if not cookies.file:
+        return 0, False
+    host = (urlsplit(url).hostname or "").lower()
+    if not host:
+        return 0, False
+    try:
+        raw = Path(cookies.file).read_text(encoding="utf-8")
+    except OSError:
+        return 0, False
+
+    total = 0
+    sesion = False
+    for line in raw.splitlines():
+        key = _cookie_key(line)
+        if key is None:
+            continue
+        dominio, _, nombre = key
+        dominio = dominio.lstrip(".").lower()
+        if not dominio or not (host == dominio or host.endswith("." + dominio)):
+            continue
+        total += 1
+        if nombre == "reddit_session" or any(p in nombre.lower() for p in _SESSION_HINTS):
+            sesion = True
+    return total, sesion
 
 
 def _read_cookie_files(path: str, extras: list[str]) -> tuple[str, list[str]] | None:

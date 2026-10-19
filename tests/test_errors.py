@@ -126,3 +126,76 @@ def test_reddit_bloqueando_la_ip_menciona_el_proxy():
     )
 
     assert "proxy" in msg.lower()
+
+
+# ---------------------------------------------------------------------------
+# Pista de cookies: «añade cookies» no dice si el tarro llegó ni qué trae
+# ---------------------------------------------------------------------------
+
+REDDIT_URL = "https://www.reddit.com/comments/1x9yenj/"
+JAR_REDDIT_ANONIMO = "# Netscape HTTP Cookie File\n.reddit.com\tTRUE\t/\tFALSE\t0\tloid\tabc\n"
+JAR_REDDIT_CON_SESION = (
+    "# Netscape HTTP Cookie File\n"
+    "#HttpOnly_.reddit.com\tTRUE\t/\tTRUE\t0\treddit_session\tsecreto\n"
+    ".reddit.com\tTRUE\t/\tFALSE\t0\tloid\tabc\n"
+)
+
+
+def _usar_tarro(monkeypatch, tmp_path, contenido):
+    from videodl import config
+
+    if contenido is None:
+        monkeypatch.setattr(config.cookies, "file", None)
+        return
+    archivo = tmp_path / "reddit.txt"
+    archivo.write_text(contenido, encoding="utf-8")
+    monkeypatch.setattr(config.cookies, "file", str(archivo))
+
+
+def test_la_pista_avisa_de_que_no_hay_cookies_de_esa_web(tmp_path, monkeypatch):
+    _usar_tarro(monkeypatch, tmp_path, None)
+
+    msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
+
+    assert "no hay ninguna cookie de esta web" in msg.lower()
+
+
+def test_la_pista_avisa_de_que_el_tarro_no_trae_sesion(tmp_path, monkeypatch):
+    """El error típico: el fichero está, pero se exportó sin la cuenta abierta."""
+    _usar_tarro(monkeypatch, tmp_path, JAR_REDDIT_ANONIMO)
+
+    msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
+
+    assert "ninguna parece de sesión" in msg.lower()
+
+
+def test_la_pista_cuenta_las_cookies_con_sesion(tmp_path, monkeypatch):
+    _usar_tarro(monkeypatch, tmp_path, JAR_REDDIT_CON_SESION)
+
+    msg = clean_ytdlp_error(REDDIT_SIN_SESION, REDDIT_URL)
+
+    assert "2 cookies de esta web con sesión" in msg
+
+
+def test_la_pista_no_se_añade_a_errores_que_no_son_de_sesion(tmp_path, monkeypatch):
+    _usar_tarro(monkeypatch, tmp_path, JAR_REDDIT_CON_SESION)
+
+    msg = clean_ytdlp_error("ERROR: Unsupported URL: xyz", REDDIT_URL)
+
+    assert msg == "Esta URL no es compatible con ninguna plataforma soportada."
+
+
+def test_la_pista_no_tapa_el_aviso_de_cookies_rotadas(tmp_path, monkeypatch):
+    """Con cookies rotadas ya se explica el motivo: sobra hablar del tarro."""
+    from videodl import errors
+
+    _usar_tarro(monkeypatch, tmp_path, JAR_REDDIT_CON_SESION)
+    errors.olvidar_cookies_rotadas()
+    errors.aviso_cookies_rotadas(AVISO_COOKIES_ROTADAS)
+    try:
+        msg = clean_ytdlp_error("ERROR: Sign in to confirm you're not a bot.", REDDIT_URL)
+    finally:
+        errors.olvidar_cookies_rotadas()
+
+    assert "rot" in msg.lower()
+    assert "de esta web" not in msg

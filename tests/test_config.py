@@ -380,3 +380,37 @@ def test_cookie_file_names_lista_los_nombres_nunca_rutas(
 
     assert etiqueta == "cookies.txt, reddit.txt"
     assert "/" not in etiqueta and "\\" not in etiqueta
+
+
+# ---------------------------------------------------------------------------
+# cookie_status: qué hay de cada web en la copia de trabajo
+# ---------------------------------------------------------------------------
+
+
+def test_cookie_status_cuenta_cada_web_por_separado(tmp_path, monkeypatch, _sin_variables):
+    """YouTube y Reddit tienen tarros distintos: cada uno ve solo las suyas."""
+    (tmp_path / "cookies.txt").write_text(COOKIES_CON_SESION, encoding="utf-8")
+    (tmp_path / "reddit.txt").write_text(COOKIES_REDDIT, encoding="utf-8")
+    monkeypatch.setattr(config, "SECRETS_DIR", tmp_path)
+    config.setup_cookies()
+
+    assert config.cookie_status("https://www.reddit.com/comments/1x9yenj/") == (2, True)
+    assert config.cookie_status("https://www.youtube.com/watch?v=x") == (2, True)
+    assert config.cookie_status("https://vimeo.com/1") == (0, False)
+
+
+def test_cookie_status_ve_que_falta_la_sesion(tmp_path, monkeypatch, _sin_variables):
+    """Un tarro exportado sin cuenta tiene cookies, pero ninguna de sesión."""
+    archivo = tmp_path / "cookies.txt"
+    archivo.write_text(COOKIES_ANONIMAS, encoding="utf-8")
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(archivo))
+    config.setup_cookies()
+
+    assert config.cookie_status("https://www.youtube.com/watch?v=x") == (2, False)
+
+
+def test_cookie_status_sin_cookies_cargadas(_sin_variables):
+    config.setup_cookies()
+
+    assert config.cookies.file is None
+    assert config.cookie_status("https://www.reddit.com/x") == (0, False)
