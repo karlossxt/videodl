@@ -36,3 +36,9 @@ async def page_clips():
 async def page_whatsapp():
     """Página del generador de enlaces de WhatsApp con código QR."""
     return FileResponse(STATIC_DIR / "whatsapp.html")
+
+
+@router.get("/legal")
+async def page_legal():
+    """Aviso legal, privacidad, términos y contacto."""
+    return FileResponse(STATIC_DIR / "legal.html")

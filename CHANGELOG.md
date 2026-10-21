@@ -3,6 +3,14 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.4.0]
+
+### Añadido
+- Página **`/legal`** con aviso legal, política de privacidad, términos de uso y
+  contacto/retirada de contenido, enlazada desde el pie de todas las páginas.
+- Hueco para el **botón de Ko-fi** en el pie, oculto hasta configurar el usuario
+  para no dejar un enlace roto.
+
 ## [2.3.3]
 
 ### Corregido

@@ -54,6 +54,37 @@ def test_info_rejects_private_url(client):
     assert res.status_code == 400
 
 
+def test_legal_page(client):
+    """Aviso legal, privacidad, términos y contacto en una sola página."""
+    res = client.get("/legal")
+
+    assert res.status_code == 200
+    for texto in (
+        "Aviso legal",
+        "Política de privacidad",
+        "Términos de uso",
+        "Contacto y retirada",
+    ):
+        assert texto in res.text
+    # Los datos del titular son marcadores visibles hasta que se rellenen.
+    assert "legal-todo" in res.text
+    assert "[EMAIL DE CONTACTO]" in res.text
+
+
+def test_todas_las_paginas_enlazan_lo_legal(client):
+    for path in (
+        "/",
+        "/comprimir-video-whatsapp",
+        "/recortar-clip-vertical",
+        "/link-whatsapp",
+        "/herramientas",
+    ):
+        res = client.get(path)
+        assert res.status_code == 200
+        assert 'href="/legal#aviso-legal"' in res.text
+        assert 'href="/legal#privacidad"' in res.text
+
+
 def test_info_rejects_bad_scheme(client):
     res = client.post("/api/info", json={"url": "ftp://example.com/video"})
     assert res.status_code == 400

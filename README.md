@@ -470,6 +470,20 @@ comprobación desde la nube. Si algún vídeo se resiste con cookies frescas:
 - **Ejecutar la app en tu propio equipo**: desde una IP doméstica no hay
   comprobación anti-bot ni hacen falta cookies, PO tokens ni proxy.
 
+## Legal, privacidad y donaciones
+
+La web incluye `/legal` con aviso legal, política de privacidad, términos de uso y
+contacto/retirada, enlazada desde el pie de todas las páginas.
+
+> **Antes de publicar:** sustituye los marcadores de `static/legal.html`
+> (`[NOMBRE COMPLETO O RAZÓN SOCIAL]`, `[NIF]`, `[DOMICILIO COMPLETO]`,
+> `[EMAIL DE CONTACTO]`), que aparecen resaltados en amarillo, y revisa el texto
+> con un profesional. No es asesoramiento jurídico.
+
+El botón de Ko-fi está preparado en el pie, pero **oculto** para no dejar un enlace
+roto: crea la cuenta, cambia `TU_USUARIO` por tu nombre de usuario y elimina el
+atributo `hidden` en los pies de las páginas (`static/*.html`).
+
 ## Aviso legal
 
 Esta herramienta se ofrece únicamente con fines educativos y de uso personal. Descarga solo contenido que te pertenezca, que sea de dominio público o que cuente con licencia de uso. Respeta los derechos de autor y los términos de servicio de cada plataforma; el autor no se responsabiliza del uso indebido de la aplicación.
