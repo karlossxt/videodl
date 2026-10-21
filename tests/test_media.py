@@ -106,10 +106,74 @@ def test_extract_with_retry_reintenta_si_no_hay_formatos(monkeypatch):
             return "media.mp4"
 
     monkeypatch.setattr(media.yt_dlp, "YoutubeDL", YDL)
+    monkeypatch.setattr(media.time, "sleep", lambda s: None)
     info, filename = media.extract_with_retry("https://x", {}, download=True)
     assert intentos["n"] == 2
     assert info["id"] == "xat53s6"
     assert filename == "media.mp4"
+
+
+def test_dailymotion_tiene_mas_intentos_y_espera_entre_ellos(monkeypatch):
+    """Dailymotion falla a rachas: 4 intentos con pausas, no 3 seguidos."""
+    intentos = {"n": 0}
+    esperas = []
+
+    class YDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def extract_info(self, url, download=False):
+            intentos["n"] += 1
+            if intentos["n"] < 4:
+                raise media.yt_dlp.utils.DownloadError(
+                    "ERROR: [dailymotion] x: No video formats found!"
+                )
+            return {"id": "x"}
+
+    monkeypatch.setattr(media.yt_dlp, "YoutubeDL", YDL)
+    monkeypatch.setattr(media.time, "sleep", esperas.append)
+
+    info, _ = media.extract_with_retry(
+        "https://www.dailymotion.com/video/x", {}, download=False
+    )
+
+    assert intentos["n"] == 4
+    assert esperas == [2.0, 4.0, 6.0]
+    assert info["id"] == "x"
+
+
+def test_otras_webs_no_reintentan_de_mas(monkeypatch):
+    """Fuera de Dailymotion se mantienen 3 intentos (2 en descarga)."""
+    intentos = {"n": 0}
+
+    class YDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def extract_info(self, url, download=False):
+            intentos["n"] += 1
+            raise media.yt_dlp.utils.DownloadError(
+                "ERROR: [vimeo] x: No video formats found!"
+            )
+
+    monkeypatch.setattr(media.yt_dlp, "YoutubeDL", YDL)
+    monkeypatch.setattr(media.time, "sleep", lambda s: None)
+
+    with pytest.raises(media.yt_dlp.utils.DownloadError):
+        media.extract_with_retry("https://vimeo.com/1", {}, download=False)
+    assert intentos["n"] == 3
 
 
 def test_extract_with_retry_no_repite_errores_de_sesion(monkeypatch):

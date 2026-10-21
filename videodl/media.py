@@ -6,8 +6,10 @@ import json
 import logging
 import subprocess
 import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import yt_dlp
 
@@ -204,6 +206,22 @@ def build_opts(
 # primera extracción devuelve 0 formatos y el siguiente intento sí responde.
 _FORMATOS_VACIOS = "no video formats found"
 
+# Dailymotion es la que más falla de forma puntual: a veces tarda unos segundos
+# en publicar el manifest. Se le dan más oportunidades y un respiro entre ellas;
+# el resto de webs reintenta una sola vez por si fue un corte momentáneo.
+_FLAKY_HOSTS = ("dailymotion.com", "dai.ly")
+_FLAKY_DELAYS = (2.0, 4.0, 6.0)
+_OTHER_DELAYS = (1.0,)
+
+
+def _retry_plan(url: str, download: bool) -> tuple[int, tuple[float, ...]]:
+    """Intentos y esperas entre ellos según la web y el tipo de petición."""
+    host = (urlsplit(url).hostname or "").lower()
+    flaky = any(host == name or host.endswith(f".{name}") for name in _FLAKY_HOSTS)
+    if flaky:
+        return (3 if download else 4), _FLAKY_DELAYS
+    return (2 if download else 3), _OTHER_DELAYS
+
 
 def extract_with_retry(
     url: str, opts: dict, *, download: bool
@@ -213,7 +231,7 @@ def extract_with_retry(
     Solo se reintenta ese fallo concreto: si la web pide sesión, bloquea la IP o
     el vídeo no existe, repetir no cambia nada y solo hace esperar de más.
     """
-    intentos = 2 if download else 3
+    intentos, esperas = _retry_plan(url, download)
     ultimo: Exception | None = None
     for intento in range(1, intentos + 1):
         try:
@@ -224,9 +242,12 @@ def extract_with_retry(
             ultimo = exc
             if _FORMATOS_VACIOS not in str(exc).lower() or intento == intentos:
                 raise
+            espera = esperas[min(intento - 1, len(esperas) - 1)]
             logger.warning(
-                "Sin formatos en %s (intento %s/%s); reintentando", url, intento, intentos
+                "Sin formatos en %s (intento %s/%s); reintentando en %.1fs",
+                url, intento, intentos, espera,
             )
+            time.sleep(espera)
     assert ultimo is not None
     raise ultimo
 

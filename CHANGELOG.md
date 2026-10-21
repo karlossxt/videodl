@@ -3,6 +3,15 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.3.3]
+
+### Corregido
+- **Dailymotion, fallos intermitentes**: cuando la extracción devolvía «No video
+  formats found», se reintentaba tres veces seguidas y sin pausa, así que a veces se
+  agotaban los intentos antes de que Dailymotion publicara el manifest. Ahora tiene
+  cuatro intentos (tres en descarga) con esperas de 2, 4 y 6 segundos. El resto de
+  webs mantiene tres intentos (dos en descarga) con una pausa de 1 segundo.
+
 ## [2.3.2]
 
 ### Cambiado
