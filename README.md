@@ -288,10 +288,16 @@ eliminarla hay dos caminos:
 
 - **Plan Starter** (de pago): el servicio no se duerme. Es lo recomendado para un
   lanzamiento.
-- **Seguir gratis**: un monitor externo (UptimeRobot o cron-job.org) haciendo ping a
-  `/api/health` cada 5 minutos. Mantiene despierto el servicio, pero consume las
-  750 h/mes del plan gratuito (24/7 son ~730–744 h), así que no deja margen para otro
-  servicio gratuito; además, la primera visita tras un despliegue sigue siendo lenta.
+- **Seguir gratis**: un monitor externo haciendo ping a `/api/health` cada 5 minutos.
+  Con UptimeRobot (plan gratuito):
+  1. *Add New Monitor* → tipo **HTTP(s)**.
+  2. URL: `https://videodl-6md8.onrender.com/api/health` (o tu dominio propio).
+  3. Intervalo: **5 minutes**; alertas por email.
+  4. Guarda y pulsa *Force check* para despertarlo.
+
+  Mantiene despierto el servicio, pero consume las 750 h/mes del plan gratuito
+  (24/7 son ~730–744 h), así que no deja margen para otro servicio gratuito; además,
+  la primera visita tras un despliegue sigue siendo lenta.
 
 Pasos para el dominio:
 
