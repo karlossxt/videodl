@@ -21,7 +21,7 @@ from .config import (
     MAX_UPLOAD_MB,
     X264_PRESET,
 )
-from .downloader import spawn_job
+from .downloader import reject_paused, spawn_job
 from .errors import clean_ytdlp_error
 from .media import (
     Cancelled,
@@ -377,6 +377,7 @@ async def clip_options():
 async def create_clip_job(req: ClipRequest):
     """Crea un clip vertical a partir de un fragmento de un vídeo en línea."""
     ensure_public_url(req.url)
+    reject_paused(req.url)
     clip_validate(req.aspect, req.quality, req.start, req.end)
 
     clips.cleanup_stale()

@@ -16,8 +16,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from .config import FFMPEG_AVAILABLE
-from .errors import clean_ytdlp_error
+from .config import FFMPEG_AVAILABLE, disabled_platform
+from .errors import clean_ytdlp_error, error_plataforma_pausada
 from .media import build_opts, extract_with_retry, info_opts, resolve_output
 from .models import DownloadRequest, InfoRequest, JobRequest, SubtitleRequest
 from .runtime import job_limiter
@@ -67,6 +67,18 @@ def validate_range(start: float | None, end: float | None) -> None:
             status_code=400,
             detail="El fin del fragmento debe ser mayor que el inicio.",
         )
+
+
+def reject_paused(url: str) -> None:
+    """Rechaza al instante las plataformas pausadas (YouTube, Reddit…).
+
+    Intentarlo desde el servidor tarda y acaba en el mismo error, así que se
+    responde directamente con el motivo. La lista se cambia con
+    ``VIDEODL_DISABLED_PLATFORMS`` sin tocar código.
+    """
+    pausada = disabled_platform(url)
+    if pausada:
+        raise HTTPException(status_code=503, detail=error_plataforma_pausada(pausada))
 
 
 def _sub_label(tracks: list, lang: str) -> str:
@@ -142,6 +154,7 @@ def spawn_job(target, *args) -> None:
 async def video_info(req: InfoRequest):
     """Analiza la URL sin descargar y devuelve los metadatos y calidades."""
     ensure_public_url(req.url)
+    reject_paused(req.url)
 
     def _extract():
         # Las mismas opciones de conexión que la descarga: YouTube exige sesión
@@ -210,6 +223,7 @@ async def video_info(req: InfoRequest):
 async def download(req: DownloadRequest):
     """Descarga el video (o solo audio) y lo sirve como archivo (bloqueante)."""
     ensure_public_url(req.url)
+    reject_paused(req.url)
     mode = validate_mode(req.mode)
     validate_range(req.start, req.end)
 
@@ -322,6 +336,7 @@ def _run_job(job_id, url, mode, title, start=None, end=None) -> None:
 async def create_job(req: JobRequest):
     """Inicia una descarga en segundo plano y devuelve su identificador."""
     ensure_public_url(req.url)
+    reject_paused(req.url)
     mode = validate_mode(req.mode)
     validate_range(req.start, req.end)
 
@@ -383,6 +398,7 @@ async def cancel_job(job_id: str):
 async def download_subtitles(req: SubtitleRequest):
     """Descarga los subtítulos de un idioma y los sirve en .srt o .vtt."""
     ensure_public_url(req.url)
+    reject_paused(req.url)
     # `lang` acaba en un patrón glob de yt-dlp: se restringe a caracteres seguros
     # para que un valor como ".*" no arrastre todas las pistas.
     if not _LANG_RE.match(req.lang or ""):

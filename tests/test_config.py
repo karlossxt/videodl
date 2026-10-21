@@ -547,3 +547,44 @@ def test_cookie_status_sin_cookies_cargadas(_sin_variables):
 
     assert config.cookies.file is None
     assert config.cookie_status("https://www.reddit.com/x") == config.CookieStatus()
+
+
+# ---------------------------------------------------------------------------
+# Plataformas pausadas
+# ---------------------------------------------------------------------------
+
+
+def test_youtube_y_reddit_estan_pausadas_por_defecto(monkeypatch):
+    monkeypatch.delenv("VIDEODL_DISABLED_PLATFORMS", raising=False)
+
+    assert config.disabled_platform("https://www.youtube.com/watch?v=x") == "youtube"
+    assert config.disabled_platform("https://youtu.be/x") == "youtube"
+    assert config.disabled_platform("https://m.youtube.com/watch?v=x") == "youtube"
+    assert config.disabled_platform("https://www.reddit.com/r/x/comments/1/") == "reddit"
+    assert config.disabled_platform("https://redd.it/x") == "reddit"
+    assert config.disabled_platforms() == ["reddit", "youtube"]
+
+
+def test_la_pausa_no_afecta_a_las_demas_plataformas(monkeypatch):
+    monkeypatch.delenv("VIDEODL_DISABLED_PLATFORMS", raising=False)
+
+    assert config.disabled_platform("https://www.tiktok.com/@x/video/1") is None
+    assert config.disabled_platform("https://vimeo.com/1") is None
+    # Un dominio que solo contiene el nombre no debe confundirse.
+    assert config.disabled_platform("https://notyoutube.com/x") is None
+    assert config.disabled_platform("https://youtube.com.ejemplo.com/x") is None
+
+
+def test_la_pausa_se_puede_desactivar(monkeypatch):
+    """VIDEODL_DISABLED_PLATFORMS="" vuelve a permitir todas las webs."""
+    monkeypatch.setenv("VIDEODL_DISABLED_PLATFORMS", "")
+
+    assert config.disabled_platforms() == []
+    assert config.disabled_platform("https://www.youtube.com/watch?v=x") is None
+
+
+def test_la_lista_de_pausadas_es_configurable(monkeypatch):
+    monkeypatch.setenv("VIDEODL_DISABLED_PLATFORMS", "reddit")
+
+    assert config.disabled_platform("https://www.youtube.com/watch?v=x") is None
+    assert config.disabled_platform("https://www.reddit.com/x") == "reddit"

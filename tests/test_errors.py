@@ -1,4 +1,4 @@
-from videodl.errors import clean_ytdlp_error
+from videodl.errors import clean_ytdlp_error, error_plataforma_pausada
 
 
 def test_removes_error_prefix_and_extra_lines():
@@ -220,3 +220,15 @@ def test_formatos_vacios_avisa_de_fallo_puntual():
         "issue on https://github.com/yt-dlp/yt-dlp/issues"
     )
     assert "vuelve a intentarlo" in msg
+
+
+def test_plataforma_pausada_explica_el_motivo():
+    youtube = error_plataforma_pausada("youtube")
+    assert "YouTube no está disponible por el momento" in youtube
+    assert "proxy residencial" in youtube
+    # Se sugiere una alternativa que sí funciona desde el servidor.
+    assert "Dailymotion" in youtube
+
+    reddit = error_plataforma_pausada("reddit")
+    assert "Reddit no está disponible por el momento" in reddit
+    assert "sesión" in reddit

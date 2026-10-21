@@ -142,6 +142,40 @@ YTDLP_POT_TIMEOUT = env_int("YTDLP_POT_TIMEOUT", 60, minimum=0)
 
 
 # ---------------------------------------------------------------------------
+# Plataformas pausadas
+# ---------------------------------------------------------------------------
+
+# Webs que se rechazan al instante en lugar de intentar una descarga que desde el
+# servidor no va a funcionar: YouTube y Reddit solo sirven vídeo a IP domésticas
+# y necesitan un proxy residencial de pago. Se reactivan sin tocar código con
+# VIDEODL_DISABLED_PLATFORMS="" (o cambiando la lista por otros nombres).
+_DISABLED_DOMAINS = {
+    "youtube": ("youtube.com", "youtu.be", "youtube-nocookie.com"),
+    "reddit": ("reddit.com", "redd.it", "redditmedia.com", "redditstatic.com"),
+}
+
+
+def disabled_platforms() -> list[str]:
+    """Plataformas pausadas ahora mismo (por defecto, YouTube y Reddit)."""
+    raw = os.environ.get("VIDEODL_DISABLED_PLATFORMS", "youtube,reddit")
+    return sorted({p.strip().lower() for p in raw.split(",") if p.strip()})
+
+
+def disabled_platform(url: str) -> str | None:
+    """Plataforma pausada a la que apunta ``url`` (o ``None`` si se puede usar)."""
+    pausadas = set(disabled_platforms())
+    if not pausadas:
+        return None
+    host = (urlsplit(url).hostname or "").lower()
+    for nombre, dominios in _DISABLED_DOMAINS.items():
+        if nombre in pausadas and any(
+            host == dominio or host.endswith(f".{dominio}") for dominio in dominios
+        ):
+            return nombre
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Rate limiting y concurrencia
 # ---------------------------------------------------------------------------
 

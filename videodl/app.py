@@ -28,6 +28,7 @@ from .config import (
     configure_logging,
     cookie_file_names,
     cookies,
+    disabled_platforms,
     setup_cookies,
 )
 from .downloader import router as downloader_router
@@ -144,6 +145,9 @@ def create_app() -> FastAPI:
             "impersonation": IMPERSONATION_AVAILABLE,
             "clip_max_seconds": CLIP_MAX_SECONDS,
             "max_upload_mb": MAX_UPLOAD_MB,
+            # Plataformas pausadas a propósito. Se reactivan sin tocar código con
+            # VIDEODL_DISABLED_PLATFORMS="" (vuelven todas) o cambiando la lista.
+            "disabled_platforms": disabled_platforms(),
             "cookies": bool(cookies.file),
             # Diagnóstico sin filtrar secretos: si las cookies traen una sesión
             # iniciada, cuántas son y de dónde salieron. Un fichero sin sesión se

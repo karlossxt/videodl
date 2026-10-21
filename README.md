@@ -9,9 +9,11 @@ Suite de herramientas de video con interfaz web. Pega el enlace de un video y de
 
 El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: TikTok, Instagram, X / Twitter, Facebook, Twitch, Dailymotion, Vimeo y enlaces directos MP4/WebM, entre muchos otros.
 
-> **YouTube y Reddit, pendientes:** solo sirven sus vídeos a IP domésticas, así que desde
-> un servidor necesitan un proxy residencial de pago. La web los muestra como
-> «Próximamente» y el resto de plataformas funciona con normalidad.
+> **YouTube y Reddit, no disponibles por el momento:** solo sirven sus vídeos a IP
+> domésticas, así que desde un servidor necesitan un proxy residencial de pago. La web
+> los muestra como «No disponible» y rechaza esos enlaces al instante con el motivo; el
+> resto de plataformas funciona con normalidad. Para reactivarlos sin tocar código:
+> `VIDEODL_DISABLED_PLATFORMS=""`.
 
 ## Herramientas
 
@@ -293,6 +295,7 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
   - Límites: **`RATE_LIMIT_PER_MINUTE`** (peticiones por minuto y por IP, `0` = sin límite), **`MAX_CONCURRENT_JOBS`** (trabajos pesados simultáneos).
   - Vídeo: **`MAX_UPLOAD_MB`**, **`COMPRESS_MAX_TARGET_MB`**, **`X264_PRESET`** (velocidad/calidad de x264, `veryfast` por defecto), **`CLIP_MAX_SECONDS`**, **`CLIP_PAD_SECONDS`** (margen de seguridad descargado de más en cada extremo para clavar el segundo exacto), **`CLIP_MAX_FULL_DOWNLOAD_MB`** (tope cuando el enlace no admite fragmentos), **`FFMPEG_TIMEOUT_SECONDS`** (mata codificaciones colgadas) y **`YTDLP_SOCKET_TIMEOUT`**.
 - yt-dlp y plataformas: **`YTDLP_PROXY`** (saca las peticiones por un proxy, útil si la plataforma bloquea la IP del servidor) y **`YTDLP_EXTRACTOR_ARGS`** (eliges otro cliente de extracción, con el formato de `--extractor-args`; por ejemplo `youtube:player_client=tv,web_safari`).
+  - Plataformas pausadas: **`VIDEODL_DISABLED_PLATFORMS`** (lista separada por comas; por defecto `youtube,reddit`). Esas URLs se rechazan al instante con un mensaje claro. Con `VIDEODL_DISABLED_PLATFORMS=""` se vuelven a permitir todas.
   - Seguridad: **`CORS_ORIGINS`** (orígenes permitidos separados por comas; vacío = mismo origen) y **`CONTENT_SECURITY_POLICY`** (CSP propia; vacío = se usa una por defecto sensata).
   - En servidores gratuitos con poca CPU conviene dejar `X264_PRESET` en `veryfast` o `ultrafast`.
 - **Seguridad**: la app valida las URLs (bloquea peticiones a direcciones internas/privadas para evitar SSRF), aplica un límite de peticiones por IP y de trabajos concurrentes, y envía cabeceras de seguridad (incluida una CSP por defecto). Consulta [`SECURITY.md`](SECURITY.md) para el modelo de amenazas y cómo reportar problemas.

@@ -26,6 +26,8 @@ def test_health_ok_without_sensitive_data(client):
     assert body["cookies_rotated"] in (True, False)
     # Si falta curl-cffi, TikTok y otras webs que exigen impersonación fallan.
     assert body["impersonation"] in (True, False)
+    # Plataformas pausadas a propósito: la web las anuncia y las rechaza.
+    assert isinstance(body["disabled_platforms"], list)
 
 
 def test_health_alias(client):
@@ -119,6 +121,9 @@ def test_analysis_sends_configured_cookies(client, monkeypatch):
     monkeypatch.setattr(downloader, "ensure_public_url", lambda url: None)
     monkeypatch.setattr(downloader.yt_dlp, "YoutubeDL", FakeYDL)
     monkeypatch.setattr(cookies, "file", "C:/privado/cookies.txt")
+    # El análisis de YouTube está pausado por defecto; aquí se prueba solo que
+    # las cookies llegan a yt-dlp, así que se reactiva la plataforma.
+    monkeypatch.setenv("VIDEODL_DISABLED_PLATFORMS", "")
 
     res = client.post("/api/info", json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
 
@@ -126,3 +131,56 @@ def test_analysis_sends_configured_cookies(client, monkeypatch):
     assert captured["cookiefile"] == "C:/privado/cookies.txt"
     assert captured["skip_download"] is True
     assert client.get("/api/clips/nope").status_code == 404
+
+
+def test_info_rechaza_plataforma_pausada(client, monkeypatch):
+    """YouTube se rechaza al instante, sin gastar una extracción que va a fallar."""
+    from videodl import downloader
+
+    monkeypatch.delenv("VIDEODL_DISABLED_PLATFORMS", raising=False)
+    monkeypatch.setattr(downloader, "ensure_public_url", lambda url: None)
+
+    res = client.post("/api/info", json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+
+    assert res.status_code == 503
+    assert "YouTube no está disponible por el momento" in res.json()["detail"]
+    assert "proxy residencial" in res.json()["detail"]
+
+
+def test_jobs_rechaza_plataforma_pausada(client, monkeypatch):
+    from videodl import downloader
+
+    monkeypatch.delenv("VIDEODL_DISABLED_PLATFORMS", raising=False)
+    monkeypatch.setattr(downloader, "ensure_public_url", lambda url: None)
+
+    res = client.post(
+        "/api/jobs", json={"url": "https://www.reddit.com/r/videos/comments/abc/x/"}
+    )
+
+    assert res.status_code == 503
+    assert "Reddit no está disponible por el momento" in res.json()["detail"]
+
+
+def test_clips_rechaza_plataforma_pausada(client, monkeypatch):
+    from videodl import clips
+
+    monkeypatch.delenv("VIDEODL_DISABLED_PLATFORMS", raising=False)
+    monkeypatch.setattr(clips, "ensure_public_url", lambda url: None)
+
+    res = client.post(
+        "/api/clips",
+        json={"url": "https://youtu.be/dQw4w9WgXcQ", "start": 0, "end": 5},
+    )
+
+    assert res.status_code == 503
+    assert "YouTube no está disponible por el momento" in res.json()["detail"]
+
+
+def test_plataformas_pausadas_se_pueden_reactivar(client, monkeypatch):
+    """Con VIDEODL_DISABLED_PLATFORMS vacío no se rechaza ninguna plataforma."""
+    monkeypatch.setenv("VIDEODL_DISABLED_PLATFORMS", "")
+
+    res = client.get("/api/health")
+
+    assert res.status_code == 200
+    assert res.json()["disabled_platforms"] == []

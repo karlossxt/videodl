@@ -143,3 +143,26 @@ def _cuantas(total: int) -> str:
     """«1 cookie» / «37 cookies», para que la pista se lea en castellano."""
     return "1 cookie" if total == 1 else f"{total} cookies"
 
+
+def error_plataforma_pausada(nombre: str) -> str:
+    """Mensaje para una plataforma desactivada a propósito (YouTube, Reddit…)."""
+    motivo = {
+        "youtube": (
+            "YouTube solo sirve sus vídeos a direcciones domésticas y necesitamos "
+            "un proxy residencial de pago para poder descargarlos desde el servidor."
+        ),
+        "reddit": (
+            "Reddit exige una sesión iniciada y bloquea las descargas desde "
+            "servidores, así que también necesita un proxy residencial de pago."
+        ),
+    }.get(
+        nombre,
+        "La plataforma bloquea las descargas desde servidores y necesita un proxy.",
+    )
+    visible = {"youtube": "YouTube", "reddit": "Reddit"}.get(nombre, nombre.capitalize())
+    return (
+        f"{visible} no está disponible por el momento: {motivo} "
+        "Estamos trabajando en ello; mientras tanto puedes usar TikTok, Instagram, "
+        "X, Facebook, Twitch, Dailymotion, Vimeo o un enlace directo MP4/WebM."
+    )
+

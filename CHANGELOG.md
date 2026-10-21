@@ -3,6 +3,19 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.3.2]
+
+### Cambiado
+- **YouTube y Reddit, no disponibles por el momento**: además de la leyenda en la
+  portada, la app **rechaza esos enlaces al instante** con el motivo y alternativas
+  que sí funcionan (TikTok, Instagram, X, Facebook, Twitch, Dailymotion, Vimeo o un
+  MP4/WebM directo), en vez de esperar a una extracción que desde el servidor acaba
+  fallando. La lista se cambia sin tocar código con `VIDEODL_DISABLED_PLATFORMS`
+  (`""` vuelve a permitir todas).
+- `/api/health` publica `disabled_platforms` para saber de un vistazo qué webs están
+  pausadas.
+- La leyenda de la portada pasa de «Próximamente» a «No disponible».
+
 ## [2.3.1]
 
 ### Corregido
