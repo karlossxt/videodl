@@ -267,3 +267,22 @@ def test_compress_target_impossible_fails_clearly(client, long_video):
     job = wait_for_job(client, "/api/compress", res.json()["id"])
     assert job["status"] == "error", job
     assert "No se puede dejar en 1 MB" in (job["error"] or ""), job
+
+
+def test_compress_respeta_el_tope_aunque_el_video_ya_quepa(client, portrait_video, tmp_path):
+    """Si cabe en el tamaño pero supera la resolución pedida, se reescala igual."""
+    with portrait_video.open("rb") as fh:
+        res = client.post(
+            "/api/compress",
+            files={"file": ("vertical.mp4", fh, "video/mp4")},
+            data={"target_mb": "2", "max_height": "360", "quality_mode": "size"},
+        )
+    assert res.status_code == 200, res.text
+    job_id = res.json()["id"]
+    job = wait_for_job(client, "/api/compress", job_id)
+    assert job["status"] == "finished", job
+
+    out = _download_compress_output(client, job_id, tmp_path)
+    meta = ffprobe_meta(out)
+    assert meta["width"] == 360, meta
+    assert meta["height"] > meta["width"], meta

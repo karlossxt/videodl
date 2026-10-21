@@ -22,6 +22,9 @@ proxy residencial de pago) y se revisan las herramientas que ya funcionan.
 - **Compresor, vídeo vertical**: el tope de resolución se aplica al lado corto. Un
   1080x1920 con «720p» salía en 406x720; ahora sale en 720x1280. Sin tope, conserva
   su resolución (antes también se achicaba a 608x1080).
+- **Compresor, tope de resolución**: si el vídeo ya cabía en el tamaño pedido, se
+  copiaba tal cual aunque superara la resolución elegida. Ahora se reescala cuando
+  hace falta.
 - **Compresor, tamaño incumplido**: si el objetivo no cabía ni con la calidad mínima,
   se devolvía un archivo **más grande del pedido** sin avisar. Ahora se reintenta con
   un tramo de progreso propio y, si aun así no cabe, el trabajo termina con un error

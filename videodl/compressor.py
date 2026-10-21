@@ -110,10 +110,22 @@ def compress_file(
     src_width = meta.get("width") or 0
     src_height = meta.get("height") or 0
 
-    # 1) Si ya cabe y los códecs son compatibles, basta con remultiplexar: rápido
-    # y sin pérdida de calidad. Si no lo son (VP9, AV1, Opus…), hay que recodificar
-    # aunque quepa: un MP4 con VP9 no se reproduce en WhatsApp ni en un iPhone.
-    if src_size <= target_bytes and meta.get("has_video") and compatible_mp4(meta):
+    # 1) Si ya cabe, los códecs son compatibles y no hay que bajar resolución,
+    # basta con remultiplexar: rápido y sin pérdida de calidad. Si los códecs no
+    # son compatibles (VP9, AV1, Opus…) hay que recodificar aunque quepa: un MP4
+    # con VP9 no se reproduce en WhatsApp ni en un iPhone.
+    necesita_escala = bool(
+        max_height
+        and src_width
+        and src_height
+        and min(src_width, src_height) > max_height
+    )
+    if (
+        src_size <= target_bytes
+        and meta.get("has_video")
+        and compatible_mp4(meta)
+        and not necesita_escala
+    ):
         compressions.update(
             job_id, status="compressing", percent=5.0,
             message="Ya cabe en el límite: optimizando sin perder calidad…",
