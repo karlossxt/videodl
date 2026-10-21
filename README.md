@@ -278,7 +278,30 @@ docker run -p 8000:8000 videodl
 3. Render detecta `render.yaml` y crea el servicio web con el Dockerfile.
 4. Cuando termine el despliegue tendrás una URL pública tipo `https://videodl.onrender.com`.
 
-El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera petición puede tardar unos segundos en despertarlo.
+El plan gratuito de Render **duerme** el servicio tras unos 15 minutos sin visitas.
+La primera visita muestra la pantalla de «spinning up» de Render durante ~1 minuto.
+
+#### Dominio propio y arranque en frío
+
+Comprar un dominio **no quita** esa pantalla: solo cambia la dirección. Para
+eliminarla hay dos caminos:
+
+- **Plan Starter** (de pago): el servicio no se duerme. Es lo recomendado para un
+  lanzamiento.
+- **Seguir gratis**: un monitor externo (UptimeRobot o cron-job.org) haciendo ping a
+  `/api/health` cada 5 minutos. Mantiene despierto el servicio, pero consume las
+  750 h/mes del plan gratuito (24/7 son ~730–744 h), así que no deja margen para otro
+  servicio gratuito; además, la primera visita tras un despliegue sigue siendo lenta.
+
+Pasos para el dominio:
+
+1. Render → servicio → **Settings → Custom Domains → Add Custom Domain**: añade
+   `tudominio.com` y `www.tudominio.com`.
+2. Crea en tu proveedor DNS los registros que muestre Render (normalmente un CNAME
+   `www` → `videodl-6md8.onrender.com`; para el dominio raíz, el ALIAS/A que indique).
+3. Si usas Cloudflare, deja la nube en **DNS only** hasta que Render emita el
+   certificado TLS.
+4. Marca uno como principal y redirige el otro (por ejemplo, `www` → `tudominio.com`).
 
 ### En Railway
 
