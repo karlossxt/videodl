@@ -181,9 +181,18 @@ def compress_file(
     # el progreso no retrocede de 98 % a 5 % (parecía que se había roto).
     tramos = [(5.0, 60.0), (60.0, 85.0), (85.0, 98.0)]
 
+    # Si el archivo ya cabía, solo se recodifica para bajar la resolución: el
+    # bitrate disponible no debe decidir el tamaño (daría 360p a un vídeo que ya
+    # entraba en 720p). El bitrate calculado sí vale: es >= el del origen.
+    solo_escala = src_size <= target_bytes
+
     for attempt in range(_MAX_INTENTOS):
         pct_from, pct_to = tramos[min(attempt, len(tramos) - 1)]
-        cap = pick_short_side(src_width, src_height, video_kbps, max_height)
+        if solo_escala:
+            cap = min(max_height, src_width, src_height) if src_width and src_height else max_height
+            cap -= cap % 2
+        else:
+            cap = pick_short_side(src_width, src_height, video_kbps, max_height)
         args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
         args += ["-i", str(src)]
         args += scale_args(src_width, src_height, cap)
