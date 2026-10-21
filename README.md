@@ -7,7 +7,11 @@ Suite de herramientas de video con interfaz web. Pega el enlace de un video y de
 > 🌐 **Demo en vivo:** https://videodl-6md8.onrender.com
 > *(plan gratuito: si lleva un rato sin usarse, la primera visita puede tardar ~50 s en despertar)*
 
-El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: YouTube, TikTok, Instagram, X / Twitter, Facebook, Reddit, Twitch, Vimeo y enlaces directos MP4/WebM, entre muchos otros.
+El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: TikTok, Instagram, X / Twitter, Facebook, Twitch, Dailymotion, Vimeo y enlaces directos MP4/WebM, entre muchos otros.
+
+> **YouTube y Reddit, pendientes:** solo sirven sus vídeos a IP domésticas, así que desde
+> un servidor necesitan un proxy residencial de pago. La web los muestra como
+> «Próximamente» y el resto de plataformas funciona con normalidad.
 
 ## Herramientas
 
@@ -15,7 +19,7 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 |---|---|
 | `/` | **Descargar video y audio** de casi cualquier plataforma: MP4 en cualquier resolución, MP3, subtítulos, miniatura, recortes y cola en lote. |
 | `/comprimir-video-whatsapp` | **Comprimir video** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
-| `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) de Twitch, Kick, YouTube o de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
+| `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) de Twitch, Kick, X o de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
 | `/link-whatsapp` | **Generar un enlace de WhatsApp** (`wa.me`) con el mensaje ya escrito para tu web o tus redes, y descargarlo como **código QR** listo para imprimir. |
 | `/herramientas` | Directorio con todas las herramientas del sitio. |
 
@@ -29,9 +33,9 @@ El backend usa **yt-dlp**, por lo que es compatible con más de 1000 sitios: You
 - 📚 **Cola en lote**: pega varios enlaces, analízalos y descárgalos en orden con estado por elemento (el historial se guarda en el navegador).
 - 💬 **Subtítulos** en `.SRT` o `.VTT` (manuales y automáticos) en el idioma que elijas.
 - 🖼️ **Descarga de la miniatura** de portada en su resolución original.
-- 🗜️ **Compresor de video**: sube un archivo y redúcelo al tamaño objetivo (WhatsApp, Discord, Telegram, correo o MB personalizados). Calcula el bitrate disponible, baja la resolución solo cuando hace falta y, si el video ya cabe, lo entrega **sin recodificar**.
+- 🗜️ **Compresor de video**: sube un archivo y redúcelo al tamaño objetivo (WhatsApp, Discord, Telegram, correo o MB personalizados). Calcula el bitrate disponible, baja la resolución solo cuando hace falta (respetando el vídeo vertical) y, si el video ya cabe y es H.264/AAC, lo entrega **sin recodificar**.
 - 🎚️ **Modo "priorizar calidad"**: recodifica con CRF sin forzar el tamaño objetivo, útil para bajar resolución sin destrozar la imagen.
-- ✂️ **Clips verticales para TikTok / Reels / Shorts**: pega un directo (VOD) o un clip de Twitch, Kick, YouTube… y descarga **solo los segundos que elijas** ya reencuadrados en 9:16. Incluye recorte centrado, fondo desenfocado para no perder los laterales, cuadrado 1:1 y hasta 5 minutos de clip.
+- ✂️ **Clips verticales para TikTok / Reels / Shorts**: pega un directo (VOD) o un clip de Twitch, Kick, X… y descarga **solo los segundos que elijas** ya reencuadrados en 9:16. Incluye recorte centrado, fondo desenfocado para no perder los laterales, cuadrado 1:1 y hasta 5 minutos de clip. Si el vídeo es de YouTube o Reddit, descárgalo aparte y súbelo como archivo.
 - 🔗 **Generador de enlaces de WhatsApp**: crea un enlace `wa.me` con el mensaje ya escrito (con plantillas), cópialo como botón HTML o descárgalo como **código QR** para imprimir. El enlace se monta en tu navegador; al servidor solo va el enlace para dibujar el QR.
 - 🖥️ **Interfaz web** oscura y responsive, sin dependencias de frameworks en el frontend.
 - 📋 Botón **Pegar** desde el portapapeles para analizar al instante.
@@ -95,15 +99,25 @@ subir un archivo de tu equipo y reducirlo hasta el tamaño que necesites:
 3. Pulsa **Comprimir** y descarga el resultado.
 
 El servidor calcula el bitrate que cabe en ese tamaño, baja la resolución solo si es
-imprescindible y, si el video ya cabía, lo entrega sin recodificar (sin pérdida).
+imprescindible y, si el video ya cabía y sus códecs son compatibles (H.264/AAC), lo
+entrega sin recodificar (sin pérdida). Un WebM/VP9 que quepa se recodifica igualmente,
+porque el MP4 resultante tiene que reproducirse en WhatsApp y en el móvil.
+
+En modo **tamaño**, el objetivo es una promesa: si no se puede cumplir sin una calidad
+inservible (por ejemplo, 1 MB para un video de 10 minutos), el trabajo termina con un
+error que lo explica y sugiere un tamaño mayor; nunca se entrega un archivo más grande
+del pedido. El tope de resolución se aplica al **lado corto**, así que un vertical
+1080x1920 con tope 720 sale en 720x1280 y no en 406x720.
+
 Con la opción **Priorizar calidad** se recodifica con CRF y no se fuerza el tamaño.
 
 ### Recortar un clip vertical (TikTok / Reels / Shorts)
 
 En **✂️ Clips verticales** (o entrando en <http://127.0.0.1:8000/recortar-clip-vertical>):
 
-1. Pega el enlace de un directo guardado (VOD) o de un clip de Twitch, Kick, YouTube…
-   y pulsa **Analizar**. También puedes subir un archivo de tu equipo.
+1. Pega el enlace de un directo guardado (VOD) o de un clip de Twitch, Kick, X…
+   y pulsa **Analizar**. También puedes subir un archivo de tu equipo (la vía para
+   clips de YouTube o Reddit).
 2. Elige el momento con los deslizadores de inicio y fin, o con los atajos de
    **Primeros 30 s**, **Últimos 30 s** y **Todo el video**.
 3. Elige el formato de salida:

@@ -26,6 +26,7 @@ const maxHeightSel = $("max-height");
 const qualitySel = $("quality-mode");
 
 let maxUploadMb = 200;
+let maxTargetMb = 200;
 let selectedFile = null;
 let targetMb = 16;
 let jobId = null;
@@ -49,6 +50,12 @@ $("error-close").addEventListener("click", clearError);
       maxUploadMb = cfg.max_upload_mb;
       $("limit-hint").textContent = `Máximo ${maxUploadMb} MB por archivo`;
       $("limit-hint-2").textContent = `${maxUploadMb} MB`;
+    }
+    // El tope del tamaño objetivo lo decide el servidor; si cambia, la interfaz
+    // no debe dejar pedir algo que la API va a rechazar.
+    if (cfg.max_target_mb) {
+      maxTargetMb = cfg.max_target_mb;
+      $("custom-mb").max = String(maxTargetMb);
     }
   } catch {
     /* sin conexión: se usan los valores por defecto */
@@ -151,7 +158,7 @@ document.querySelectorAll(".preset").forEach((b) =>
 function clampMb(value) {
   const n = Number(value);
   if (!isFinite(n) || n < 1) return 1;
-  if (n > 200) return 200;
+  if (n > maxTargetMb) return maxTargetMb;
   return Math.round(n * 10) / 10;
 }
 
