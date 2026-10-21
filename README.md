@@ -304,6 +304,11 @@ El plan gratuito de Render "duerme" el servicio tras un rato sin uso: la primera
 
 ### YouTube desde la nube (PO tokens, cookies y proxy)
 
+> **Ahora pausado:** de fábrica la app rechaza YouTube y Reddit
+> (`VIDEODL_DISABLED_PLATFORMS=youtube,reddit`). Esta sección explica lo que hay
+> montado para cuando se reactive con un proxy residencial:
+> `VIDEODL_DISABLED_PLATFORMS=""`.
+
 Desde una IP de servidor (Render, Railway…) YouTube responde *"Sign in to confirm
 you're not a bot"* a buena parte de sus vídeos: quiere una prueba de que hay una
 persona al otro lado. La app trae tres mecanismos y los usa en este orden:
