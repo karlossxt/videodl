@@ -227,7 +227,7 @@ async def download(req: DownloadRequest):
             status_code=422, detail=clean_ytdlp_error(str(e), req.url.strip())
         ) from e
 
-    path = resolve_output(tmpdir, filename)
+    path = resolve_output(tmpdir, filename or "")
     if path is None:
         rmtree_robust(tmpdir)
         raise HTTPException(status_code=500, detail="No se generó ningún archivo")
@@ -288,7 +288,7 @@ def _run_job(job_id, url, mode, title, start=None, end=None) -> None:
     try:
         info, filename = extract_with_retry(url, opts, download=True)
 
-        path = resolve_output(tmpdir, filename)
+        path = resolve_output(tmpdir, filename or "")
         if path is None:
             raise RuntimeError("No se generó ningún archivo")
 
