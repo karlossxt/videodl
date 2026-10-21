@@ -26,6 +26,7 @@ from .errors import clean_ytdlp_error
 from .media import (
     Cancelled,
     build_opts,
+    extract_with_retry,
     ffprobe_meta,
     first_video_pts,
     probe_safe,
@@ -84,10 +85,14 @@ def clip_filter(aspect: str, quality: str, w: int, h: int):
         cw, ch, x, y = centered_crop(w, h, 1, 1)
         return f"crop={cw}:{ch}:{x}:{y},scale={side}:{side},setsar=1", side, side
 
-    # Original: solo se limita la altura si hace falta.
+    # Original: solo se limita el lado corto si hace falta (en un vertical, el
+    # ancho). Limitar la altura dejaba un 1080x1920 en 608x1080 sin necesidad.
     cap = even(sizes["orig"])
-    if h and w and h > cap:
-        return f"scale=-2:{cap},setsar=1", even(w * cap / h), cap
+    corto = min(w, h) if w and h else 0
+    if corto and corto > cap:
+        if w >= h:
+            return f"scale=-2:{cap},setsar=1", even(w * cap / h), cap
+        return f"scale={cap}:-2,setsar=1", cap, even(h * cap / w)
     return None, w, h
 
 
@@ -201,10 +206,8 @@ def _clip_download(job_id, url, tmpdir: Path, start, end, con_rango: bool, exact
     if not con_rango:
         # Si hay que bajar el archivo entero, se pone un tope para no llenar el disco.
         opts["max_filesize"] = CLIP_MAX_FULL_DOWNLOAD_MB * 1024 * 1024
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-    return info, resolve_output(tmpdir, filename)
+    info, filename = extract_with_retry(url, opts, download=True)
+    return info, resolve_output(tmpdir, filename or "")
 
 
 def _run_clip_job_url(job_id, url, start, end, aspect, quality, title) -> None:
