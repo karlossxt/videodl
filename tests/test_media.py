@@ -80,3 +80,58 @@ def test_connection_opts_compartido(monkeypatch, _sin_ajustes_ytdlp):
     assert opts["cookiefile"] == "C:/c.txt"
     assert opts["socket_timeout"] == 30
     assert media.info_opts()["cookiefile"] == "C:/c.txt"
+
+def test_extract_with_retry_reintenta_si_no_hay_formatos(monkeypatch):
+    intentos = {"n": 0}
+
+    class YDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def extract_info(self, url, download=False):
+            intentos["n"] += 1
+            if intentos["n"] < 2:
+                raise media.yt_dlp.utils.DownloadError(
+                    "ERROR: [dailymotion] xat53s6: No video formats found!"
+                )
+            return {"id": "xat53s6"}
+
+        def prepare_filename(self, info):
+            return "media.mp4"
+
+    monkeypatch.setattr(media.yt_dlp, "YoutubeDL", YDL)
+    info, filename = media.extract_with_retry("https://x", {}, download=True)
+    assert intentos["n"] == 2
+    assert info["id"] == "xat53s6"
+    assert filename == "media.mp4"
+
+
+def test_extract_with_retry_no_repite_errores_de_sesion(monkeypatch):
+    intentos = {"n": 0}
+
+    class YDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def extract_info(self, url, download=False):
+            intentos["n"] += 1
+            raise media.yt_dlp.utils.DownloadError(
+                "ERROR: [youtube] x: Sign in to confirm you are not a bot"
+            )
+
+    monkeypatch.setattr(media.yt_dlp, "YoutubeDL", YDL)
+    with pytest.raises(media.yt_dlp.utils.DownloadError):
+        media.extract_with_retry("https://x", {}, download=False)
+    assert intentos["n"] == 1

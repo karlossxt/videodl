@@ -18,7 +18,7 @@ from starlette.background import BackgroundTask
 
 from .config import FFMPEG_AVAILABLE
 from .errors import clean_ytdlp_error
-from .media import build_opts, info_opts, resolve_output
+from .media import build_opts, extract_with_retry, info_opts, resolve_output
 from .models import DownloadRequest, InfoRequest, JobRequest, SubtitleRequest
 from .runtime import job_limiter
 from .security import ensure_public_url, fetch_image
@@ -146,8 +146,8 @@ async def video_info(req: InfoRequest):
     def _extract():
         # Las mismas opciones de conexión que la descarga: YouTube exige sesión
         # también para leer los metadatos cuando la petición viene de un servidor.
-        with yt_dlp.YoutubeDL(info_opts()) as ydl:
-            return ydl.extract_info(req.url.strip(), download=False)
+        info, _ = extract_with_retry(req.url.strip(), info_opts(), download=False)
+        return info
 
     try:
         info = await asyncio.to_thread(_extract)
@@ -183,8 +183,10 @@ async def video_info(req: InfoRequest):
                     "ext": f.get("ext"),
                     "size": size,
                 }
-        # Solo cuenta como audio descargable el formato que NO tiene vídeo.
-        if vcodec == "none" and acodec != "none":
+        # Basta con que algún formato traiga audio, aunque venga con vídeo: de un
+        # MP4 combinado también se puede extraer el MP3 (Dailymotion no ofrece
+        # pistas de audio sueltas y antes el botón de audio ni aparecía).
+        if acodec != "none":
             audio_available = True
 
     ordered = sorted(qualities.values(), key=lambda q: q["height"], reverse=True)
@@ -215,9 +217,7 @@ async def download(req: DownloadRequest):
     opts = build_opts(mode, tmpdir, start=req.start, end=req.end)
 
     def _download():
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(req.url.strip(), download=True)
-            return info, ydl.prepare_filename(info)
+        return extract_with_retry(req.url.strip(), opts, download=True)
 
     try:
         info, filename = await asyncio.to_thread(_download)
@@ -286,9 +286,7 @@ def _run_job(job_id, url, mode, title, start=None, end=None) -> None:
     opts = build_opts(mode, tmpdir, progress_hook=_make_progress_hook(job_id), start=start, end=end)
 
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
+        info, filename = extract_with_retry(url, opts, download=True)
 
         path = resolve_output(tmpdir, filename)
         if path is None:

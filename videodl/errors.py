@@ -90,6 +90,12 @@ def _mensaje(msg: str) -> str:
             "cookies de esa web exportadas con la sesión abierta: consulta la "
             "sección «Cookies» del README."
         )
+    if "No video formats found" in msg:
+        return (
+            "La plataforma no devolvió ningún formato descargable. Desde un servidor "
+            "pasa de vez en cuando (Dailymotion sobre todo): vuelve a intentarlo en "
+            "unos segundos."
+        )
     return f"No se pudo procesar la URL: {msg[:200]}"
 
 

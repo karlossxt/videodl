@@ -213,3 +213,10 @@ def test_la_pista_no_tapa_el_aviso_de_cookies_rotadas(tmp_path, monkeypatch):
 
     assert "rot" in msg.lower()
     assert "de esta web" not in msg
+
+def test_formatos_vacios_avisa_de_fallo_puntual():
+    msg = clean_ytdlp_error(
+        "ERROR: [dailymotion] xat53s6: No video formats found!; please report this "
+        "issue on https://github.com/yt-dlp/yt-dlp/issues"
+    )
+    assert "vuelve a intentarlo" in msg
