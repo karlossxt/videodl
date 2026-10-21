@@ -28,9 +28,35 @@ logger = logging.getLogger("videodl.compressor")
 
 router = APIRouter()
 
+# Por debajo de este bitrate de vídeo la imagen se ve mal y, aun así, el archivo
+# puede seguir sin caber: mejor decírselo al usuario que servir algo peor sin
+# avisar.
+_MIN_VIDEO_KBPS = 60.0
+_MAX_INTENTOS = 3
 
-def pick_height(src_height: int, video_kbps: float, max_height: int) -> int:
-    """Elige la resolución vertical máxima razonable para ese bitrate."""
+# Códecs que se pueden copiar tal cual a MP4 y se reproducen en cualquier móvil
+# (WhatsApp incluido). Un VP9 o un AV1 «caben» en MP4, pero luego no se ven: por
+# eso no basta con comprobar que el archivo quepa para remultiplexar.
+_MP4_VIDEO_CODECS = frozenset({"h264"})
+_MP4_AUDIO_CODECS = frozenset({"aac", "mp3"})
+
+
+def compatible_mp4(meta: dict) -> bool:
+    """¿Se puede copiar a MP4 sin recodificar y que se reproduzca en todas partes?"""
+    if meta.get("vcodec") not in _MP4_VIDEO_CODECS:
+        return False
+    return not meta.get("has_audio") or meta.get("acodec") in _MP4_AUDIO_CODECS
+
+
+def pick_short_side(
+    src_width: int, src_height: int, video_kbps: float, max_height: int
+) -> int:
+    """Lado corto máximo razonable para ese bitrate.
+
+    El tope va en el **lado corto** para que un vídeo vertical no acabe
+    achicado: un 1080x1920 con tope 720 debe quedar en 720x1280, no en 406x720
+    (que es lo que sale al limitar la altura en vertical).
+    """
     if max_height and max_height > 0:
         cap = max_height
     elif video_kbps >= 1600:
@@ -41,9 +67,27 @@ def pick_height(src_height: int, video_kbps: float, max_height: int) -> int:
         cap = 480
     else:
         cap = 360
-    if src_height and src_height < cap:
-        cap = src_height
+    if src_width and src_height:
+        cap = min(cap, src_width, src_height)
+    elif src_height:
+        cap = min(cap, src_height)
     return cap - (cap % 2)
+
+
+def scale_args(src_width: int, src_height: int, cap: int) -> list[str]:
+    """Argumentos ``-vf`` para dejar el lado corto en ``cap`` (vacío si ya cabe)."""
+    if not cap or not src_width or not src_height:
+        return []
+    if min(src_width, src_height) <= cap:
+        return []
+    if src_width >= src_height:
+        return ["-vf", f"scale=-2:{cap}"]
+    return ["-vf", f"scale={cap}:-2"]
+
+
+def _mb(target_bytes: int) -> str:
+    """«16» o «16.5», sin decimales que sobren."""
+    return f"{target_bytes / (1024 * 1024):g}"
 
 
 def compress_file(
@@ -56,11 +100,20 @@ def compress_file(
     meta: dict,
     quality_mode: str = "size",
 ) -> None:
-    """Deja en ``dest`` un MP4 por debajo del tamaño objetivo."""
-    src_size = src.stat().st_size
+    """Deja en ``dest`` un MP4 por debajo del tamaño objetivo.
 
-    # 1) Si ya cabe, basta con remultiplexar: rápido y sin pérdida de calidad.
-    if src_size <= target_bytes and meta.get("has_video"):
+    En modo ``size`` el objetivo es una promesa: si no se puede cumplir sin
+    destrozar la calidad, se lanza ``RuntimeError`` en vez de devolver un archivo
+    más grande del pedido (el usuario lo enviaría por WhatsApp y no cabría).
+    """
+    src_size = src.stat().st_size
+    src_width = meta.get("width") or 0
+    src_height = meta.get("height") or 0
+
+    # 1) Si ya cabe y los códecs son compatibles, basta con remultiplexar: rápido
+    # y sin pérdida de calidad. Si no lo son (VP9, AV1, Opus…), hay que recodificar
+    # aunque quepa: un MP4 con VP9 no se reproduce en WhatsApp ni en un iPhone.
+    if src_size <= target_bytes and meta.get("has_video") and compatible_mp4(meta):
         compressions.update(
             job_id, status="compressing", percent=5.0,
             message="Ya cabe en el límite: optimizando sin perder calidad…",
@@ -68,7 +121,10 @@ def compress_file(
         args = [
             FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
             "-progress", "pipe:1", "-nostats",
-            "-i", str(src), "-c", "copy", "-movflags", "+faststart", str(dest),
+            "-i", str(src),
+            # Solo vídeo y audio: copiar subtítulos o datos a MP4 puede fallar.
+            "-map", "0:v:0", "-map", "0:a?",
+            "-c", "copy", "-movflags", "+faststart", str(dest),
         ]
         code = run_ffmpeg(args, compressions, job_id, duration, 5.0, 90.0)
         if code == 0 and dest.exists() and 0 < dest.stat().st_size <= target_bytes:
@@ -77,16 +133,12 @@ def compress_file(
 
     # 1b) Modo "priorizar calidad": no se fuerza el tamaño, solo se baja resolución.
     if quality_mode == "quality":
-        src_h = meta.get("height") or 0
-        cap = max_height if max_height > 0 else src_h
-        if src_h and src_h < cap:
-            cap = src_h
-        height = (cap - (cap % 2)) or None
+        cap = max_height if max_height > 0 else min(src_width, src_height)
+        cap = (cap - (cap % 2)) or 0
 
         args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
         args += ["-i", str(src)]
-        if height and src_h > height:
-            args += ["-vf", f"scale=-2:{height}"]
+        args += scale_args(src_width, src_height, cap)
         args += [
             "-map_metadata", "-1",
             "-c:v", "libx264", "-preset", X264_PRESET, "-crf", "23",
@@ -111,14 +163,18 @@ def compress_file(
     if total_kbps < 240:
         audio_kbps = 64
 
-    video_kbps = max(60.0, total_kbps - audio_kbps - 4)
+    video_kbps = max(_MIN_VIDEO_KBPS, total_kbps - audio_kbps - 4)
 
-    for attempt in range(2):
-        height = pick_height(meta.get("height") or 0, video_kbps, max_height)
+    # Cada reintento ocupa su propio tramo de la barra: si empieza otra pasada,
+    # el progreso no retrocede de 98 % a 5 % (parecía que se había roto).
+    tramos = [(5.0, 60.0), (60.0, 85.0), (85.0, 98.0)]
+
+    for attempt in range(_MAX_INTENTOS):
+        pct_from, pct_to = tramos[min(attempt, len(tramos) - 1)]
+        cap = pick_short_side(src_width, src_height, video_kbps, max_height)
         args = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-progress", "pipe:1", "-nostats"]
         args += ["-i", str(src)]
-        if height and (meta.get("height") or 0) > height:
-            args += ["-vf", f"scale=-2:{height}"]
+        args += scale_args(src_width, src_height, cap)
         args += [
             "-map_metadata", "-1",
             "-c:v", "libx264", "-preset", X264_PRESET,
@@ -131,22 +187,30 @@ def compress_file(
             str(dest),
         ]
         msg = "Comprimiendo el vídeo…" if attempt == 0 else "Ajustando el tamaño final…"
-        compressions.update(job_id, status="compressing", percent=5.0, message=msg)
+        compressions.update(job_id, status="compressing", percent=pct_from, message=msg)
 
-        code = run_ffmpeg(args, compressions, job_id, duration, 5.0, 98.0)
+        code = run_ffmpeg(args, compressions, job_id, duration, pct_from, pct_to)
         if code != 0 or not dest.exists() or dest.stat().st_size == 0:
             raise RuntimeError("No se pudo comprimir el vídeo (ffmpeg falló).")
         if dest.stat().st_size <= target_bytes:
             return
 
-        # Se pasó del objetivo: bajar el bitrate y reintentar una sola vez.
-        factor = (target_bytes / dest.stat().st_size) * 0.94
-        new_kbps = max(60.0, video_kbps * factor)
-        if new_kbps >= video_kbps - 5:
-            logger.info("Compresión %s: no se puede bajar más sin perder calidad", job_id)
-            return  # ya estamos en el mínimo razonable
-        video_kbps = new_kbps
+        # Se pasó del objetivo: bajar el bitrate y reintentar.
+        factor = (target_bytes / dest.stat().st_size) * 0.96
+        nuevo = max(_MIN_VIDEO_KBPS, video_kbps * factor)
         dest.unlink(missing_ok=True)
+        if attempt == _MAX_INTENTOS - 1 or nuevo >= video_kbps - 5:
+            break
+        video_kbps = nuevo
+
+    # No se cumplió el objetivo: se borra el intento para no entregar un archivo
+    # que no cabe donde el usuario lo va a enviar.
+    destino = _mb(target_bytes)
+    raise RuntimeError(
+        f"No se puede dejar en {destino} MB sin una calidad inservible: el vídeo es "
+        "demasiado largo o la resolución muy alta. Prueba un tamaño mayor, una "
+        "resolución menor o un vídeo más corto (o elige «Priorizar calidad»)."
+    )
 
 
 def _run_compress_job(
@@ -176,7 +240,7 @@ def _run_compress_job(
             raise RuntimeError("No se generó el archivo comprimido.")
 
         base = sanitize_filename(base_name.rsplit(".", 1)[0] or "video")
-        nombre = f"{base} ({int(target_mb)}MB).mp4"
+        nombre = f"{base} ({_mb(target_bytes)}MB).mp4"
         compressions.update(
             job_id,
             status="finished",

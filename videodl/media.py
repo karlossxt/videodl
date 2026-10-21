@@ -9,6 +9,8 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 
+import yt_dlp
+
 from . import errors
 from .config import (
     FFMPEG_AVAILABLE,
@@ -198,6 +200,37 @@ def build_opts(
     return opts
 
 
+# Fallo puntual de algunas webs (Dailymotion desde una IP de servidor): la
+# primera extracción devuelve 0 formatos y el siguiente intento sí responde.
+_FORMATOS_VACIOS = "no video formats found"
+
+
+def extract_with_retry(
+    url: str, opts: dict, *, download: bool
+) -> tuple[dict, str | None]:
+    """Extrae la información (y descarga) reintentando si no llegan formatos.
+
+    Solo se reintenta ese fallo concreto: si la web pide sesión, bloquea la IP o
+    el vídeo no existe, repetir no cambia nada y solo hace esperar de más.
+    """
+    intentos = 2 if download else 3
+    ultimo: Exception | None = None
+    for intento in range(1, intentos + 1):
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(url, download=download)
+                return (info, ydl.prepare_filename(info)) if download else (info, None)
+        except yt_dlp.utils.DownloadError as exc:
+            ultimo = exc
+            if _FORMATOS_VACIOS not in str(exc).lower() or intento == intentos:
+                raise
+            logger.warning(
+                "Sin formatos en %s (intento %s/%s); reintentando", url, intento, intentos
+            )
+    assert ultimo is not None
+    raise ultimo
+
+
 def resolve_output(tmpdir: Path, filename: str) -> Path | None:
     """Devuelve el archivo final generado (el post-procesado puede cambiar la extensión).
 
@@ -281,6 +314,10 @@ def ffprobe_meta(path: Path) -> dict:
         "height": height,
         "has_video": video is not None,
         "has_audio": audio is not None,
+        # Códecs: hacen falta para saber si se puede remultiplexar a MP4 sin
+        # recodificar (un VP9 «cabe» en MP4 pero no se reproduce en un móvil).
+        "vcodec": (video or {}).get("codec_name") or "",
+        "acodec": (audio or {}).get("codec_name") or "",
     }
 
 
