@@ -3,6 +3,40 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [2.3.0]
+
+Preparación del lanzamiento: YouTube y Reddit quedan **pendientes** (necesitan un
+proxy residencial de pago) y se revisan las herramientas que ya funcionan.
+
+### Añadido
+- La portada marca **YouTube y Reddit como «Próximamente»** y explica el motivo, en
+  vez de prometer plataformas que desde el servidor no descargan. Se añaden
+  **Dailymotion** y **Vimeo** a la lista de sitios compatibles (probados en producción).
+- Dailymotion: si la primera extracción devuelve 0 formatos (fallo puntual habitual
+  desde una IP de servidor), se **reintenta sola** antes de rendirse. También se
+  reintenta el análisis de la URL.
+- El botón de **solo audio** aparece en webs que únicamente ofrecen formatos
+  combinados (Dailymotion): el MP3 se extrae del MP4.
+
+### Corregido
+- **Compresor, vídeo vertical**: el tope de resolución se aplica al lado corto. Un
+  1080x1920 con «720p» salía en 406x720; ahora sale en 720x1280. Sin tope, conserva
+  su resolución (antes también se achicaba a 608x1080).
+- **Compresor, tamaño incumplido**: si el objetivo no cabía ni con la calidad mínima,
+  se devolvía un archivo **más grande del pedido** sin avisar. Ahora se reintenta con
+  un tramo de progreso propio y, si aun así no cabe, el trabajo termina con un error
+  claro que sugiere un tamaño mayor (nunca se entrega algo que no cabe en WhatsApp).
+- **Compresor, WebM/VP9**: si el archivo ya cabía se remultiplexaba a MP4 conservando
+  VP9/Opus, que WhatsApp, iOS y QuickTime no reproducen. Solo se copia sin recodificar
+  si es H.264 + AAC/MP3; el resto se convierte.
+- **Compresor**: la barra de progreso ya no retrocede de 98 % a 5 % cuando hace falta
+  una segunda pasada.
+- **Clips, formato «Original»**: los vídeos verticales se limitaban por la altura
+  (un 1080x1920 quedaba en 608x1080). Ahora se limita el lado corto y conserva la
+  resolución.
+- El tamaño personalizado del compresor usa el máximo que publica la API
+  (`max_target_mb`) en vez de un 200 fijo.
+
 ## [2.2.8]
 
 ### Corregido
