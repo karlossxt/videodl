@@ -9,10 +9,8 @@ venv/
 .env
 .env.*
 !.env.example
-cookies.txt
-*.cookies
 
-# Archivos temporales de descarga
+# Archivos temporales de procesado
 downloads/
 *.part
 

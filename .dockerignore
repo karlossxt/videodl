@@ -19,10 +19,8 @@ _ejemplo_gemini/
 .env
 .env.*
 !.env.example
-cookies.txt
-*.cookies
 
-# Temporales de descarga
+# Temporales de procesado
 downloads/
 *.part
 

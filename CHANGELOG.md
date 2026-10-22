@@ -3,6 +3,62 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [3.1.0] - 2026-10-22
+
+### Añadido
+- **Catálogo único de herramientas** en `videodl/catalog.py`: categorías, estado
+  (`available`/`soon`), iconos, descripciones y palabras clave. La portada, el
+  directorio y las herramientas relacionadas se generan desde ese registro.
+- **Nueva portada** con buscador instantáneo, filtros por categoría, herramientas
+  destacadas, catálogo completo y flujos relacionados. `/herramientas` reutiliza el
+  mismo catálogo y buscador.
+- **Modo claro opcional** con preferencia guardada, menú móvil accesible y navegación,
+  cabecera y pie compartidos entre todas las páginas.
+- **SEO técnico**: canonical y Open Graph por página, `sitemap.xml`, `robots.txt` y
+  variable `SITE_URL` (con `RENDER_EXTERNAL_URL` como respaldo en Render).
+- Espacios publicitarios preparados en HTML/CSS, ocultos y sin scripts de terceros.
+- Pruebas de catálogo, enlaces internos, búsqueda, navegación móvil, accesibilidad
+  básica, modo claro y SEO en `tests/test_site.py`.
+
+### Cambiado
+- Las herramientas no implementadas aparecen como **Próximamente**, sin enlace ni
+  página vacía.
+- `static/index.html` y `static/herramientas.html` se sustituyen por páginas generadas
+  desde el catálogo.
+- Los alias antiguos (`/comprimir`, `/clips-verticales`, `/clips-twitch-vertical`,
+  `/generador-enlace-whatsapp`) redirigen con **301** a su URL canónica.
+- Versión **3.1.0**.
+
+## [3.0.0]
+
+### Cambiado (ruptura deliberada)
+- **VideoDL deja de descargar vídeos de plataformas externas.** La app solo procesa
+  archivos aportados por el usuario: compresión, clips verticales y enlaces de
+  WhatsApp. Se retiran yt-dlp, el proveedor de PO tokens (bgutil), el runtime Deno,
+  las cookies, los proxies, la impersonación y la lista de plataformas pausadas.
+- El **recortador de clips** ya no acepta enlaces: solo archivos subidos. Se elimina
+  la pestaña «Pegar enlace» y el modo URL del backend.
+- La **portada** pasa a un directorio de herramientas; el formulario de descargas y su
+  JavaScript se eliminan. El rediseño completo queda para más adelante.
+- `/api/health` publica solo capacidades activas y límites públicos (sin cookies,
+  rutas ni diagnósticos de red).
+- Las rutas antiguas (`/api/info`, `/api/download`, `/api/jobs…`, `/api/subtitles`,
+  `/api/thumbnail`, `POST /api/clips`) responden **410 Gone**.
+- `README`, `.env.example`, `Dockerfile`, `requirements.txt` y `pyproject.toml`
+  actualizados a la nueva arquitectura. Versión **3.0.0**.
+
+### Añadido
+- Módulo `videodl/tasks.py` con el lanzador de trabajos en segundo plano, extraído del
+  antiguo `downloader.py` para evitar dependencias circulares.
+- Módulo `videodl/legacy.py` con las respuestas 410 de las rutas retiradas.
+- Pruebas de regresión de subida, compresión, clips y QR, y comprobaciones de que las
+  dependencias de descarga no vuelven al proyecto.
+
+### Corregido
+- Los errores genéricos del compresor y del recortador ya no exponen `str(exc)` al
+  cliente: solo se publican los mensajes controlados por la app.
+- Mojibake en `pyproject.toml` y `videodl/__init__.py`.
+
 ## [2.4.0]
 
 ### Añadido

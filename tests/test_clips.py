@@ -1,8 +1,12 @@
-"""Pruebas del reencuadre de clips (sin ffmpeg)."""
+"""Pruebas del reencuadre y la validación de clips (sin ffmpeg)."""
 
 from __future__ import annotations
 
-from videodl.clips import clip_filter
+import pytest
+from fastapi import HTTPException
+
+from videodl import clips
+from videodl.clips import clip_filter, clip_validate
 
 
 def test_vertical_recorta_y_escala():
@@ -40,3 +44,52 @@ def test_square():
     vf, w, h = clip_filter("square", "baja", 1920, 1080)
     assert (w, h) == (480, 480)
     assert vf and "crop=" in vf and "scale=480:480" in vf
+
+
+# ---------------------------------------------------------------------------
+# Validación de la entrada del recortador
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def _ffmpeg_disponible(monkeypatch):
+    monkeypatch.setattr(clips, "FFMPEG_AVAILABLE", True)
+    monkeypatch.setattr(clips, "FFPROBE_AVAILABLE", True)
+    monkeypatch.setattr(clips, "CLIP_MAX_SECONDS", 300)
+
+
+def test_clip_validate_acepta_valores_correctos(_ffmpeg_disponible):
+    clip_validate("vertical", "media", 0, 30)  # no lanza
+
+
+def test_clip_validate_rechaza_formato_desconocido(_ffmpeg_disponible):
+    with pytest.raises(HTTPException) as exc:
+        clip_validate("raro", "media", 0, 30)
+    assert exc.value.status_code == 400
+
+
+def test_clip_validate_rechaza_calidad_desconocida(_ffmpeg_disponible):
+    with pytest.raises(HTTPException) as exc:
+        clip_validate("vertical", "ultra", 0, 30)
+    assert exc.value.status_code == 400
+
+
+def test_clip_validate_exige_un_segundo_minimo(_ffmpeg_disponible):
+    with pytest.raises(HTTPException) as exc:
+        clip_validate("vertical", "media", 10, 10.5)
+    assert exc.value.status_code == 400
+
+
+def test_clip_validate_respeta_el_maximo(monkeypatch, _ffmpeg_disponible):
+    monkeypatch.setattr(clips, "CLIP_MAX_SECONDS", 10)
+    with pytest.raises(HTTPException) as exc:
+        clip_validate("vertical", "media", 0, 11)
+    assert exc.value.status_code == 400
+
+
+def test_clip_validate_avisa_si_falta_ffmpeg(monkeypatch):
+    monkeypatch.setattr(clips, "FFMPEG_AVAILABLE", False)
+    monkeypatch.setattr(clips, "FFPROBE_AVAILABLE", True)
+    with pytest.raises(HTTPException) as exc:
+        clip_validate("vertical", "media", 0, 30)
+    assert exc.value.status_code == 503

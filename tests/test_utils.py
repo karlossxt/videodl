@@ -2,7 +2,7 @@ from videodl.utils import (
     centered_crop,
     even,
     human_size,
-    parse_extractor_args,
+    public_error,
     sanitize_filename,
     time_tag,
 )
@@ -54,22 +54,11 @@ def test_centered_crop_stays_within_bounds():
         assert y + ch <= h
 
 
-def test_parse_extractor_args_cliente_con_lista():
-    assert parse_extractor_args("youtube:player_client=tv,web_safari") == {
-        "youtube": {"player_client": ["tv", "web_safari"]}
-    }
-
-
-def test_parse_extractor_args_varios_argumentos_y_extractores():
-    assert parse_extractor_args("youtube:player_client=tv;po_token=web+abc; vimeo:key=1") == {
-        "youtube": {"player_client": ["tv"], "po_token": ["web+abc"]},
-        "vimeo": {"key": ["1"]},
-    }
-
-
-def test_parse_extractor_args_vacio_o_invalido():
-    assert parse_extractor_args("") == {}
-    assert parse_extractor_args("   ") == {}
-    # Sin extractor o sin "=" no hay nada que aplicar.
-    assert parse_extractor_args("player_client=tv") == {}
-    assert parse_extractor_args("youtube:") == {}
+def test_public_error_publica_solo_errores_propios():
+    # Los mensajes controlados por la app sí se muestran.
+    assert public_error(RuntimeError("ffmpeg falló"), "Error") == "ffmpeg falló"
+    # Cualquier otro fallo se oculta tras el mensaje genérico.
+    assert public_error(OSError("C:\\privado\\archivo"), "Error") == "Error"
+    assert public_error(ValueError("interno"), "Error") == "Error"
+    # Un RuntimeError vacío tampoco se publica.
+    assert public_error(RuntimeError("   "), "Error") == "Error"

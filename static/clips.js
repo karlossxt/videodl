@@ -1,4 +1,4 @@
-/* Recortador de clips verticales (TikTok / Reels / Shorts) para Twitch, Kick, YouTube…
+/* Recortador de clips verticales a partir de un archivo propio.
    Utilidades compartidas en common.js (window.VD). */
 
 const {
@@ -19,12 +19,9 @@ const {
 let maxUploadMb = 200;
 let maxSeconds = 300;
 
-let mode = "url";          // url | file
-let info = null;           // metadatos devueltos por /api/info
-let posterUrl = null;      // imagen para la vista previa (miniatura o fotograma)
-let localUrl = null;       // objectURL del archivo local
 let selectedFile = null;
-let duration = 0;          // duración total en segundos
+let localUrl = null;        // objectURL del archivo local
+let duration = 0;           // duración total en segundos
 let start = 0;
 let end = 30;
 let aspect = "vertical";
@@ -32,7 +29,6 @@ let quality = "media";
 
 let jobId = null;
 let pollRunId = 0;
-let jobStartedAt = 0;
 let outUrl = null;
 let outName = "clip-vertical.mp4";
 
@@ -58,6 +54,7 @@ $("error-close").addEventListener("click", clearError);
       maxUploadMb = cfg.max_upload_mb;
       $("limit-hint").textContent = `Máximo ${maxUploadMb} MB por archivo`;
       $("limit-hint-2").textContent = `${maxUploadMb} MB`;
+      $("faq-upload").textContent = String(maxUploadMb);
     }
     if (cfg.max_seconds) {
       maxSeconds = cfg.max_seconds;
@@ -70,88 +67,8 @@ $("error-close").addEventListener("click", clearError);
 })();
 
 // ---------------------------------------------------------------------------
-// Paso 1 · origen (enlace o archivo)
+// Paso 1 · archivo
 // ---------------------------------------------------------------------------
-
-const srcTabs = Array.from(document.querySelectorAll(".clip-src-tabs .tab"));
-
-function selectSrcTab(tab) {
-  for (const t of srcTabs) {
-    const active = t === tab;
-    t.classList.toggle("active", active);
-    t.setAttribute("aria-selected", String(active));
-    t.setAttribute("tabindex", active ? "0" : "-1");
-  }
-  mode = tab.dataset.src;
-  $("src-url-panel").classList.toggle("hidden", mode !== "url");
-  $("src-file-panel").classList.toggle("hidden", mode !== "file");
-  clearError();
-  resetSource();
-}
-
-srcTabs.forEach((tab, index) => {
-  tab.addEventListener("click", () => selectSrcTab(tab));
-  tab.addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    e.preventDefault();
-    const dir = e.key === "ArrowRight" ? 1 : -1;
-    const next = srcTabs[(index + dir + srcTabs.length) % srcTabs.length];
-    next.focus();
-    selectSrcTab(next);
-  });
-});
-
-function resetSource() {
-  info = null;
-  duration = 0;
-  selectedFile = null;
-  $("info-card").classList.add("hidden");
-  $("clip-btn").disabled = true;
-  $("clip-hint").textContent = "Elige primero un vídeo.";
-}
-
-$("clip-url-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const url = $("clip-url").value.trim();
-  if (!url) return;
-
-  clearError();
-  resetResult();
-  const btn = $("clip-analyze");
-  btn.disabled = true;
-  btn.textContent = "Analizando…";
-
-  try {
-    const res = await fetchWithTimeout(
-      "/api/info",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      },
-      45000
-    );
-    if (!res.ok) throw await errorFromResponse(res, "No se pudo analizar el enlace.");
-    const data = await res.json();
-
-    info = data;
-    duration = Number(data.duration) || 0;
-    if (!duration) throw new Error("Este vídeo es un directo sin duración conocida: usa un VOD o un clip.");
-
-    showInfo(
-      data.title || "Vídeo sin título",
-      [data.uploader, data.extractor, fmtClock(duration)].filter(Boolean).join(" · "),
-      data.thumbnail || null
-    );
-    setupTrim(duration, Math.min(30, duration));
-    showToast("Enlace analizado");
-  } catch (err) {
-    showError(err.message || "No se pudo analizar el enlace.");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Analizar →";
-  }
-});
 
 const dropzone = $("clip-dropzone");
 const fileInput = $("clip-file-input");
@@ -224,7 +141,6 @@ function showInfo(title, meta, image) {
   $("info-title").textContent = title;
   $("info-meta").textContent = meta;
 
-  posterUrl = image;
   const bg = $("pv-bg");
   const fg = $("pv-fg");
   if (image) {
@@ -396,50 +312,22 @@ $("clip-btn").addEventListener("click", () => {
   clearError();
   resetResult();
 
+  if (!selectedFile) return showError("Elige primero un vídeo.");
+
   const len = end - start;
   if (len < 1) return showError("El clip debe durar al menos 1 segundo.");
   if (len > maxSeconds) return showError(`El clip no puede durar más de ${fmtClock(maxSeconds)}.`);
 
   $("progress").classList.remove("hidden");
   $("pr-fill").style.width = "0%";
-  $("pr-fill").classList.remove("indeterminate");
   $("pr-track").setAttribute("aria-valuenow", "0");
   $("pr-percent").textContent = "0%";
-  $("pr-status").textContent = mode === "file" ? "Subiendo el vídeo…" : "Analizando el enlace…";
-  $("pr-detail").textContent = mode === "file" ? formatBytes(selectedFile.size) : "Preparando la descarga";
+  $("pr-status").textContent = "Subiendo el vídeo…";
+  $("pr-detail").textContent = formatBytes(selectedFile.size);
   $("clip-btn").disabled = true;
-  jobStartedAt = Date.now();
 
-  if (mode === "file") uploadClip();
-  else createClipJob();
+  uploadClip();
 });
-
-async function createClipJob() {
-  try {
-    const res = await fetchWithTimeout(
-      "/api/clips",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: $("clip-url").value.trim(),
-          start: Number(start.toFixed(2)),
-          end: Number(end.toFixed(2)),
-          aspect,
-          quality,
-          title: info?.title || null,
-        }),
-      },
-      60000
-    );
-    if (!res.ok) throw await errorFromResponse(res, "No se pudo iniciar el clip.");
-    const data = await res.json();
-    jobId = data.id;
-    pollJob();
-  } catch (err) {
-    failClip(err.message || "No se pudo iniciar el clip.");
-  }
-}
 
 function uploadClip() {
   const form = new FormData();
@@ -530,36 +418,13 @@ async function pollJob() {
 
 function updateClipProgress(job) {
   const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
-  const fill = $("pr-fill");
   $("pr-status").textContent = job.message || "Creando el clip…";
+  $("pr-fill").style.width = `${pct}%`;
+  $("pr-percent").textContent = `${pct.toFixed(0)}%`;
+  $("pr-track").setAttribute("aria-valuenow", String(Math.round(pct)));
 
-  // Cuando yt-dlp descarga un fragmento de un directo no siempre puede informar
-  // del avance: en ese caso se muestra una barra animada con el tiempo transcurrido.
-  if (job.status === "downloading" && pct < 0.5) {
-    if (!fill.classList.contains("indeterminate")) {
-      fill.classList.add("indeterminate");
-      fill.style.width = "";
-    }
-    const elapsed = Math.max(0, Math.round((Date.now() - jobStartedAt) / 1000));
-    $("pr-percent").textContent = "…";
-    $("pr-detail").textContent =
-      `${fmtClock(elapsed)} descargando el fragmento` +
-      (elapsed > 20 ? " · en directos largos esta parte tarda un poco" : "");
-  } else {
-    fill.classList.remove("indeterminate");
-    fill.style.width = `${pct}%`;
-    $("pr-percent").textContent = `${pct.toFixed(0)}%`;
-    $("pr-track").setAttribute("aria-valuenow", String(Math.round(pct)));
-
-    if (job.status === "downloading") {
-      const parts = [];
-      if (job.downloaded) parts.push(`${formatBytes(job.downloaded)}${job.total ? ` / ${formatBytes(job.total)}` : ""}`);
-      if (job.speed) parts.push(`${formatBytes(job.speed)}/s`);
-      if (job.eta) parts.push(`faltan ${fmtClock(job.eta)}`);
-      $("pr-detail").textContent = parts.join(" · ") || "Descargando solo el fragmento…";
-    } else if (job.status === "transforming") {
-      $("pr-detail").textContent = "Recodificando en vertical · esto es lo que más tarda";
-    }
+  if (job.status === "transforming") {
+    $("pr-detail").textContent = "Recodificando el clip · esto es lo que más tarda";
   }
 }
 
@@ -618,14 +483,15 @@ $("download-btn").addEventListener("click", () => {
 
 $("again-btn").addEventListener("click", () => {
   resetResult();
-  if (mode === "file") {
-    selectedFile = null;
-    fileInput.value = "";
-    resetSource();
-    if (localUrl) {
-      URL.revokeObjectURL(localUrl);
-      localUrl = null;
-    }
+  selectedFile = null;
+  fileInput.value = "";
+  duration = 0;
+  $("info-card").classList.add("hidden");
+  $("clip-btn").disabled = true;
+  $("clip-hint").textContent = "Elige primero un vídeo.";
+  if (localUrl) {
+    URL.revokeObjectURL(localUrl);
+    localUrl = null;
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 });

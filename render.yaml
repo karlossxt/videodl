@@ -8,7 +8,9 @@ services:
     plan: free
     healthCheckPath: /api/health
     autoDeployTrigger: commit
-    # Render inyecta PORT automáticamente; el Dockerfile la usa.
+    # Render inyecta PORT y RENDER_EXTERNAL_URL automáticamente. La URL pública
+    # se usa para canonical, Open Graph, sitemap.xml y robots.txt; si quieres
+    # forzar otro dominio, define SITE_URL (sin barra final).
     # Estas variables son opcionales (sync: false = se editan en el panel).
     envVars:
       - key: LOG_LEVEL

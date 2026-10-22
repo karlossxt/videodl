@@ -1,27 +1,14 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recortar clip vertical de Twitch, Kick o X para TikTok — VideoDL</title>
-  <meta name="description" content="Pega un directo o un clip de Twitch, Kick o X (o sube tu propio archivo), elige el momento y descarga esos segundos en vertical 9:16 listos para TikTok, Reels y Shorts. Gratis, sin marca de agua y sin registro." />
-  <meta name="theme-color" content="#0b0f19" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂️</text></svg>" />
+  <!-- HEAD -->
 </head>
 <body>
 
   <!-- ============ NAV ============ -->
-  <nav class="toolnav" aria-label="Navegación principal">
-    <a class="toolnav-brand" href="/">⬇ Video<span class="accent">DL</span></a>
-    <div class="toolnav-links">
-      <a href="/">Descargar vídeos</a>
-      <a href="/comprimir-video-whatsapp">Comprimir</a>
-      <a href="/recortar-clip-vertical" class="active" aria-current="page">Clips verticales</a>
-      <a href="/link-whatsapp">Enlace de WhatsApp</a>
-      <a href="/herramientas">Herramientas</a>
-    </div>
-  </nav>
+  <!-- NAV -->
 
   <!-- ============ HERO ============ -->
   <header class="hero">
@@ -29,14 +16,14 @@
     <div class="hero-inner">
       <h1 class="hero-title">Recortar un clip vertical para TikTok, Reels o Shorts</h1>
       <p class="hero-sub">
-        Pega el enlace de Twitch, Kick, X o de cualquier otra plataforma, elige
-        los segundos que quieres y descárgalos en vertical (9:16) sin marca de agua.
-        También puedes subir tu propio archivo.
+        Sube tu propio vídeo, elige los segundos que quieres y descárgalos en
+        vertical (9:16) o cuadrado, sin marca de agua. Todo se procesa en el
+        servidor a partir del archivo que subes.
       </p>
     </div>
   </header>
 
-  <main class="main">
+  <main id="main" class="main">
 
     <div id="error-box" class="error-box hidden" role="alert">
       <span id="error-text"></span>
@@ -49,35 +36,7 @@
       <span class="muted-small" id="limit-hint"></span>
     </div>
 
-    <div class="tabs clip-src-tabs" role="tablist" aria-label="Origen del vídeo">
-      <button type="button" class="tab active" data-src="url" role="tab" id="src-tab-url" aria-selected="true" aria-controls="src-url-panel">🔗 Pegar enlace</button>
-      <button type="button" class="tab" data-src="file" role="tab" id="src-tab-file" aria-selected="false" aria-controls="src-file-panel" tabindex="-1">📁 Subir archivo</button>
-    </div>
-
-    <!-- Panel: enlace -->
-    <div id="src-url-panel" class="clip-panel" role="tabpanel" aria-labelledby="src-tab-url">
-      <form id="clip-url-form" class="searchbar" autocomplete="off">
-        <span class="search-icon" aria-hidden="true">🔗</span>
-        <label class="sr-only" for="clip-url">Enlace del vídeo</label>
-        <input
-          type="url"
-          id="clip-url"
-          inputmode="url"
-          placeholder="https://www.twitch.tv/videos/… o https://clips.twitch.tv/…"
-          spellcheck="false"
-        />
-        <button type="submit" id="clip-analyze" class="primary-btn">Analizar →</button>
-      </form>
-      <p class="clip-hint-line">
-        Funciona con directos guardados (VOD) y clips de Twitch y Kick, y también con
-        TikTok, Instagram, X, Facebook, Dailymotion… El vídeo se procesa en el servidor
-        y solo se descargan los segundos que pidas. Si el vídeo es de YouTube o Reddit,
-        descárgalo primero y súbelo como archivo.
-      </p>
-    </div>
-
-    <!-- Panel: archivo -->
-    <div id="src-file-panel" class="clip-panel hidden" role="tabpanel" aria-labelledby="src-tab-file">
+    <div class="clip-panel">
       <div id="clip-dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un vídeo">
         <input type="file" id="clip-file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
         <div class="dropzone-icon" aria-hidden="true">🎬</div>
@@ -237,9 +196,9 @@
 
     <!-- ============ CONTENIDO SEO ============ -->
     <section class="seo-block">
-      <h2>¿Cómo recortar un clip vertical de Twitch para TikTok?</h2>
+      <h2>¿Cómo recortar un clip vertical para TikTok?</h2>
       <ol class="steps">
-        <li><strong>Pega el enlace</strong> del directo, del vídeo o del clip y pulsa «Analizar».</li>
+        <li><strong>Sube tu vídeo</strong> arrastrándolo o buscándolo en tu equipo.</li>
         <li><strong>Elige el momento</strong>: mueve el inicio y el fin, o usa los atajos de 30 segundos.</li>
         <li><strong>Elige el formato</strong>: vertical 9:16 con recorte centrado o con fondo desenfocado.</li>
         <li><strong>Pulsa «Crear el clip»</strong>, espera unos segundos y descárgalo listo para subir.</li>
@@ -270,10 +229,9 @@
 
       <h2>Preguntas frecuentes</h2>
       <details class="faq">
-        <summary>¿Sirve para directos largos de Twitch o Kick?</summary>
-        <p>Sí. Al pegar un VOD, el servidor analiza la duración total y solo descarga los
-        segundos que elijas, no la transmisión completa. Así un clip de 4 horas de directo
-        tarda lo mismo que uno de 10 minutos.</p>
+        <summary>¿De qué tamaño puede ser el vídeo?</summary>
+        <p>Hasta <span id="faq-upload">200</span> MB por archivo. Se admiten MP4, MOV, MKV,
+        WEBM, AVI y otros formatos habituales; el servidor se encarga de convertirlo a MP4.</p>
       </details>
       <details class="faq">
         <summary>¿Cuánto puede durar el clip?</summary>
@@ -285,37 +243,23 @@
         <p>No. La salida es un MP4 limpio, sin marcas de agua, sin registro y sin límite de clips.</p>
       </details>
       <details class="faq">
-        <summary>¿Qué pasa con el vídeo que proceso?</summary>
+        <summary>¿Qué pasa con el vídeo que subo?</summary>
         <p>Se procesa en el servidor y se borra automáticamente en cuanto lo descargas
         (y en todo caso tras una hora). No se comparte con terceros.</p>
       </details>
       <details class="faq">
-        <summary>¿Puedo hacer lo mismo con un vídeo de mi móvil?</summary>
-        <p>Sí. Cambia a la pestaña «Subir archivo», arrastra el vídeo y recórtalo igual.
-        Es útil para pasar grabaciones horizontales a vertical antes de publicarlas.</p>
+        <summary>¿Puedo recortar una grabación de mi móvil?</summary>
+        <p>Sí. Sube la grabación y recórtala igual. Es útil para pasar vídeos horizontales
+        a vertical antes de publicarlos, o para quedarte solo con el momento que te interesa.</p>
       </details>
     </section>
 
-    <div class="tool-cross">
-      <p>¿El clip te pesa demasiado para enviarlo por WhatsApp? 🗜️</p>
-      <a class="primary-btn" href="/comprimir-video-whatsapp">Comprimir un vídeo →</a>
-    </div>
+    <!-- RELATED -->
   </main>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <footer class="footer">
-    <p>✂️ Recortador de clips verticales para TikTok, Reels y Shorts · VideoDL</p>
-    <p>Recorta y publica solo contenido que te pertenezca o que puedas usar libremente.</p>
-    <nav class="footer-links" aria-label="Enlaces legales">
-      <a href="/legal#aviso-legal">Aviso legal</a>
-      <a href="/legal#privacidad">Privacidad</a>
-      <a href="/legal#terminos">Términos</a>
-      <a href="/legal#contacto">Contacto</a>
-      <!-- Ko-fi: sustituye TU_USUARIO y elimina hidden cuando tengas cuenta. -->
-      <a class="footer-kofi" href="https://ko-fi.com/TU_USUARIO" hidden>☕ Invítame a un café</a>
-    </nav>
-  </footer>
+  <!-- FOOTER -->
 
   <script src="common.js"></script>
   <script src="clips.js"></script>

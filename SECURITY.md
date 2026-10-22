@@ -17,17 +17,18 @@ Se intentará responder en un plazo razonable.
 
 ## Superficie de riesgo
 
-VideoDL acepta URLs y archivos del usuario y ejecuta `yt-dlp` y `ffmpeg` en el
-servidor. Las defensas incluyen:
+VideoDL Tools acepta únicamente archivos subidos por el usuario y ejecuta
+`ffmpeg`/`ffprobe` en el servidor. No hay descargas de plataformas externas, URLs
+de entrada, proxies ni cookies de sesión. Las defensas incluyen:
 
-- **Anti-SSRF**: las URLs se comprueban antes de usarse y se rechazan las
-  direcciones internas/privadas (incluidas las redirecciones de la miniatura).
-- **Límite de subida** en el compresor y los clips (`MAX_UPLOAD_MB`).
+- **Límite de subida** en el compresor y los clips (`MAX_UPLOAD_MB`) y validación
+  del tipo de archivo antes de procesarlo.
 - **Rate limiting** por IP (`RATE_LIMIT_PER_MINUTE`) y límite de trabajos
   simultáneos (`MAX_CONCURRENT_JOBS`).
 - **Cabeceras de seguridad** y CSP configurables.
 - **Temporales** aislados por trabajo y borrados al terminar o al vencer el TTL.
-- Las cookies de sesión (si se configuran) se guardan con permisos restringidos.
+- **Tiempo máximo de ffmpeg** configurable con `FFMPEG_TIMEOUT_SECONDS`.
+- El tema claro/oscuro se guarda solo en `localStorage`; no se envía al servidor.
 
-Nunca subas a un repositorio público un `cookies.txt` ni un `.env` con secretos:
-ya están en `.gitignore`.
+Nunca subas a un repositorio público un `.env` con secretos: ya está en
+`.gitignore`.

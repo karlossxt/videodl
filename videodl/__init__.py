@@ -1,17 +1,21 @@
-"""VideoDL: suite de herramientas de vÃ­deo (descarga, compresiÃ³n y clips).
+"""VideoDL: suite de herramientas de vídeo sobre archivos propios.
 
-El paquete estÃ¡ dividido en mÃ³dulos pequeÃ±os y con una Ãºnica responsabilidad:
+El paquete está dividido en módulos pequeños y con una única responsabilidad:
 
-  config    -> variables de entorno validadas, detecciÃ³n de ffmpeg y cookies
-  utils     -> utilidades puras (nombres de archivo, tamaÃ±os, limpieza)
-  errors    -> traducciÃ³n de errores tÃ©cnicos a mensajes para el usuario
-  security  -> validaciÃ³n de URLs, protecciÃ³n SSRF, rate limit y concurrencia
-  jobs      -> almacÃ©n genÃ©rico de trabajos en memoria con TTL
-  media     -> envoltorios de ffmpeg/ffprobe y opciones de yt-dlp
-  downloader, compressor, clips -> routers de la API
-  app       -> creaciÃ³n de la aplicaciÃ³n FastAPI
+  config    -> variables de entorno validadas y detección de ffmpeg
+  utils     -> utilidades puras (nombres de archivo, tamaños, limpieza)
+  security  -> rate limit y límite de trabajos simultáneos
+  jobs      -> almacén genérico de trabajos en memoria con TTL
+  media     -> envoltorios de ffmpeg/ffprobe
+  tasks     -> lanzador de trabajos en segundo plano
+  catalog   -> registro único de herramientas y categorías
+  views     -> navegación, tarjetas, portada, directorio y SEO
+  pages     -> rutas HTML, alias canónicos, sitemap y robots
+  compressor, clips, whatsapp -> routers de la API
+  legacy    -> rutas retiradas del antiguo descargador (410 Gone)
+  app       -> creación de la aplicación FastAPI
 """
 
-__version__ = "2.4.0"
+__version__ = "3.1.0"
 
 __all__ = ["__version__"]

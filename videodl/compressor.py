@@ -18,11 +18,11 @@ from .config import (
     X264_PRESET,
 )
 from .constants import ALLOWED_HEIGHTS, COMPRESS_PRESETS
-from .downloader import spawn_job
 from .media import Cancelled, ffprobe_meta, run_ffmpeg
 from .stores import compressions
+from .tasks import spawn_job
 from .uploads import save_video_upload
-from .utils import rmtree_robust, sanitize_filename
+from .utils import public_error, rmtree_robust, sanitize_filename
 
 logger = logging.getLogger("videodl.compressor")
 
@@ -277,7 +277,13 @@ def _run_compress_job(
     except Exception as exc:  # noqa: BLE001
         logger.exception("Error al comprimir %s", job_id)
         rmtree_robust(tmpdir)
-        compressions.update(job_id, status="error", error=str(exc), message="Error", tmpdir=None)
+        compressions.update(
+            job_id,
+            status="error",
+            error=public_error(exc, "No se pudo comprimir el vídeo."),
+            message="Error",
+            tmpdir=None,
+        )
 
 
 @router.get("/api/compress/presets")
@@ -329,7 +335,13 @@ async def create_compress_job(
         path=None,
         tmpdir=str(src.parent),
     )
-    spawn_job(_run_compress_job, job_id, src, src.name, target_mb, max_height, quality_mode)
+    try:
+        spawn_job(_run_compress_job, job_id, src, src.name, target_mb, max_height, quality_mode)
+    except HTTPException:
+        # Sin hueco para el trabajo: no dejar ni el registro ni la carpeta temporal.
+        compressions.delete(job_id)
+        rmtree_robust(src.parent)
+        raise
     return {"id": job_id}
 
 

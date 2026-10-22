@@ -1,4 +1,4 @@
-"""Envoltorios de ffmpeg/ffprobe y construcción de opciones de yt-dlp."""
+"""Envoltorios de ffmpeg y ffprobe para los archivos del usuario."""
 
 from __future__ import annotations
 
@@ -6,278 +6,15 @@ import json
 import logging
 import subprocess
 import threading
-import time
-from collections.abc import Callable
 from pathlib import Path
-from urllib.parse import urlsplit
 
-import yt_dlp
-
-from . import errors
-from .config import (
-    FFMPEG_AVAILABLE,
-    FFMPEG_TIMEOUT_SECONDS,
-    FFPROBE,
-    FFPROBE_AVAILABLE,
-    YTDLP_EXTRACTOR_ARGS,
-    YTDLP_PROXY,
-    YTDLP_SOCKET_TIMEOUT,
-    cookies,
-    refresh_cookies,
-)
-from .jobs import JobStore
-from .pot import configure_pot_provider
+from .config import FFMPEG_TIMEOUT_SECONDS, FFPROBE
 
 logger = logging.getLogger("videodl.media")
-
-# Se ajusta el proveedor de PO tokens antes de cualquier extracción (si está
-# instalado; si no, no hace nada). Sin él YouTube contesta con su comprobación
-# anti-bot desde una IP de nube, por muchas cookies que se manden.
-configure_pot_provider()
-
-# Sufijos de archivos incompletos que nunca deben servirse como resultado final.
-_TEMP_SUFFIXES = {".part", ".ytdl", ".temp", ".tmp"}
-
-ProgressHook = Callable[[dict], None]
 
 
 class Cancelled(Exception):
     """Se lanza cuando el usuario cancela un proceso en curso."""
-
-
-# ---------------------------------------------------------------------------
-# yt-dlp
-# ---------------------------------------------------------------------------
-
-
-def format_selector(mode: str) -> str:
-    """Construye la cadena de formato de yt-dlp para el modo elegido."""
-    if mode == "audio":
-        return "bestaudio/best"
-    if mode == "best":
-        return (
-            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
-            if FFMPEG_AVAILABLE
-            else "best[ext=mp4]/best"
-        )
-    height = mode.split("-", 1)[1]
-    # En vídeo vertical (TikTok, Reels, Shorts) yt-dlp da la altura como el lado
-    # largo (un 1080x1920 tiene height=1920), así que "height<=720" no encaja con
-    # ningún formato y se acababa descargando el mejor. Se prueban también los
-    # formatos cuyo ancho cabe en el límite; para vídeo horizontal no cambia nada
-    # porque las primeras alternativas ya resuelven.
-    branches: list[str] = []
-    for dim in ("height", "width"):
-        if FFMPEG_AVAILABLE:
-            branches += [
-                f"bestvideo[{dim}<={height}][ext=mp4]+bestaudio[ext=m4a]",
-                f"bestvideo[{dim}<={height}]+bestaudio",
-                f"best[{dim}<={height}][ext=mp4]",
-                f"best[{dim}<={height}]",
-            ]
-        else:
-            branches += [
-                f"best[{dim}<={height}][ext=mp4]",
-                f"best[{dim}<={height}]",
-            ]
-    return "/".join([*branches, "best"])
-
-
-class _YtdlpLogger:
-    """Reenvía los mensajes de yt-dlp al registro de la app.
-
-    yt-dlp se ejecuta en modo silencioso y así se perdían avisos que explican los
-    fallos: clientes descartados por no admitir cookies, proveedores de PO tokens
-    rechazados, «esto es un experimento»… Los avisos y los errores salen con su
-    nivel (visibles con ``LOG_LEVEL=INFO``) y el resto a ``DEBUG`` para poder
-    seguir una extracción entera con ``LOG_LEVEL=DEBUG``.
-    """
-
-    _log = logging.getLogger("videodl.ytdlp")
-
-    def debug(self, message: str) -> None:
-        self._log.debug("%s", message)
-
-    def info(self, message: str) -> None:
-        self._log.info("%s", message)
-
-    def warning(self, message: str) -> None:
-        # YouTube rota las cookies de la sesión exportada; yt-dlp lo avisa por
-        # aquí y conviene recordarlo para poder explicarlo si luego falla.
-        errors.aviso_cookies_rotadas(message)
-        self._log.warning("%s", message)
-
-    def error(self, message: str) -> None:
-        self._log.error("%s", message)
-
-
-def connection_opts() -> dict:
-    """Ajustes de conexión válidos para cualquier llamada a yt-dlp.
-
-    Cookies, proxy y cliente de extracción: cuando la plataforma bloquea la IP
-    del servidor (YouTube en la nube), sin esto ni el análisis ni la descarga
-    funcionan. El ``cookiefile`` apunta siempre a una copia escribible porque
-    yt-dlp reescribe el fichero al cerrar. También se le pasa un ``logger``: sin
-    él, yt-dlp se traga sus propios avisos y depurar un bloqueo es a ciegas.
-    """
-    opts: dict = {"logger": _YtdlpLogger()}
-    # Antes de cada extracción se rehace la copia de cookies: yt-dlp reescribe el
-    # fichero al cerrar y, si YouTube rota la sesión, guarda el tarro ya sin ella
-    # (la copia se degradaba sola y las siguientes descargas iban sin sesión).
-    refresh_cookies()
-    if YTDLP_SOCKET_TIMEOUT > 0:
-        opts["socket_timeout"] = YTDLP_SOCKET_TIMEOUT
-    if YTDLP_PROXY:
-        opts["proxy"] = YTDLP_PROXY
-    if YTDLP_EXTRACTOR_ARGS:
-        opts["extractor_args"] = YTDLP_EXTRACTOR_ARGS
-    if cookies.file:
-        opts["cookiefile"] = cookies.file
-    return opts
-
-
-def info_opts() -> dict:
-    """Opciones para analizar una URL (o bajar subtítulos) sin descargar vídeo.
-
-    Incluye las cookies: el análisis pasa por la misma puerta que la descarga, así
-    que si el vídeo exige sesión también hay que mandarlas al leerlo.
-    """
-    return {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "skip_download": True,
-        **connection_opts(),
-    }
-
-
-def build_opts(
-    mode: str,
-    tmpdir: Path,
-    progress_hook: ProgressHook | None = None,
-    start: float | None = None,
-    end: float | None = None,
-    force_keyframes: bool = True,
-) -> dict:
-    """Opciones de yt-dlp comunes a la descarga directa y a los trabajos."""
-    opts: dict = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "outtmpl": str(tmpdir / "media.%(ext)s"),
-        "format": format_selector(mode),
-        "merge_output_format": None if mode == "audio" else "mp4",
-        "noprogress": True,
-        "restrictfilenames": False,
-        "retries": 3,
-        # Solo audio -> convertir a mp3 si hay ffmpeg
-        "postprocessors": (
-            [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }
-            ]
-            if mode == "audio" and FFMPEG_AVAILABLE
-            else []
-        ),
-    }
-
-    # Cookies, proxy y cliente de extracción: ver connection_opts().
-    opts.update(connection_opts())
-
-    # Recorte de un fragmento (requiere ffmpeg para cortar con precisión)
-    if FFMPEG_AVAILABLE and (start is not None or end is not None):
-        opts["download_ranges"] = lambda info_dict, ydl: [
-            {"start_time": start or 0, "end_time": end}
-        ]
-        # force_keyframes_at_cuts recodifica el fragmento al vuelo para que el corte
-        # caiga exactamente en el segundo pedido. Es muy caro en servidores con poca
-        # CPU, así que los clips lo desactivan (cortan después, con ffmpeg).
-        opts["force_keyframes_at_cuts"] = bool(force_keyframes)
-
-    if progress_hook is not None:
-        opts["progress_hooks"] = [progress_hook]
-    return opts
-
-
-# Fallo puntual de algunas webs (Dailymotion desde una IP de servidor): la
-# primera extracción devuelve 0 formatos y el siguiente intento sí responde.
-_FORMATOS_VACIOS = "no video formats found"
-
-# Dailymotion es la que más falla de forma puntual: a veces tarda unos segundos
-# en publicar el manifest. Se le dan más oportunidades y un respiro entre ellas;
-# el resto de webs reintenta una sola vez por si fue un corte momentáneo.
-_FLAKY_HOSTS = ("dailymotion.com", "dai.ly")
-_FLAKY_DELAYS = (2.0, 4.0, 6.0)
-_OTHER_DELAYS = (1.0,)
-
-
-def _retry_plan(url: str, download: bool) -> tuple[int, tuple[float, ...]]:
-    """Intentos y esperas entre ellos según la web y el tipo de petición."""
-    host = (urlsplit(url).hostname or "").lower()
-    flaky = any(host == name or host.endswith(f".{name}") for name in _FLAKY_HOSTS)
-    if flaky:
-        return (3 if download else 4), _FLAKY_DELAYS
-    return (2 if download else 3), _OTHER_DELAYS
-
-
-def extract_with_retry(
-    url: str, opts: dict, *, download: bool
-) -> tuple[dict, str | None]:
-    """Extrae la información (y descarga) reintentando si no llegan formatos.
-
-    Solo se reintenta ese fallo concreto: si la web pide sesión, bloquea la IP o
-    el vídeo no existe, repetir no cambia nada y solo hace esperar de más.
-    """
-    intentos, esperas = _retry_plan(url, download)
-    ultimo: Exception | None = None
-    for intento in range(1, intentos + 1):
-        try:
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(url, download=download)
-                return (info, ydl.prepare_filename(info)) if download else (info, None)
-        except yt_dlp.utils.DownloadError as exc:
-            ultimo = exc
-            if _FORMATOS_VACIOS not in str(exc).lower() or intento == intentos:
-                raise
-            espera = esperas[min(intento - 1, len(esperas) - 1)]
-            logger.warning(
-                "Sin formatos en %s (intento %s/%s); reintentando en %.1fs",
-                url, intento, intentos, espera,
-            )
-            time.sleep(espera)
-    assert ultimo is not None
-    raise ultimo
-
-
-def resolve_output(tmpdir: Path, filename: str) -> Path | None:
-    """Devuelve el archivo final generado (el post-procesado puede cambiar la extensión).
-
-    Ignora archivos temporales/incompletos (``.part``, ``.ytdl``…) que yt-dlp deja
-    cuando una descarga falla, para no servir un archivo a medias como si fuera el
-    resultado final.
-    """
-    path = Path(filename)
-    if path.exists() and _is_final_file(path):
-        return path
-    candidates = [p for p in tmpdir.iterdir() if p.is_file() and _is_final_file(p)]
-    if not candidates:
-        return None
-    # El archivo más grande suele ser el resultado fusionado (vídeo + audio).
-    return max(candidates, key=lambda p: p.stat().st_size)
-
-
-def _is_final_file(path: Path) -> bool:
-    try:
-        return (
-            path.suffix.lower() not in _TEMP_SUFFIXES
-            and not path.name.startswith(".")
-            and path.stat().st_size > 0
-        )
-    except OSError:
-        return False
 
 
 # ---------------------------------------------------------------------------
@@ -342,46 +79,6 @@ def ffprobe_meta(path: Path) -> dict:
     }
 
 
-def probe_safe(path) -> dict:
-    """Igual que ``ffprobe_meta`` pero sin lanzar: un archivo roto no tumba el trabajo."""
-    if path is None:
-        return {}
-    try:
-        return ffprobe_meta(Path(path))
-    except Exception:  # noqa: BLE001 - es deliberadamente tolerante
-        return {}
-
-
-def first_video_pts(path: Path) -> float | None:
-    """Instante (en segundos) del primer fotograma de vídeo del archivo.
-
-    Cuando yt-dlp descarga solo un fragmento con ffmpeg, la línea de tiempo
-    resultante queda desplazada: el segundo pedido acaba en 0 y el trozo que
-    arrastra desde el fotograma clave anterior tiene marcas negativas. Saber
-    cuánto se desplazó permite luego recortar con exactitud.
-    """
-    if not FFPROBE_AVAILABLE:
-        return None
-    cmd = [
-        FFPROBE, "-v", "error", "-select_streams", "v:0",
-        "-show_entries", "packet=pts_time", "-of", "csv=p=0",
-        "-read_intervals", "%+#1", str(path),
-    ]
-    try:
-        raw = subprocess.run(cmd, capture_output=True, timeout=120).stdout
-    except (OSError, subprocess.SubprocessError):
-        return None
-    for line in raw.decode("utf-8", "replace").splitlines():
-        line = line.strip().rstrip(",")
-        if not line:
-            continue
-        try:
-            return float(line)
-        except ValueError:
-            continue
-    return None
-
-
 # ---------------------------------------------------------------------------
 # ffmpeg
 # ---------------------------------------------------------------------------
@@ -389,7 +86,7 @@ def first_video_pts(path: Path) -> float | None:
 
 def run_ffmpeg(
     args: list,
-    store: JobStore,
+    store,
     job_id: str,
     duration: float,
     pct_from: float,
