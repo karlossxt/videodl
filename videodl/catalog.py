@@ -43,7 +43,7 @@ class Tool:
 CATEGORIES: tuple[Category, ...] = (
     Category("video", "Vídeo", "🎬", "Comprime, recorta y convierte vídeo."),
     Category("audio", "Audio", "🎧", "Extrae, une y convierte pistas de audio."),
-    Category("imagenes", "Imágenes", "🖼️", "Comprime y convierte imágenes."),
+    Category("imagenes", "Imágenes", "🖼️", "Comprime, convierte y redimensiona imágenes."),
     Category("pdf", "PDF", "📄", "Une, comprime y organiza documentos PDF."),
     Category("productividad", "Productividad", "⚡", "Enlaces, códigos QR y utilidades del día a día."),
 )
@@ -101,18 +101,35 @@ TOOLS: tuple[Tool, ...] = (
     Tool(
         slug="comprimir-imagen",
         name="Comprimir imágenes",
-        description="Reduce el peso de JPG, PNG o WebP manteniendo una calidad visible.",
+        description="Reduce el peso de JPG, PNG o WebP con calidad ajustable y sin subirlas al servidor.",
         category="imagenes",
         icon="🗻",
-        keywords=("imagen", "jpg", "png", "webp", "comprimir", "peso"),
+        keywords=("imagen", "jpg", "png", "webp", "comprimir", "peso", "calidad"),
+        route="/comprimir-imagen",
+        status="available",
+        featured=True,
     ),
     Tool(
         slug="convertir-imagen",
         name="Convertir imágenes",
-        description="Cambia entre JPG, PNG, WebP y AVIF en unos segundos.",
+        description="Cambia entre JPG, PNG y WebP en el navegador, con transparencia y calidad configurables.",
         category="imagenes",
         icon="🔄",
-        keywords=("convertir", "imagen", "jpg", "png", "webp", "avif"),
+        keywords=("convertir", "imagen", "jpg", "jpeg", "png", "webp", "formato"),
+        route="/convertir-imagen",
+        status="available",
+        featured=True,
+    ),
+    Tool(
+        slug="redimensionar-imagen",
+        name="Redimensionar imágenes",
+        description="Cambia el ancho y el alto por píxeles o porcentaje manteniendo la proporción.",
+        category="imagenes",
+        icon="📐",
+        keywords=("redimensionar", "escalar", "tamaño", "píxeles", "porcentaje", "imagen"),
+        route="/redimensionar-imagen",
+        status="available",
+        featured=True,
     ),
     # --- PDF ---------------------------------------------------------------
     Tool(

@@ -19,6 +19,28 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 - Espacios publicitarios preparados en HTML/CSS, ocultos y sin scripts de terceros.
 - Pruebas de catálogo, enlaces internos, búsqueda, navegación móvil, accesibilidad
   básica, modo claro y SEO en `tests/test_site.py`.
+- **Tres herramientas de imagen que funcionan en el navegador**:
+  - `/comprimir-imagen`: calidad ajustable, formato original o salida JPG/PNG/WebP,
+    comparación de tamaños y porcentaje real de reducción (también si es negativo).
+  - `/convertir-imagen`: conversión entre JPG, PNG y WebP con control de calidad,
+    detección de transparencia, aviso al elegir JPG y color de fondo configurable.
+  - `/redimensionar-imagen`: píxeles o porcentaje, proporción bloqueable, presets
+    rápidos y límites de 16 384 px por lado y 64 MP.
+- **Privacidad por diseño**: las imágenes no se suben. La validación por firma de bytes,
+  el canvas, la codificación y la descarga se hacen en el cliente; no hay endpoints de
+  imagen ni peticiones a `/api/`. Se revocan las URL `blob:` y se vacía el canvas al
+  cambiar de archivo o cerrar la página.
+- **Plantilla y motor compartidos** (`static/imagen-tool.html`, `static/image-tools.js`,
+  `static/imagenes.js`) con contenido propio por modo en `videodl/image_pages.py`,
+  navegación «Imágenes» y estilos responsive con fondo de cuadros para transparencia.
+- Pruebas nuevas: `tests/image-tools.test.js` (Node, sin DOM) para sniffing de JPG, PNG,
+  WebP, GIF, AVIF, BMP y SVG, límites, proporciones, calidad y nombres seguros;
+  `tests/test_image_tools.py` para el contrato HTML, el catálogo, la ausencia de código
+  de subida y la ejecución de las pruebas Node. Matriz E2E de 91 comprobaciones con
+  Chrome headless documentada en `docs/herramientas-imagen.md`.
+- Documentación de compatibilidad de navegadores, límites, manejo de transparencia y
+  limitaciones conocidas (EXIF no se conserva, WebP depende del navegador, ampliar no
+  crea detalle, memoria en móviles).
 
 ### Cambiado
 - Las herramientas no implementadas aparecen como **Próximamente**, sin enlace ni

@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from . import views
+from . import image_pages, views
 
 router = APIRouter(include_in_schema=False)
 
@@ -48,6 +48,24 @@ async def page_clips():
 async def page_whatsapp():
     """Página del generador de enlaces de WhatsApp con código QR."""
     return HTMLResponse(views.render_static("whatsapp"))
+
+
+@router.get("/comprimir-imagen", response_class=HTMLResponse)
+async def page_comprimir_imagen():
+    """Compresor de imágenes JPG, PNG y WebP en el navegador."""
+    return HTMLResponse(image_pages.render_image_page("comprimir-imagen"))
+
+
+@router.get("/convertir-imagen", response_class=HTMLResponse)
+async def page_convertir_imagen():
+    """Conversor de imágenes entre JPG, PNG y WebP en el navegador."""
+    return HTMLResponse(image_pages.render_image_page("convertir-imagen"))
+
+
+@router.get("/redimensionar-imagen", response_class=HTMLResponse)
+async def page_redimensionar_imagen():
+    """Redimensionador de imágenes por píxeles o porcentaje."""
+    return HTMLResponse(image_pages.render_image_page("redimensionar-imagen"))
 
 
 @router.get("/legal", response_class=HTMLResponse)

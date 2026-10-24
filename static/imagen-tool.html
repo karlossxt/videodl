@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body data-image-tool="<!-- MODE -->">
+
+  <!-- ============ NAV ============ -->
+  <!-- NAV -->
+
+  <!-- ============ HERO ============ -->
+  <header class="hero image-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title"><!-- HERO_TITLE --></h1>
+      <p class="hero-sub"><!-- HERO_SUB --></p>
+      <p class="hero-badge"><span aria-hidden="true">🔒</span> <!-- HERO_BADGE --></p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <noscript>
+      <p class="noscript-note">Esta herramienta procesa las imágenes en tu navegador y necesita JavaScript. Actívalo para continuar; no se sube ningún archivo a internet.</p>
+    </noscript>
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" type="button" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <!-- ============ 1. ARCHIVO ============ -->
+    <div class="section-head">
+      <h3>Paso 1 · Elige la imagen</h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar una imagen JPG, PNG o WebP">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.jfif,.png,.webp" hidden />
+      <div class="dropzone-icon" aria-hidden="true">🖼️</div>
+      <p class="dropzone-title">Arrastra la imagen aquí o <span class="accent">búscala en tu equipo</span></p>
+      <p class="dropzone-sub">JPG, PNG o WebP · hasta <span id="limit-hint-2"><!-- MAX_MB --> MB</span></p>
+    </div>
+
+    <div id="file-card" class="file-card hidden">
+      <div class="file-icon" aria-hidden="true">🖼️</div>
+      <div class="file-info">
+        <div class="file-name" id="file-name"></div>
+        <div class="file-meta" id="file-meta"></div>
+      </div>
+      <button type="button" id="file-clear" class="ghost-btn small">✕ Quitar</button>
+    </div>
+
+    <!-- ============ 2. VISTA PREVIA ============ -->
+    <section id="workspace" class="image-workspace hidden" aria-labelledby="preview-title">
+      <div class="section-head">
+        <h3 id="preview-title">Vista previa</h3>
+        <span id="preview-hint" class="muted-small">El resultado aparecerá al procesar la imagen.</span>
+      </div>
+
+      <div class="image-preview-grid">
+        <figure class="image-preview-card">
+          <div class="image-preview-frame image-checker">
+            <img id="input-preview" alt="Vista previa de la imagen original" />
+          </div>
+          <figcaption>
+            <span>Original</span>
+            <span id="input-preview-meta" class="muted-small">—</span>
+          </figcaption>
+        </figure>
+
+        <figure class="image-preview-card">
+          <div class="image-preview-frame image-checker">
+            <img id="output-preview" class="hidden" alt="Vista previa de la imagen resultante" />
+            <p id="output-placeholder" class="image-preview-empty">El resultado aparecerá aquí</p>
+          </div>
+          <figcaption>
+            <span>Resultado</span>
+            <span id="output-preview-meta" class="muted-small">Sin procesar</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ 3. OPCIONES ============ -->
+    <section id="controls" class="image-controls hidden" aria-labelledby="controls-title">
+      <div class="section-head">
+        <h3 id="controls-title">Paso 2 · Ajusta el resultado</h3>
+        <span id="format-support" class="muted-small"></span>
+      </div>
+
+      <!-- CONTROLS -->
+
+      <div class="image-action">
+        <button type="button" id="process-btn" class="primary-btn big" disabled><!-- ACTION_LABEL --></button>
+        <span id="action-hint" class="muted-small"><!-- ACTION_HINT --></span>
+      </div>
+
+      <div id="working" class="working hidden" role="status" aria-live="polite">
+        <span class="spinner small" aria-hidden="true"></span>
+        <span id="working-text">Procesando la imagen…</span>
+      </div>
+    </section>
+
+    <!-- ============ RESULTADO ============ -->
+    <section id="result" class="result hidden" aria-labelledby="result-title">
+      <div class="section-head">
+        <h3 id="result-title">Resultado</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para descargar</span>
+      </div>
+
+      <div class="compare-card">
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Antes</span>
+            <span class="compare-value" id="out-before">—</span>
+            <span class="compare-detail" id="out-before-detail">—</span>
+          </div>
+          <div class="compare-arrow" aria-hidden="true">→</div>
+          <div class="compare-stat">
+            <span class="compare-label">Ahora</span>
+            <span class="compare-value accent" id="out-after">—</span>
+            <span class="compare-detail" id="out-after-detail">—</span>
+          </div>
+          <div class="compare-saved" id="out-saved"></div>
+        </div>
+
+        <p id="result-note" class="result-note"></p>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big" disabled>⬇ Descargar imagen</button>
+          <button type="button" id="again-btn" class="soft-btn">Procesar otra imagen</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTENIDO SEO ============ -->
+    <section class="seo-block">
+      <!-- SEO_CONTENT -->
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="image-tools.js"></script>
+  <script src="imagenes.js"></script>
+</body>
+</html>

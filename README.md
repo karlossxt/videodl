@@ -4,8 +4,8 @@
 
 Plataforma de multiherramientas gratuitas en español. **Solo procesa archivos que
 sube el usuario**: comprime un vídeo para enviarlo por WhatsApp o Discord, recorta un
-clip vertical listo para TikTok, Reels y Shorts, o crea un enlace de WhatsApp con
-mensaje y código QR.
+clip vertical listo para TikTok, Reels y Shorts, reduce o convierte imágenes y crea un
+enlace de WhatsApp con mensaje y código QR.
 
 > **La descarga desde plataformas externas se ha retirado.** VideoDL Tools ya no usa
 > yt-dlp, ni cookies, ni proxies, ni tokens anti-bot. Las rutas antiguas de descarga
@@ -19,6 +19,9 @@ mensaje y código QR.
 | `/herramientas` | Directorio reutilizable con el mismo catálogo, búsqueda y filtros. |
 | `/comprimir-video-whatsapp` | **Comprimir vídeo** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
 | `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) a partir de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
+| `/comprimir-imagen` | **Comprimir imágenes** JPG, PNG o WebP con calidad ajustable, vista previa antes/después y descarga directa, sin subirlas al servidor. |
+| `/convertir-imagen` | **Convertir imágenes** entre JPG, PNG y WebP, con aviso y color de fondo cuando el destino no admite transparencia. |
+| `/redimensionar-imagen` | **Redimensionar imágenes** por píxeles o porcentaje, con proporción bloqueable y presets rápidos. |
 | `/link-whatsapp` | **Generar un enlace de WhatsApp** (`wa.me`) con el mensaje ya escrito, y descargarlo como **código QR**. |
 | `/legal` | Aviso legal, privacidad, términos de uso y contacto. |
 
@@ -34,9 +37,19 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
 - 🎚️ **Modo «priorizar calidad»**: recodifica con CRF sin forzar el tamaño objetivo.
 - ✂️ **Clips verticales**: recorte por segundo, formatos 9:16 (recorte centrado o
   fondo desenfocado), 1:1 y original, con calidad ajustable.
+- 🖼️ **Imágenes en el navegador**: comprimir, convertir y redimensionar JPG, PNG y
+  WebP con canvas. Validación por firma de bytes, vista previa antes/después, tamaño
+  original y final, porcentaje real (también negativo) y descarga local. **La imagen
+  nunca se sube**: no hay endpoints de imagen ni peticiones externas.
+- 🔍 **Transparencia controlada**: al convertir a JPG se detecta el canal alfa, se avisa
+  y se permite elegir el color de fondo; PNG y WebP conservan la transparencia.
+- 📐 **Redimensionado flexible**: píxeles o porcentaje, proporción bloqueable, presets
+  de 25–100 % y 1920/1080/800 px, con límites de 16 384 px por lado y 64 MP.
+- 🧹 **Limpieza en el cliente**: se revocan las URL `blob:` y se vacía el canvas al
+  cambiar de imagen o cerrar la página.
 - 🔗 **Enlaces de WhatsApp**: enlace `wa.me` con mensaje y **código QR** en PNG.
 - 📊 **Progreso en vivo** de compresión y clips, con opción de cancelar.
-- 🧹 **Limpieza automática**: los archivos viven en una carpeta temporal y se borran
+- 🗂️ **Limpieza automática**: los archivos viven en una carpeta temporal y se borran
   al descargarlos o en la limpieza periódica del servidor.
 - 🚦 **Límites de recursos**: tamaño de subida, duración de clip, peticiones por IP y
   trabajos simultáneos configurables por entorno.
@@ -57,7 +70,10 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
 ## Requisitos
 
 - Python 3.10 o superior
-- **ffmpeg** y **ffprobe** (compresión, clips y lectura de metadatos)
+- **ffmpeg** y **ffprobe** (compresión, clips y lectura de metadatos de vídeo). Las
+  herramientas de imagen no los necesitan: el procesamiento ocurre en el navegador.
+- **Node.js 18 o superior** solo para ejecutar las pruebas del motor de imagen. La app
+  no lo usa en tiempo de ejecución.
 
 En Windows, con [winget](https://learn.microsoft.com/windows/package-manager/winget/):
 
@@ -116,6 +132,11 @@ Las antiguas rutas de descarga (`/api/info`, `/api/download`, `/api/jobs…`,
 `/api/subtitles`, `/api/thumbnail` y `POST /api/clips`) responden **`410 Gone`** con
 una explicación, para no dejar endpoints huérfanos.
 
+Las tres herramientas de imagen **no tienen API ni endpoint de subida**: el servidor
+solo entrega el HTML, el CSS y el JavaScript; validar, decodificar, redimensionar y
+codificar ocurre en el navegador con canvas. Es una decisión de privacidad y se verifica
+en las pruebas (ausencia de `fetch`, `XMLHttpRequest`, `FormData` y `/api/`).
+
 `/api/health` publica únicamente capacidades activas y límites públicos:
 
 ```json
@@ -160,13 +181,22 @@ el valor por defecto.
 pip install -r requirements-dev.txt
 ruff check .
 pytest
+node --test tests/image-tools.test.js
 ```
 
 Las pruebas de extremo a extremo generan vídeos de prueba con ffmpeg y se saltan si
 `ffmpeg`/`ffprobe` no están instalados. `tests/test_site.py` valida el catálogo, los
 enlaces internos, la búsqueda, la navegación móvil, la accesibilidad básica, el modo
-claro y el SEO técnico. El CI (`.github/workflows/ci.yml`) ejecuta ruff, pytest y un
-build de Docker con comprobación de `/api/health`.
+claro y el SEO técnico. `tests/test_image_tools.py` comprueba el contrato de las páginas
+de imagen, la ausencia de código de subida y ejecuta las pruebas Node del motor.
+`tests/image-tools.test.js` cubre sniffing de formatos, límites, proporciones y nombres
+de descarga sin necesidad de DOM. El CI (`.github/workflows/ci.yml`) ejecuta ruff, las
+pruebas Node del motor de imagen, pytest y un build de Docker con comprobación de
+`/api/health`.
+
+La matriz de pruebas manuales/E2E de las herramientas de imagen (91 comprobaciones con
+Chrome headless), la compatibilidad de navegadores y las limitaciones conocidas están en
+[`docs/herramientas-imagen.md`](docs/herramientas-imagen.md).
 
 ## Estructura
 
@@ -176,6 +206,7 @@ videodl/
   catalog.py     # registro único de categorías, herramientas y estados
   views.py       # cabecera, navegación, tarjetas, portada, directorio y SEO
   pages.py       # rutas HTML amigables, alias 301, sitemap.xml y robots.txt
+  image_pages.py # textos, controles y SEO de las tres herramientas de imagen
   config.py      # variables de entorno validadas y detección de ffmpeg
   compressor.py  # compresión por tamaño objetivo o calidad
   clips.py       # clips verticales a partir de archivos subidos
@@ -185,7 +216,11 @@ videodl/
   jobs.py        # almacén de trabajos en memoria con TTL
   legacy.py      # rutas retiradas (410 Gone)
 static/          # HTML de herramientas, CSS y JS sin frameworks
+  imagen-tool.html # plantilla única de comprimir/convertir/redimensionar
+  image-tools.js   # motor de imagen (validación, canvas, medidas, limpieza)
+  imagenes.js      # interfaz compartida de las tres herramientas de imagen
 tests/           # pruebas unitarias, de API, de sitio y e2e con ffmpeg
+docs/            # compatibilidad, límites y matriz de pruebas de imagen
 ```
 
 ## Despliegue

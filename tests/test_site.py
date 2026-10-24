@@ -15,6 +15,9 @@ PAGES = (
     "/herramientas",
     "/comprimir-video-whatsapp",
     "/recortar-clip-vertical",
+    "/comprimir-imagen",
+    "/convertir-imagen",
+    "/redimensionar-imagen",
     "/link-whatsapp",
     "/legal",
 )
@@ -322,6 +325,9 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
         f"{site}/herramientas",
         f"{site}/comprimir-video-whatsapp",
         f"{site}/recortar-clip-vertical",
+        f"{site}/comprimir-imagen",
+        f"{site}/convertir-imagen",
+        f"{site}/redimensionar-imagen",
         f"{site}/link-whatsapp",
     }
     assert all("/legal" not in loc for loc in locs)

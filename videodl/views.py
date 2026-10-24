@@ -96,6 +96,39 @@ PAGE_META: dict[str, PageMeta] = {
         nav="whatsapp",
         tool_slug="link-whatsapp",
     ),
+    "comprimir-imagen": PageMeta(
+        key="comprimir-imagen",
+        path="/comprimir-imagen",
+        title="Comprimir imágenes JPG, PNG y WebP — VideoDL Tools",
+        description=(
+            "Comprime imágenes JPG, PNG y WebP con calidad ajustable directamente en tu "
+            "navegador. Sin subirlas a internet, con vista previa y descarga gratis."
+        ),
+        nav="imagenes",
+        tool_slug="comprimir-imagen",
+    ),
+    "convertir-imagen": PageMeta(
+        key="convertir-imagen",
+        path="/convertir-imagen",
+        title="Convertir imágenes entre JPG, PNG y WebP — VideoDL Tools",
+        description=(
+            "Convierte imágenes JPG, PNG y WebP en tu navegador con control de calidad y "
+            "transparencia. Sin registro, sin servidores y con descarga directa."
+        ),
+        nav="imagenes",
+        tool_slug="convertir-imagen",
+    ),
+    "redimensionar-imagen": PageMeta(
+        key="redimensionar-imagen",
+        path="/redimensionar-imagen",
+        title="Redimensionar imágenes por píxeles o porcentaje — VideoDL Tools",
+        description=(
+            "Cambia el ancho y el alto de tus imágenes por píxeles o porcentaje, "
+            "manteniendo la proporción. Todo en tu navegador y sin perder el original."
+        ),
+        nav="imagenes",
+        tool_slug="redimensionar-imagen",
+    ),
     "legal": PageMeta(
         key="legal",
         path="/legal",
@@ -119,10 +152,20 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("tools", "Herramientas", "/herramientas"),
     ("comprimir", "Comprimir", "/comprimir-video-whatsapp"),
     ("clips", "Clips", "/recortar-clip-vertical"),
+    ("imagenes", "Imágenes", "/herramientas?categoria=imagenes"),
     ("whatsapp", "WhatsApp", "/link-whatsapp"),
 )
 
-SITEMAP_KEYS = ("home", "directory", "comprimir", "clips", "whatsapp")
+SITEMAP_KEYS = (
+    "home",
+    "directory",
+    "comprimir",
+    "clips",
+    "comprimir-imagen",
+    "convertir-imagen",
+    "redimensionar-imagen",
+    "whatsapp",
+)
 
 
 # ---------------------------------------------------------------------------
