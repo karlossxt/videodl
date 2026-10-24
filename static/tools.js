@@ -7,7 +7,11 @@
   if (!input || !grid) return;
 
   const cards = Array.from(grid.querySelectorAll("[data-tool-card]"));
-  const chips = Array.from(document.querySelectorAll("[data-category]"));
+  // Solo los chips del filtro: las tarjetas también llevan data-category y no
+  // deben interceptar la navegación ni recibir aria-current.
+  const chips = Array.from(
+    document.querySelectorAll("[data-category-chip]")
+  );
   const count = document.querySelector("[data-tools-count]");
   const empty = document.querySelector("[data-tools-empty]");
   const categoryInput = document.querySelector("[data-category-input]");

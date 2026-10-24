@@ -57,9 +57,9 @@ PAGE_META: dict[str, PageMeta] = {
         path="/herramientas",
         title="Directorio de herramientas gratis — VideoDL Tools",
         description=(
-            "Explora todas las herramientas de VideoDL Tools: compresión de vídeo, "
-            "clips verticales, enlaces de WhatsApp y próximas utilidades de audio, "
-            "imágenes y PDF."
+            "Explora todas las herramientas de VideoDL Tools: comprimir vídeo, recortar "
+            "clips, comprimir y convertir imágenes, enlaces de WhatsApp y próximas "
+            "utilidades de audio y PDF."
         ),
         nav="tools",
     ),
@@ -429,14 +429,15 @@ def _hero(title: str, subtitle: str, query: str, category: str, base_path: str) 
     active = category if category_by_slug(category) else "all"
     chips = [
         f'<a class="category-chip{" is-active" if active == "all" else ""}" '
-        f'href="{e(base_path)}" data-category="all"'
+        f'href="{e(base_path)}" data-category="all" data-category-chip'
         + (' aria-current="true"' if active == "all" else "")
         + ">Todas</a>"
     ]
     for item in CATEGORIES:
         chips.append(
             f'<a class="category-chip{" is-active" if active == item.slug else ""}" '
-            f'href="{e(base_path)}?categoria={e(item.slug)}" data-category="{e(item.slug)}"'
+            f'href="{e(base_path)}?categoria={e(item.slug)}" data-category="{e(item.slug)}" '
+            "data-category-chip"
             + (' aria-current="true"' if active == item.slug else "")
             + f'><span aria-hidden="true">{e(item.icon)}</span> {e(item.name)}</a>'
         )

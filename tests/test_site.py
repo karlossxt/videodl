@@ -153,6 +153,17 @@ def test_portada_tiene_hero_buscador_y_categorias(client):
     assert len({card["data-search"] for card in home_cards}) == len(TOOLS)
     assert len(visible_categories(text)) == len(CATEGORIES)
 
+    # Los chips del filtro se distinguen de las tarjetas, que también llevan
+    # data-category pero deben conservar su enlace.
+    chips = [
+        attrs
+        for tag, attrs in parse_tags(text)
+        if tag == "a" and "data-category-chip" in attrs
+    ]
+    assert len(chips) == len(CATEGORIES) + 1
+    assert all("data-category" in chip for chip in chips)
+    assert all("data-category-chip" not in card for card in home_cards)
+
 
 def test_portada_enlaza_solo_herramientas_implementadas(client):
     text = client.get("/").text
@@ -207,6 +218,11 @@ def test_buscador_instantaneo_conectado_al_html(client):
     assert "dataset.search" in js
     assert "data-tools-count" in js
     assert "aria-current" in js
+
+    # El selector de chips no puede abarcar las tarjetas: si lo hace, el clic
+    # en una herramienta se intercepta como filtro y no navega.
+    assert 'querySelectorAll("[data-category-chip]")' in js
+    assert 'querySelectorAll("[data-category]")' not in js
 
     # Solo la cuadrícula del catálogo se filtra: las destacadas no se duplican
     # en el recuento ni desaparecen al escribir en el buscador.
@@ -296,6 +312,13 @@ def test_canonical_y_open_graph_en_todas_las_paginas(client):
         assert 'property="og:site_name" content="VideoDL Tools"' in text
         assert '<meta name="description"' in text
         assert "<title>" in text
+
+
+def test_meta_del_directorio_no_presenta_como_pendientes_las_imagenes(client):
+    description = views.PAGE_META["directory"].description
+    assert "imágenes" in description
+    assert "próximas utilidades de audio, imágenes" not in description
+    assert description in client.get("/herramientas").text
 
 
 def test_site_url_de_entorno_se_usa_en_canonical_sitemap_y_robots(client, monkeypatch):
