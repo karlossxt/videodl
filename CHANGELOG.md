@@ -3,7 +3,7 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [Unreleased]
+## [3.2.0] - 2026-10-25
 
 ### Añadido
 - **Suite PDF en el navegador** con cuatro herramientas:

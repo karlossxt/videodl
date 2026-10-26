@@ -1,6 +1,6 @@
 [project]
 name = "videodl"
-version = "3.1.0"
+version = "3.2.0"
 description = "Suite de herramientas de vídeo: compresión, clips verticales y enlaces de WhatsApp."
 requires-python = ">=3.10"
 readme = "README.md"

@@ -155,7 +155,7 @@ decisión de privacidad y se verifica en las pruebas (ausencia de `fetch`,
 ```json
 {
   "status": "ok",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "ffmpeg": true,
   "ffprobe": true,
   "compressor": true,
