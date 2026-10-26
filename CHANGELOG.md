@@ -3,6 +3,47 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Unreleased]
+
+### Añadido
+- **Suite PDF en el navegador** con cuatro herramientas:
+  - `/unir-pdf`: combina varios PDF, permite reordenar documentos y avisa de que unir
+    no comprime.
+  - `/dividir-pdf`: extrae páginas o rangos (`1-3, 5, 8-10`) conservando el orden
+    escrito, con vista previa y validación de límites.
+  - `/imagenes-a-pdf`: crea un PDF con imágenes JPG/PNG, reordena, elige A4 vertical,
+    A4 horizontal o el tamaño de cada imagen y conserva la transparencia del PNG.
+  - `/pdf-a-jpg`: renderiza páginas con calidad y escala ajustables; una página se
+    descarga como JPG y varias como ZIP.
+- **pdf-lib 1.17.1** (MIT) y **PDF.js 6.4.299** (Apache-2.0) vendorizados en
+  `static/vendor/pdf/`, con fuentes estándar, CMaps, ICC y WASM locales. No se usa CDN.
+  `manifest.json` incluye versiones, licencias, integridad npm y SHA-256 de los 203
+  archivos vendorizados (sin contar el propio manifest); una prueba verifica que
+  coincide con el contenido real.
+- **Núcleo puro testeable** en `static/pdf-core.js`: validación por firma, rangos,
+  orden, geometría A4, límites de render, nombres seguros, CRC32 y un escritor ZIP
+  *store* sin JSZip.
+- **Interfaz compartida** (`static/pdf-tool.html`, `static/pdf-suite.js`,
+  `videodl/pdf_pages.py`) con selección o arrastre, lista reordenable, miniaturas,
+  progreso real, tamaños de entrada/salida y descargas.
+- Límites explícitos: 25 MB por archivo, 75 MB total, 10 PDF, 20 imágenes, 300 páginas
+  al unir/dividir, 80 al convertir a JPG, 64 MP por imagen de entrada y 40 MP / 8192 px
+  por página renderizada.
+- Errores claros para PDF corruptos, vacíos, sin páginas y protegidos con contraseña
+  (no se intenta descifrar). Avisos de memoria para selecciones grandes.
+- Pruebas nuevas: `tests/pdf-tools.test.js` (Node) y `tests/test_pdf_tools.py`
+  (contrato, catálogo, integridad de vendor, límites y ZIP interoperable). El CI
+  ejecuta las suites Node de imagen y PDF, además de pytest y el build Docker.
+- Documentación en `docs/herramientas-pdf.md` con arquitectura, límites, navegadores,
+  privacidad, matriz E2E de 64 comprobaciones y limitaciones conocidas.
+
+### Cambiado
+- El catálogo incorpora las cuatro rutas nuevas; `unir-pdf` deja de mostrarse como
+  «Próximamente» y se añaden al sitemap, a la navegación «PDF» y a las herramientas
+  relacionadas. `comprimir-pdf` sigue pendiente y no se presenta como disponible.
+- La CSP incluye `worker-src 'self'` para el worker module local de PDF.js.
+- `README.md` y `CHANGELOG.md` documentan la nueva suite y sus límites.
+
 ## [3.1.0] - 2026-10-22
 
 ### Añadido

@@ -33,6 +33,9 @@ jobs:
       - name: Tests del motor de imagen (Node)
         run: node --test tests/image-tools.test.js
 
+      - name: Tests del núcleo PDF (Node)
+        run: node --test tests/pdf-tools.test.js
+
       - name: Tests (pytest)
         run: pytest
 

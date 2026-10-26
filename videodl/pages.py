@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from . import image_pages, views
+from . import image_pages, pdf_pages, views
 
 router = APIRouter(include_in_schema=False)
 
@@ -66,6 +66,30 @@ async def page_convertir_imagen():
 async def page_redimensionar_imagen():
     """Redimensionador de imágenes por píxeles o porcentaje."""
     return HTMLResponse(image_pages.render_image_page("redimensionar-imagen"))
+
+
+@router.get("/unir-pdf", response_class=HTMLResponse)
+async def page_unir_pdf():
+    """Unión de varios PDF en el orden elegido."""
+    return HTMLResponse(pdf_pages.render_pdf_page("unir-pdf"))
+
+
+@router.get("/dividir-pdf", response_class=HTMLResponse)
+async def page_dividir_pdf():
+    """Extracción de páginas o rangos de un PDF."""
+    return HTMLResponse(pdf_pages.render_pdf_page("dividir-pdf"))
+
+
+@router.get("/imagenes-a-pdf", response_class=HTMLResponse)
+async def page_imagenes_a_pdf():
+    """Creación de un PDF a partir de imágenes JPG o PNG."""
+    return HTMLResponse(pdf_pages.render_pdf_page("imagenes-a-pdf"))
+
+
+@router.get("/pdf-a-jpg", response_class=HTMLResponse)
+async def page_pdf_a_jpg():
+    """Conversión de páginas PDF a imágenes JPG."""
+    return HTMLResponse(pdf_pages.render_pdf_page("pdf-a-jpg"))
 
 
 @router.get("/legal", response_class=HTMLResponse)

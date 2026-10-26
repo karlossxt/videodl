@@ -3,9 +3,9 @@
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/karlossxt/videodl)
 
 Plataforma de multiherramientas gratuitas en español. **Solo procesa archivos que
-sube el usuario**: comprime un vídeo para enviarlo por WhatsApp o Discord, recorta un
-clip vertical listo para TikTok, Reels y Shorts, reduce o convierte imágenes y crea un
-enlace de WhatsApp con mensaje y código QR.
+aporta el usuario**: comprime un vídeo para enviarlo por WhatsApp o Discord, recorta un
+clip vertical listo para TikTok, Reels y Shorts, reduce o convierte imágenes, une o
+divide PDF y crea un enlace de WhatsApp con mensaje y código QR.
 
 > **La descarga desde plataformas externas se ha retirado.** VideoDL Tools ya no usa
 > yt-dlp, ni cookies, ni proxies, ni tokens anti-bot. Las rutas antiguas de descarga
@@ -22,6 +22,10 @@ enlace de WhatsApp con mensaje y código QR.
 | `/comprimir-imagen` | **Comprimir imágenes** JPG, PNG o WebP con calidad ajustable, vista previa antes/después y descarga directa, sin subirlas al servidor. |
 | `/convertir-imagen` | **Convertir imágenes** entre JPG, PNG y WebP, con aviso y color de fondo cuando el destino no admite transparencia. |
 | `/redimensionar-imagen` | **Redimensionar imágenes** por píxeles o porcentaje, con proporción bloqueable y presets rápidos. |
+| `/unir-pdf` | **Unir PDF** en el orden que elijas, con vista previa de cada documento y sin subir los archivos. |
+| `/dividir-pdf` | **Dividir PDF** y extraer páginas o rangos (`1-3, 5`) conservando el orden escrito. |
+| `/imagenes-a-pdf` | **Convertir imágenes JPG/PNG a PDF** con páginas A4 o el tamaño de cada imagen. |
+| `/pdf-a-jpg` | **Convertir PDF a JPG** con calidad y resolución ajustables; varias páginas se descargan en ZIP. |
 | `/link-whatsapp` | **Generar un enlace de WhatsApp** (`wa.me`) con el mensaje ya escrito, y descargarlo como **código QR**. |
 | `/legal` | Aviso legal, privacidad, términos de uso y contacto. |
 
@@ -47,6 +51,14 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
   de 25–100 % y 1920/1080/800 px, con límites de 16 384 px por lado y 64 MP.
 - 🧹 **Limpieza en el cliente**: se revocan las URL `blob:` y se vacía el canvas al
   cambiar de imagen o cerrar la página.
+- **Suite PDF en el navegador**: unir, dividir, imágenes a PDF y PDF a JPG con
+  pdf-lib y PDF.js servidos desde el propio sitio. El documento nunca se sube;
+  se muestran tamaños reales, progreso, miniaturas y descargas locales.
+- **Límites PDF explícitos**: 25 MB por archivo, 75 MB por selección, 300 páginas
+  al unir/dividir, 80 páginas al convertir a JPG, 64 MP por imagen de entrada y un
+  máximo de 40 MP por página renderizada.
+- **ZIP sin dependencias extra**: los JPG de un PDF de varias páginas se empaquetan
+  con un escritor ZIP mínimo en JavaScript, validado con `zipfile` de Python.
 - 🔗 **Enlaces de WhatsApp**: enlace `wa.me` con mensaje y **código QR** en PNG.
 - 📊 **Progreso en vivo** de compresión y clips, con opción de cancelar.
 - 🗂️ **Limpieza automática**: los archivos viven en una carpeta temporal y se borran
@@ -72,8 +84,8 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
 - Python 3.10 o superior
 - **ffmpeg** y **ffprobe** (compresión, clips y lectura de metadatos de vídeo). Las
   herramientas de imagen no los necesitan: el procesamiento ocurre en el navegador.
-- **Node.js 18 o superior** solo para ejecutar las pruebas del motor de imagen. La app
-  no lo usa en tiempo de ejecución.
+- **Node.js 18 o superior** solo para ejecutar las pruebas de los motores de imagen y
+  PDF. La app no lo usa en tiempo de ejecución.
 
 En Windows, con [winget](https://learn.microsoft.com/windows/package-manager/winget/):
 
@@ -132,10 +144,11 @@ Las antiguas rutas de descarga (`/api/info`, `/api/download`, `/api/jobs…`,
 `/api/subtitles`, `/api/thumbnail` y `POST /api/clips`) responden **`410 Gone`** con
 una explicación, para no dejar endpoints huérfanos.
 
-Las tres herramientas de imagen **no tienen API ni endpoint de subida**: el servidor
-solo entrega el HTML, el CSS y el JavaScript; validar, decodificar, redimensionar y
-codificar ocurre en el navegador con canvas. Es una decisión de privacidad y se verifica
-en las pruebas (ausencia de `fetch`, `XMLHttpRequest`, `FormData` y `/api/`).
+Las herramientas de imagen y PDF **no tienen API ni endpoint de subida**: el servidor
+solo entrega el HTML, el CSS, el JavaScript y las bibliotecas locales; validar,
+decodificar, unir, dividir, renderizar y codificar ocurre en el navegador. Es una
+decisión de privacidad y se verifica en las pruebas (ausencia de `fetch`,
+`XMLHttpRequest`, `FormData` y `/api/` en el código de las herramientas).
 
 `/api/health` publica únicamente capacidades activas y límites públicos:
 
@@ -182,6 +195,7 @@ pip install -r requirements-dev.txt
 ruff check .
 pytest
 node --test tests/image-tools.test.js
+node --test tests/pdf-tools.test.js
 ```
 
 Las pruebas de extremo a extremo generan vídeos de prueba con ffmpeg y se saltan si
@@ -190,13 +204,18 @@ enlaces internos, la búsqueda, la navegación móvil, la accesibilidad básica,
 claro y el SEO técnico. `tests/test_image_tools.py` comprueba el contrato de las páginas
 de imagen, la ausencia de código de subida y ejecuta las pruebas Node del motor.
 `tests/image-tools.test.js` cubre sniffing de formatos, límites, proporciones y nombres
-de descarga sin necesidad de DOM. El CI (`.github/workflows/ci.yml`) ejecuta ruff, las
-pruebas Node del motor de imagen, pytest y un build de Docker con comprobación de
+de descarga sin necesidad de DOM. `tests/test_pdf_tools.py` comprueba el contrato de
+las cuatro páginas PDF, la integridad SHA-256 de las bibliotecas locales y que el ZIP
+generado en JavaScript se abre con `zipfile`; `tests/pdf-tools.test.js` cubre rangos,
+geometría, nombres y CRC32. El CI (`.github/workflows/ci.yml`) ejecuta ruff, las
+pruebas Node de imagen y PDF, pytest y un build de Docker con comprobación de
 `/api/health`.
 
 La matriz de pruebas manuales/E2E de las herramientas de imagen (91 comprobaciones con
 Chrome headless), la compatibilidad de navegadores y las limitaciones conocidas están en
-[`docs/herramientas-imagen.md`](docs/herramientas-imagen.md).
+[`docs/herramientas-imagen.md`](docs/herramientas-imagen.md). La suite PDF tiene su
+propia matriz de 64 comprobaciones, límites, bibliotecas y limitaciones en
+[`docs/herramientas-pdf.md`](docs/herramientas-pdf.md).
 
 ## Estructura
 
@@ -207,6 +226,7 @@ videodl/
   views.py       # cabecera, navegación, tarjetas, portada, directorio y SEO
   pages.py       # rutas HTML amigables, alias 301, sitemap.xml y robots.txt
   image_pages.py # textos, controles y SEO de las tres herramientas de imagen
+  pdf_pages.py   # textos, controles y SEO de las cuatro herramientas PDF
   config.py      # variables de entorno validadas y detección de ffmpeg
   compressor.py  # compresión por tamaño objetivo o calidad
   clips.py       # clips verticales a partir de archivos subidos
@@ -218,9 +238,13 @@ videodl/
 static/          # HTML de herramientas, CSS y JS sin frameworks
   imagen-tool.html # plantilla única de comprimir/convertir/redimensionar
   image-tools.js   # motor de imagen (validación, canvas, medidas, limpieza)
+  pdf-tool.html    # plantilla única de las cuatro herramientas PDF
+  pdf-core.js      # núcleo puro: validación, rangos, geometría, nombres, CRC32 y ZIP
+  pdf-suite.js     # interfaz y procesamiento PDF (pdf-lib + PDF.js)
+  vendor/pdf/      # pdf-lib 1.17.1, PDF.js 6.4.299 y recursos, con manifest.json
   imagenes.js      # interfaz compartida de las tres herramientas de imagen
 tests/           # pruebas unitarias, de API, de sitio y e2e con ffmpeg
-docs/            # compatibilidad, límites y matriz de pruebas de imagen
+docs/            # compatibilidad, límites y matrices de pruebas de imagen y PDF
 ```
 
 ## Despliegue

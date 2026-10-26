@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body data-pdf-tool="<!-- MODE -->">
+
+  <!-- ============ NAV ============ -->
+  <!-- NAV -->
+
+  <!-- ============ HERO ============ -->
+  <header class="hero image-hero pdf-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title"><!-- HERO_TITLE --></h1>
+      <p class="hero-sub"><!-- HERO_SUB --></p>
+      <p class="hero-badge"><span aria-hidden="true">&#128196;</span> <!-- HERO_BADGE --></p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <noscript>
+      <p class="noscript-note">Esta herramienta procesa los PDF en tu navegador y necesita JavaScript. Actívalo para continuar; no se sube ningún documento a internet.</p>
+    </noscript>
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" type="button" title="Cerrar" aria-label="Cerrar el mensaje">&times;</button>
+    </div>
+
+    <!-- ============ 1. ARCHIVOS ============ -->
+    <div class="section-head">
+      <h3>Paso 1 &middot; <!-- STEP_ONE_TITLE --></h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="<!-- DROP_ARIA -->">
+      <input type="file" id="file-input" accept="<!-- ACCEPT -->" <!-- MULTIPLE --> hidden />
+      <div class="dropzone-icon" aria-hidden="true"><!-- DROP_ICON --></div>
+      <p class="dropzone-title"><!-- DROP_TITLE --></p>
+      <p class="dropzone-sub"><!-- DROP_SUB --></p>
+    </div>
+
+    <p id="size-warning" class="warning-box hidden" role="status"></p>
+
+    <section id="files-section" class="pdf-files hidden" aria-labelledby="files-title">
+      <div class="section-head">
+        <h3 id="files-title"><!-- FILES_TITLE --></h3>
+        <span id="file-count" class="muted-small" role="status" aria-live="polite"></span>
+        <button type="button" id="clear-all" class="ghost-btn small">Quitar todos</button>
+      </div>
+      <ul id="file-list" class="pdf-file-list"></ul>
+    </section>
+
+    <!-- ============ 2. VISTA PREVIA Y OPCIONES ============ -->
+    <section id="workspace" class="pdf-workspace hidden" aria-labelledby="preview-title">
+      <div class="section-head">
+        <h3 id="preview-title">Vista previa</h3>
+        <span id="preview-hint" class="muted-small"></span>
+      </div>
+      <div id="preview-grid" class="pdf-preview-grid"></div>
+      <p id="preview-note" class="pdf-note"></p>
+    </section>
+
+    <section id="controls" class="pdf-controls hidden" aria-labelledby="controls-title">
+      <div class="section-head">
+        <h3 id="controls-title">Paso 2 &middot; Ajusta el resultado</h3>
+        <span id="library-status" class="muted-small"></span>
+      </div>
+
+      <!-- CONTROLS -->
+
+      <div class="pdf-action">
+        <button type="button" id="process-btn" class="primary-btn big" disabled><!-- ACTION_LABEL --></button>
+        <span id="action-hint" class="muted-small"><!-- ACTION_HINT --></span>
+      </div>
+
+      <div id="progress-wrap" class="pdf-progress hidden" role="status" aria-live="polite">
+        <div class="pdf-progress-head">
+          <span id="progress-label">Preparando&hellip;</span>
+          <span id="progress-value">0 %</span>
+        </div>
+        <progress id="progress" max="100" value="0">0 %</progress>
+      </div>
+    </section>
+
+    <!-- ============ RESULTADO ============ -->
+    <section id="result" class="result hidden" aria-labelledby="result-title">
+      <div class="section-head">
+        <h3 id="result-title">Resultado</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para descargar</span>
+      </div>
+
+      <div class="compare-card">
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Entrada</span>
+            <span class="compare-value" id="out-before">&mdash;</span>
+            <span class="compare-detail" id="out-before-detail">&mdash;</span>
+          </div>
+          <div class="compare-arrow" aria-hidden="true">&rarr;</div>
+          <div class="compare-stat">
+            <span class="compare-label">Salida</span>
+            <span class="compare-value accent" id="out-after">&mdash;</span>
+            <span class="compare-detail" id="out-after-detail">&mdash;</span>
+          </div>
+          <div class="compare-saved" id="out-saved"></div>
+        </div>
+
+        <div id="result-previews" class="pdf-result-previews hidden"></div>
+        <p id="result-note" class="result-note"></p>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big" disabled>Descargar resultado</button>
+          <button type="button" id="again-btn" class="soft-btn">Empezar de nuevo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTENIDO SEO ============ -->
+    <section class="seo-block">
+      <!-- SEO_CONTENT -->
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="image-tools.js"></script>
+  <script src="pdf-core.js"></script>
+  <script type="module" src="pdf-suite.js"></script>
+</body>
+</html>

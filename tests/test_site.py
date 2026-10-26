@@ -195,7 +195,7 @@ def test_directorio_reutiliza_el_mismo_catalogo(client):
 def test_busqueda_en_servidor_filtra_por_texto_y_categoria(client):
     pdf = client.get("/?q=pdf").text
     assert visible_categories(pdf) == {"pdf"}
-    assert "2 herramientas" in pdf
+    assert f"{len(views.filter_tools('pdf'))} herramientas" in pdf
 
     clip = client.get("/herramientas?q=clip").text
     assert visible_categories(clip) == {"video"}
@@ -351,6 +351,10 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
         f"{site}/comprimir-imagen",
         f"{site}/convertir-imagen",
         f"{site}/redimensionar-imagen",
+        f"{site}/unir-pdf",
+        f"{site}/dividir-pdf",
+        f"{site}/imagenes-a-pdf",
+        f"{site}/pdf-a-jpg",
         f"{site}/link-whatsapp",
     }
     assert all("/legal" not in loc for loc in locs)

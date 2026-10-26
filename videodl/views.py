@@ -58,8 +58,8 @@ PAGE_META: dict[str, PageMeta] = {
         title="Directorio de herramientas gratis — VideoDL Tools",
         description=(
             "Explora todas las herramientas de VideoDL Tools: comprimir vídeo, recortar "
-            "clips, comprimir y convertir imágenes, enlaces de WhatsApp y próximas "
-            "utilidades de audio y PDF."
+            "clips, comprimir y convertir imágenes, unir o dividir PDF, enlaces de WhatsApp "
+            "y próximas utilidades de audio y productividad."
         ),
         nav="tools",
     ),
@@ -129,6 +129,50 @@ PAGE_META: dict[str, PageMeta] = {
         nav="imagenes",
         tool_slug="redimensionar-imagen",
     ),
+    "unir-pdf": PageMeta(
+        key="unir-pdf",
+        path="/unir-pdf",
+        title="Unir PDF online y ordenar documentos — VideoDL Tools",
+        description=(
+            "Combina varios PDF en uno solo, elige el orden de cada documento y descarga "
+            "el resultado. Procesamiento local, sin subir archivos ni registro."
+        ),
+        nav="pdf",
+        tool_slug="unir-pdf",
+    ),
+    "dividir-pdf": PageMeta(
+        key="dividir-pdf",
+        path="/dividir-pdf",
+        title="Dividir PDF y extraer páginas o rangos — VideoDL Tools",
+        description=(
+            "Extrae páginas o rangos de un PDF con orden personalizado y vista previa. "
+            "El documento se procesa en tu navegador y no se sube a ningún servidor."
+        ),
+        nav="pdf",
+        tool_slug="dividir-pdf",
+    ),
+    "imagenes-a-pdf": PageMeta(
+        key="imagenes-a-pdf",
+        path="/imagenes-a-pdf",
+        title="Convertir imágenes JPG y PNG a PDF — VideoDL Tools",
+        description=(
+            "Crea un PDF con tus imágenes JPG o PNG, ordénalas y elige páginas A4 o el "
+            "tamaño original. Todo en tu navegador, sin subir las fotos."
+        ),
+        nav="pdf",
+        tool_slug="imagenes-a-pdf",
+    ),
+    "pdf-a-jpg": PageMeta(
+        key="pdf-a-jpg",
+        path="/pdf-a-jpg",
+        title="Convertir PDF a JPG y descargar en ZIP — VideoDL Tools",
+        description=(
+            "Convierte las páginas de un PDF en imágenes JPG con calidad y resolución "
+            "ajustables. Descarga una imagen o un ZIP, sin subir el PDF."
+        ),
+        nav="pdf",
+        tool_slug="pdf-a-jpg",
+    ),
     "legal": PageMeta(
         key="legal",
         path="/legal",
@@ -153,6 +197,7 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("comprimir", "Comprimir", "/comprimir-video-whatsapp"),
     ("clips", "Clips", "/recortar-clip-vertical"),
     ("imagenes", "Imágenes", "/herramientas?categoria=imagenes"),
+    ("pdf", "PDF", "/herramientas?categoria=pdf"),
     ("whatsapp", "WhatsApp", "/link-whatsapp"),
 )
 
@@ -164,6 +209,10 @@ SITEMAP_KEYS = (
     "comprimir-imagen",
     "convertir-imagen",
     "redimensionar-imagen",
+    "unir-pdf",
+    "dividir-pdf",
+    "imagenes-a-pdf",
+    "pdf-a-jpg",
     "whatsapp",
 )
 
