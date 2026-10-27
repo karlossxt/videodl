@@ -6,6 +6,28 @@
 
   const $ = (id) => document.getElementById(id);
 
+  /** Traduce una clave de window.I18N_STRINGS.js; mantiene el texto base si falta. */
+  function t(key, fallback, values) {
+    const root = window.I18N_STRINGS || {};
+    const lookup = (source) =>
+      key.split(".").reduce((current, part) => {
+        return current && typeof current === "object"
+          ? current[part]
+          : undefined;
+      }, source);
+    let value = lookup(root.js || {});
+    if (typeof value !== "string") value = lookup(root);
+    if (typeof value !== "string") value = fallback || key;
+    if (values && typeof values === "object") {
+      Object.keys(values).forEach((name) => {
+        value = value.replaceAll(`{${name}}`, String(values[name]));
+      });
+    }
+    return value;
+  }
+
+  window.t = t;
+
   const ALLOWED_VIDEO = [
     ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v",
     ".mpg", ".mpeg", ".flv", ".ts", ".3gp", ".wmv",
@@ -86,9 +108,19 @@
       return await fetch(url, { ...options, signal: controller.signal });
     } catch (err) {
       if (err && err.name === "AbortError") {
-        throw new Error("El servidor tardó demasiado en responder. Inténtalo de nuevo.");
+        throw new Error(
+          t(
+            "common.serverTimeout",
+            "El servidor tardó demasiado en responder. Inténtalo de nuevo."
+          )
+        );
       }
-      throw new Error("No se pudo conectar con el servidor. Revisa tu conexión.");
+      throw new Error(
+        t(
+          "common.connection",
+          "No se pudo conectar con el servidor. Revisa tu conexión."
+        )
+      );
     } finally {
       clearTimeout(timer);
     }
@@ -115,7 +147,9 @@
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
       timeoutMs
     );
-    if (!res.ok) throw await errorFromResponse(res, "Error inesperado");
+    if (!res.ok) {
+      throw await errorFromResponse(res, t("common.unexpected", "Error inesperado"));
+    }
     return res;
   }
 
@@ -133,7 +167,14 @@
           job = await fetcher();
         } catch (err) {
           if (Date.now() - started > timeoutMs) {
-            return reject(new Error("El trabajo tardó demasiado. Inténtalo de nuevo."));
+            return reject(
+              new Error(
+                t(
+                  "common.jobTimeout",
+                  "El trabajo tardó demasiado. Inténtalo de nuevo."
+                )
+              )
+            );
           }
           setTimeout(tick, intervalMs);
           return;
@@ -143,7 +184,14 @@
           return resolve(job);
         }
         if (Date.now() - started > timeoutMs) {
-          return reject(new Error("El trabajo tardó demasiado. Inténtalo de nuevo."));
+          return reject(
+            new Error(
+              t(
+                "common.jobTimeout",
+                "El trabajo tardó demasiado. Inténtalo de nuevo."
+              )
+            )
+          );
         }
         setTimeout(tick, intervalMs);
       };
@@ -221,6 +269,7 @@
 
   window.VD = {
     $,
+    t,
     escapeHtml,
     showToast,
     showError,

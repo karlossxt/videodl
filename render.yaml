@@ -28,3 +28,7 @@ services:
         value: "2"
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
+      # Marca visible. Si usas otro dominio, define aquí FasTools.es (o el
+      # nombre elegido). Render inyecta RENDER_EXTERNAL_URL para SITE_URL.
+      - key: SITE_NAME
+        sync: false

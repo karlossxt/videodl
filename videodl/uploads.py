@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
@@ -15,24 +16,32 @@ from .utils import rmtree_robust, sanitize_filename
 logger = logging.getLogger("videodl.uploads")
 
 
-async def save_video_upload(file: UploadFile, *, dir_prefix: str) -> tuple[Path, int]:
-    """Guarda un vídeo subido en una carpeta temporal.
+async def save_media_upload(
+    file: UploadFile,
+    *,
+    dir_prefix: str,
+    allowed_suffixes: Iterable[str],
+    max_mb: int,
+    format_label: str,
+    base_name: str = "entrada",
+) -> tuple[Path, int]:
+    """Guarda un archivo subido en una carpeta temporal.
 
-    Comprueba la extensión, va escribiendo por bloques y aborta si se supera
-    ``MAX_UPLOAD_MB``. Devuelve ``(ruta, bytes_escritos)``. En caso de error
-    limpia la carpeta y lanza ``HTTPException``.
+    Comprueba la extensión, escribe por bloques y aborta si se supera
+    ``max_mb``. Devuelve ``(ruta, bytes_escritos)``. En caso de error limpia la
+    carpeta y lanza ``HTTPException``.
     """
-    name = sanitize_filename(file.filename or "video")
+    name = sanitize_filename(file.filename or base_name)
     suffix = Path(name).suffix.lower()
-    if suffix not in ALLOWED_SUFFIXES:
+    if suffix not in set(allowed_suffixes):
         raise HTTPException(
             status_code=400,
-            detail="Formato no compatible. Sube un vídeo (MP4, MOV, MKV, WEBM…).",
+            detail=f"Formato no compatible. Sube un archivo {format_label}.",
         )
 
     tmpdir = Path(tempfile.mkdtemp(prefix=dir_prefix))
-    dest = tmpdir / f"entrada{suffix}"
-    limit = MAX_UPLOAD_MB * 1024 * 1024
+    dest = tmpdir / f"{base_name}{suffix}"
+    limit = max_mb * 1024 * 1024
     total = 0
     try:
         with dest.open("wb") as fh:
@@ -44,7 +53,7 @@ async def save_video_upload(file: UploadFile, *, dir_prefix: str) -> tuple[Path,
                 if total > limit:
                     raise HTTPException(
                         status_code=413,
-                        detail=f"El archivo supera el límite de {MAX_UPLOAD_MB} MB.",
+                        detail=f"El archivo supera el límite de {max_mb} MB.",
                     )
                 fh.write(chunk)
     except HTTPException:
@@ -62,3 +71,15 @@ async def save_video_upload(file: UploadFile, *, dir_prefix: str) -> tuple[Path,
         raise HTTPException(status_code=400, detail="El archivo está vacío.")
 
     return dest, total
+
+
+async def save_video_upload(file: UploadFile, *, dir_prefix: str) -> tuple[Path, int]:
+    """Guarda un vídeo subido (usado por el compresor y los clips)."""
+    return await save_media_upload(
+        file,
+        dir_prefix=dir_prefix,
+        allowed_suffixes=ALLOWED_SUFFIXES,
+        max_mb=MAX_UPLOAD_MB,
+        format_label="de vídeo (MP4, MOV, MKV, WEBM…)",
+        base_name="entrada",
+    )

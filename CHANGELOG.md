@@ -6,6 +6,14 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [Unreleased]
 
 ### Añadido
+- **Generador de códigos QR** (`/generador-qr`): enlaces o texto, WiFi (WPA/WEP/abierta
+  y oculta), email, teléfono y SMS. Tamaño, margen, corrección de errores, colores con
+  validación de contraste y descarga en PNG o SVG. El contenido se envía solo para
+  dibujar la imagen y no se guarda.
+- **Transcripción de audio a texto** (`/transcribir-audio`): audio o vídeo con
+  faster-whisper (dependencia opcional), detección de idioma, progreso, cancelación y
+  descarga en TXT, SRT o VTT. Si falta la dependencia, la página sigue publicada y la
+  API responde 503.
 - **Comprimir PDF** (`/comprimir-pdf`): rasteriza cada página con PDF.js, la codifica
   como JPG con calidad (40–95 %) y escala (1×, 1,5× o 2×) ajustables y reconstruye el
   PDF con pdf-lib. Procesa hasta 80 páginas y avisa de que se pierden el texto
@@ -18,15 +26,29 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 - `package.json` y `package-lock.json` con `@playwright/test` como única dependencia de
   desarrollo; `npm run test:e2e` ejecuta la suite. Los artefactos de Playwright se
   excluyen del repositorio.
+- **Sitio bilingüe español/inglés**: locales `videodl/locales/es.json` y `en.json`,
+  módulo `videodl/i18n.py`, rutas inglesas bajo `/en/...`, selector de idioma, textos
+  JS mediante `window.I18N_STRINGS`, `hreflang`/`x-default` y sitemap con ambas
+  variantes. El español mantiene las URLs sin prefijo y `/es/...` redirige a ellas.
+  Los mensajes dinámicos de compresión, clips, QR, WhatsApp, transcripción, imágenes,
+  PDF y los núcleos de validación usan las mismas claves en ambos idiomas.
 
 ### Cambiado
-- **Marca visible renombrada a FasTools.app**: títulos, cabecera, pie, textos, avisos
-  legales, metadatos PDF, README y documentación. El paquete `videodl`, las rutas, el
+- **Marca configurable con `SITE_NAME`**: títulos, cabecera, pie, Open Graph y textos
+  de privacidad usan la variable (por defecto `FasTools.app`), así que se puede publicar
+  en otro dominio sin editar el código. `SITE_URL` sigue controlando canonical y sitemap.
+- **Marca visible renombrada a FasTools.app**: títulos, cabecera, pie, textos, avisos de
+  privacidad, metadatos PDF, README y documentación. El paquete `videodl`, las rutas, el
   repositorio y el servicio de Render conservan su nombre para no romper el despliegue.
+- La antigua página `/legal` se sustituye por una nota breve de privacidad en
+  `/privacidad`, centrada en archivos temporales, datos técnicos y almacenamiento local.
+  `/legal` redirige con 301 a la nueva ruta y el pie solo enlaza a privacidad.
 - `comprimir-pdf` pasa a estar `available` en el catálogo y se añade al sitemap, a la
   navegación PDF y a las herramientas relacionadas.
 - `.gitattributes` excluye `static/vendor/**` de la conversión de finales de línea para
   no romper los SHA-256 del manifiesto en Windows.
+- Las páginas y los assets se sirven con `Cache-Control: no-cache` para que un despliegue
+  no deje JavaScript o traducciones antiguas en la caché del navegador.
 - El CI instala Chromium y ejecuta Playwright después de pytest.
 
 ## [3.2.0] - 2026-10-25

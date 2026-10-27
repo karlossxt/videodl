@@ -36,6 +36,9 @@ jobs:
       - name: Tests del núcleo PDF (Node)
         run: node --test tests/pdf-tools.test.js
 
+      - name: Tests del núcleo QR (Node)
+        run: node --test tests/qr-core.test.js
+
       - name: Tests (pytest)
         run: pytest
 

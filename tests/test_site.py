@@ -15,11 +15,13 @@ PAGES = (
     "/herramientas",
     "/comprimir-video-whatsapp",
     "/recortar-clip-vertical",
+    "/transcribir-audio",
     "/comprimir-imagen",
     "/convertir-imagen",
     "/redimensionar-imagen",
+    "/generador-qr",
     "/link-whatsapp",
-    "/legal",
+    "/privacidad",
 )
 
 
@@ -343,22 +345,32 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
 
     site = views.site_url()
     locs = set(re.findall(r"<loc>(.*?)</loc>", res.text))
-    assert locs == {
-        f"{site}/",
-        f"{site}/herramientas",
-        f"{site}/comprimir-video-whatsapp",
-        f"{site}/recortar-clip-vertical",
-        f"{site}/comprimir-imagen",
-        f"{site}/convertir-imagen",
-        f"{site}/redimensionar-imagen",
-        f"{site}/unir-pdf",
-        f"{site}/dividir-pdf",
-        f"{site}/imagenes-a-pdf",
-        f"{site}/pdf-a-jpg",
-        f"{site}/comprimir-pdf",
-        f"{site}/link-whatsapp",
+    spanish = {
+        "/",
+        "/herramientas",
+        "/comprimir-video-whatsapp",
+        "/recortar-clip-vertical",
+        "/transcribir-audio",
+        "/comprimir-imagen",
+        "/convertir-imagen",
+        "/redimensionar-imagen",
+        "/unir-pdf",
+        "/dividir-pdf",
+        "/imagenes-a-pdf",
+        "/pdf-a-jpg",
+        "/comprimir-pdf",
+        "/generador-qr",
+        "/link-whatsapp",
     }
-    assert all("/legal" not in loc for loc in locs)
+    expected = {f"{site}{path}" for path in spanish}
+    expected |= {
+        f"{site}/en/" if path == "/" else f"{site}/en{path}" for path in spanish
+    }
+    assert locs == expected
+    assert 'hreflang="es"' in res.text
+    assert 'hreflang="en"' in res.text
+    assert 'hreflang="x-default"' in res.text
+    assert all("/privacidad" not in loc for loc in locs)
     for tool in TOOLS:
         if tool.status == "soon":
             assert tool.slug not in res.text
@@ -373,8 +385,11 @@ def test_robots_txt(client):
     assert f"Sitemap: {views.site_url()}/sitemap.xml" in res.text
 
 
-def test_legal_es_noindex(client):
-    assert '<meta name="robots" content="noindex, follow" />' in client.get("/legal").text
+def test_privacidad_es_noindex(client):
+    assert (
+        '<meta name="robots" content="noindex, follow" />'
+        in client.get("/privacidad").text
+    )
 
 
 # ---------------------------------------------------------------------------

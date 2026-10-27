@@ -19,4 +19,11 @@ ALLOWED_SUFFIXES = {
     ".mpg", ".mpeg", ".flv", ".ts", ".3gp", ".wmv",
 }
 
+# La transcripción acepta audio y también vídeo: de un vídeo se extrae la pista
+# de audio antes de pasarla al modelo.
+ALLOWED_AUDIO_SUFFIXES = {
+    ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".opus", ".flac",
+    ".wma", ".amr", ".aiff", ".aif",
+} | ALLOWED_SUFFIXES
+
 UPLOAD_CHUNK = 1024 * 1024

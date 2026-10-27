@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
 
 logger = logging.getLogger("videodl.config")
@@ -109,6 +110,64 @@ FFMPEG_TIMEOUT_SECONDS = env_int("FFMPEG_TIMEOUT_SECONDS", 3600, minimum=0)
 
 
 # ---------------------------------------------------------------------------
+# Transcripción de audio (opcional)
+# ---------------------------------------------------------------------------
+# faster-whisper no está en requirements.txt: es una dependencia pesada (modelos
+# de cientos de MB y CPU/RAM considerables). Si no está instalada, la página
+# sigue existiendo y la API responde 503 con un mensaje claro.
+
+_TRANSCRIBE_MODELS = {
+    "tiny", "tiny.en",
+    "base", "base.en",
+    "small", "small.en",
+    "medium", "medium.en",
+    "large-v3", "large-v3-turbo",
+}
+
+TRANSCRIBE_MODEL = env_str("TRANSCRIBE_MODEL", "base").lower() or "base"
+if TRANSCRIBE_MODEL not in _TRANSCRIBE_MODELS:
+    logger.warning(
+        "TRANSCRIBE_MODEL=%r no es un modelo válido; se usa 'base'", TRANSCRIBE_MODEL
+    )
+    TRANSCRIBE_MODEL = "base"
+
+TRANSCRIBE_DEVICE = env_str("TRANSCRIBE_DEVICE", "cpu").lower() or "cpu"
+if TRANSCRIBE_DEVICE not in {"cpu", "cuda", "auto"}:
+    logger.warning(
+        "TRANSCRIBE_DEVICE=%r no es válido (cpu, cuda o auto); se usa 'cpu'",
+        TRANSCRIBE_DEVICE,
+    )
+    TRANSCRIBE_DEVICE = "cpu"
+
+TRANSCRIBE_COMPUTE_TYPE = env_str("TRANSCRIBE_COMPUTE_TYPE", "int8").lower() or "int8"
+if TRANSCRIBE_COMPUTE_TYPE not in {"int8", "int8_float16", "float16", "float32"}:
+    logger.warning(
+        "TRANSCRIBE_COMPUTE_TYPE=%r no es válido; se usa 'int8'", TRANSCRIBE_COMPUTE_TYPE
+    )
+    TRANSCRIBE_COMPUTE_TYPE = "int8"
+if TRANSCRIBE_DEVICE == "cpu" and TRANSCRIBE_COMPUTE_TYPE in {"float16", "int8_float16"}:
+    logger.warning(
+        "El tipo de cómputo %r no es compatible con CPU; se usa 'int8'",
+        TRANSCRIBE_COMPUTE_TYPE,
+    )
+    TRANSCRIBE_COMPUTE_TYPE = "int8"
+
+# beam_size=1 prioriza velocidad (la transcripción corre en CPU compartida).
+TRANSCRIBE_BEAM_SIZE = env_int("TRANSCRIBE_BEAM_SIZE", 1, minimum=1, maximum=5)
+# Duración máxima del audio que se procesa (segundos) y tamaño máximo de subida.
+TRANSCRIBE_MAX_SECONDS = env_int("TRANSCRIBE_MAX_SECONDS", 1800, minimum=10)
+TRANSCRIBE_MAX_MB = env_int("TRANSCRIBE_MAX_MB", 100, minimum=1)
+# Idioma fijo (p. ej. "es") o vacío para detección automática.
+TRANSCRIBE_LANGUAGE = env_str("TRANSCRIBE_LANGUAGE", "").lower()
+if TRANSCRIBE_LANGUAGE and not re.fullmatch(r"[a-z]{2,3}", TRANSCRIBE_LANGUAGE):
+    logger.warning(
+        "TRANSCRIBE_LANGUAGE=%r no es un código ISO 639 válido; se usa detección automática",
+        TRANSCRIBE_LANGUAGE,
+    )
+    TRANSCRIBE_LANGUAGE = ""
+
+
+# ---------------------------------------------------------------------------
 # Rate limiting y concurrencia
 # ---------------------------------------------------------------------------
 
@@ -130,6 +189,13 @@ SITE_URL = (
     ).rstrip("/")
     or "http://localhost:8000"
 )
+
+# Nombre visible de la marca. Cámbialo si compras otro dominio (p. ej.
+# "FasTools.es"). Se usa en títulos, cabecera, pie y Open Graph.
+SITE_NAME = env_str("SITE_NAME", "FasTools.app") or "FasTools.app"
+if len(SITE_NAME) > 60 or "<" in SITE_NAME or ">" in SITE_NAME:
+    logger.warning("SITE_NAME=%r no es válido; se usa 'FasTools.app'", SITE_NAME)
+    SITE_NAME = "FasTools.app"
 
 # CSP por defecto. Se puede sustituir con CONTENT_SECURITY_POLICY; dejarla
 # vacía desactiva la cabecera.

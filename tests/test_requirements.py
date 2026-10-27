@@ -42,3 +42,12 @@ def test_dev_dependencies_incluyen_pytest_httpx_y_ruff():
     dev = (RAIZ / "requirements-dev.txt").read_text(encoding="utf-8")
     for paquete in ("pytest", "httpx", "ruff"):
         assert paquete in dev
+
+
+def test_transcripcion_es_una_dependencia_opcional():
+    """faster-whisper no debe engordar la imagen por defecto."""
+    assert not _lineas_de("faster-whisper")
+    opcional = (RAIZ / "requirements-transcribe.txt").read_text(encoding="utf-8")
+    assert "faster-whisper" in opcional
+    dockerfile = (RAIZ / "Dockerfile").read_text(encoding="utf-8")
+    assert "INSTALL_TRANSCRIBE" in dockerfile

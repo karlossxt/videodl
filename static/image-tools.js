@@ -12,6 +12,10 @@
   const MAX_PIXELS = 64 * 1000 * 1000;
   const ALPHA_SCAN_PIXELS = 4 * 1000 * 1000;
   const ALPHA_SCAN_MAX_SIDE = 1024;
+  const tr = (key, fallback, values) =>
+    global && typeof global.t === "function"
+      ? global.t(key, fallback, values)
+      : fallback;
 
   const MIME = {
     jpeg: "image/jpeg",
@@ -114,7 +118,14 @@
   }
 
   function describeSize(bytes, maxBytes) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB (máximo ${(maxBytes / (1024 * 1024)).toFixed(0)} MB)`;
+    return tr(
+      "image.maxSize",
+      `${(bytes / (1024 * 1024)).toFixed(1)} MB (máximo ${(maxBytes / (1024 * 1024)).toFixed(0)} MB)`,
+      {
+        size: (bytes / (1024 * 1024)).toFixed(1),
+        max: (maxBytes / (1024 * 1024)).toFixed(0),
+      }
+    );
   }
 
   /**
@@ -125,16 +136,28 @@
     const maxBytes = options.maxBytes || MAX_FILE_BYTES;
 
     if (!file) {
-      return { ok: false, code: "missing", error: "No se ha seleccionado ningún archivo." };
+      return {
+        ok: false,
+        code: "missing",
+        error: tr("image.missing", "No se ha seleccionado ningún archivo."),
+      };
     }
     if (!Number.isFinite(file.size) || file.size <= 0) {
-      return { ok: false, code: "empty", error: "El archivo está vacío o no se puede leer." };
+      return {
+        ok: false,
+        code: "empty",
+        error: tr("image.empty", "El archivo está vacío o no se puede leer."),
+      };
     }
     if (file.size > maxBytes) {
       return {
         ok: false,
         code: "too-large",
-        error: `La imagen pesa ${describeSize(file.size, maxBytes)}. Usa una imagen más pequeña.`,
+        error: tr(
+          "image.tooHeavy",
+          `La imagen pesa ${describeSize(file.size, maxBytes)}. Usa una imagen más pequeña.`,
+          { size: describeSize(file.size, maxBytes) }
+        ),
       };
     }
 
@@ -146,7 +169,10 @@
       return {
         ok: false,
         code: "unreadable",
-        error: "No se pudo leer el archivo. Comprueba que sigue disponible e inténtalo de nuevo.",
+        error: tr(
+          "image.unreadable",
+          "No se pudo leer el archivo. Comprueba que sigue disponible e inténtalo de nuevo."
+        ),
       };
     }
 
@@ -158,13 +184,20 @@
         return {
           ok: false,
           code: "unsupported",
-          error: `El formato «.${ext}» no es compatible. Acepta JPG, PNG o WebP.`,
+          error: tr(
+            "image.unsupportedExt",
+            `El formato «.${ext}» no es compatible. Acepta JPG, PNG o WebP.`,
+            { ext }
+          ),
         };
       }
       return {
         ok: false,
         code: "corrupt",
-        error: "El archivo no parece una imagen JPG, PNG o WebP válida. Puede estar dañado.",
+        error: tr(
+          "image.corrupt",
+          "El archivo no parece una imagen JPG, PNG o WebP válida. Puede estar dañado."
+        ),
       };
     }
 
@@ -172,7 +205,11 @@
       return {
         ok: false,
         code: "unsupported",
-        error: `El formato ${detected.label} no es compatible. Convierte la imagen a JPG, PNG o WebP.`,
+        error: tr(
+          "image.unsupportedDetected",
+          `El formato ${detected.label} no es compatible. Convierte la imagen a JPG, PNG o WebP.`,
+          { format: detected.label }
+        ),
       };
     }
 
@@ -189,13 +226,14 @@
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       if (typeof Image === "undefined") {
-        reject(new Error("Este navegador no puede cargar imágenes."));
+        reject(new Error(tr("image.browserLoad", "Este navegador no puede cargar imágenes.")));
         return;
       }
       const image = new Image();
       image.decoding = "async";
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("La imagen no se pudo decodificar."));
+      image.onerror = () =>
+        reject(new Error(tr("image.decode", "La imagen no se pudo decodificar.")));
       image.src = url;
     });
   }
@@ -257,7 +295,7 @@
   }
 
   function fileBaseName(name) {
-    const raw = String(name || "imagen");
+    const raw = String(name || tr("image.imageFallback", "imagen"));
     const withoutExtension = raw.replace(/\.[^./\\]+$/, "");
     const clean = withoutExtension
       .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-")
@@ -265,7 +303,7 @@
       .trim()
       .replace(/^[.\s-]+/, "")
       .slice(0, 80);
-    return clean || "imagen";
+    return clean || tr("image.imageFallback", "imagen");
   }
 
   function outputName(name, suffix, mime) {
@@ -347,13 +385,21 @@
         const args = mime === MIME.png ? [mime] : [mime, quality];
         canvas.toBlob((blob) => {
           if (!blob) {
-            reject(new Error("El navegador no pudo generar el archivo final."));
+            reject(
+              new Error(
+                tr("image.encode", "El navegador no pudo generar el archivo final.")
+              )
+            );
             return;
           }
           if (blob.type && blob.type !== mime) {
             reject(
               new Error(
-                `Tu navegador no puede guardar en ${formatLabel(mime)}. Prueba con otro formato.`
+                tr(
+                  "image.unsupportedSave",
+                  `Tu navegador no puede guardar en ${formatLabel(mime)}. Prueba con otro formato.`,
+                  { format: formatLabel(mime) }
+                )
               )
             );
             return;
@@ -361,7 +407,14 @@
           resolve(blob);
         }, ...args);
       } catch (_) {
-        reject(new Error("El navegador no pudo procesar la imagen. Prueba con una más pequeña."));
+        reject(
+          new Error(
+            tr(
+              "image.tooBig",
+              "El navegador no pudo procesar la imagen. Prueba con una más pequeña."
+            )
+          )
+        );
       }
     });
   }
@@ -374,11 +427,15 @@
     const target = limitFor(width, height);
     if (!target) {
       throw new Error(
-        `La salida supera el límite de ${MAX_SIDE} px por lado o ${MAX_PIXELS / 1000000} megapíxeles.`
+        tr(
+          "image.tooLarge",
+          `La salida supera el límite de ${MAX_SIDE} px por lado o ${MAX_PIXELS / 1000000} megapíxeles.`,
+          { side: MAX_SIDE, megapixels: MAX_PIXELS / 1000000 }
+        )
       );
     }
     if (!formatInfo(mime)) {
-      throw new Error("El formato de salida no es compatible.");
+      throw new Error(tr("image.unsupported", "El formato de salida no es compatible."));
     }
 
     const canvas = document.createElement("canvas");
@@ -386,7 +443,7 @@
       canvas.width = target.width;
       canvas.height = target.height;
       const ctx = canvas.getContext("2d", { alpha: mime !== MIME.jpeg });
-      if (!ctx) throw new Error("No se pudo preparar el lienzo de la imagen.");
+      if (!ctx) throw new Error(tr("image.canvas", "No se pudo preparar el lienzo de la imagen."));
 
       // JPEG no admite alfa: se pinta un fondo opaco antes de dibujar.
       if (mime === MIME.jpeg) {

@@ -17,6 +17,11 @@ def test_health_ok_without_sensitive_data(client):
         "compressor",
         "clips",
         "whatsapp",
+        "qr",
+        "transcribe",
+        "transcribe_model",
+        "transcribe_max_seconds",
+        "transcribe_max_mb",
         "clip_max_seconds",
         "max_upload_mb",
         "max_target_mb",
@@ -147,27 +152,26 @@ def test_clip_rejects_too_large_upload(client, monkeypatch):
     assert res.status_code == 413
 
 
-def test_legal_page(client):
-    """Aviso legal, privacidad, términos y contacto en una sola página."""
-    res = client.get("/legal")
+def test_privacy_page(client):
+    """Una nota breve de privacidad, sin datos fiscales ni términos de descarga."""
+    res = client.get("/privacidad")
 
     assert res.status_code == 200
     for texto in (
-        "Aviso legal",
-        "Política de privacidad",
-        "Términos de uso",
-        "Contacto y retirada",
+        "Privacidad",
+        "Archivos y datos",
+        "Datos técnicos",
+        "Cookies y almacenamiento local",
+        "Servicios externos",
     ):
         assert texto in res.text
-    # Los datos del titular son marcadores visibles hasta que se rellenen.
-    assert "legal-todo" in res.text
-    assert "[EMAIL DE CONTACTO]" in res.text
-    # El texto ya no promete descargas de plataformas externas.
-    assert "no descarga vídeos de plataformas externas" in res.text
-    assert "Pega el enlace" not in res.text
+    assert "legal-todo" not in res.text
+    assert "Aviso legal" not in res.text
+    assert "Términos de uso" not in res.text
+    assert "no descarga vídeos de plataformas externas" not in res.text
 
 
-def test_todas_las_paginas_enlazan_lo_legal(client):
+def test_todas_las_paginas_enlazan_la_privacidad(client):
     for path in (
         "/",
         "/comprimir-video-whatsapp",
@@ -177,8 +181,8 @@ def test_todas_las_paginas_enlazan_lo_legal(client):
     ):
         res = client.get(path)
         assert res.status_code == 200
-        assert 'href="/legal#aviso-legal"' in res.text
-        assert 'href="/legal#privacidad"' in res.text
+        assert 'href="/privacidad"' in res.text
+        assert 'href="/legal' not in res.text
 
 
 def test_security_headers_present(client):

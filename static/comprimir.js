@@ -3,6 +3,7 @@
 
 const {
   $,
+  t,
   showToast,
   showError,
   clearError,
@@ -32,7 +33,7 @@ let targetMb = 16;
 let jobId = null;
 let pollRunId = 0;
 let outUrl = null;
-let outName = "video-comprimido.mp4";
+let outName = t("compress.defaultName", "video-comprimido.mp4");
 let localPreviewUrl = null;
 
 $("error-close").addEventListener("click", clearError);
@@ -48,7 +49,11 @@ $("error-close").addEventListener("click", clearError);
     const cfg = await res.json();
     if (cfg.max_upload_mb) {
       maxUploadMb = cfg.max_upload_mb;
-      $("limit-hint").textContent = `Máximo ${maxUploadMb} MB por archivo`;
+      $("limit-hint").textContent = t(
+        "compress.limitHint",
+        `Máximo ${maxUploadMb} MB por archivo`,
+        { mb: maxUploadMb }
+      );
       $("limit-hint-2").textContent = `${maxUploadMb} MB`;
     }
     // El tope del tamaño objetivo lo decide el servidor; si cambia, la interfaz
@@ -72,11 +77,22 @@ function handleFile(file) {
   clearError();
 
   if (!isAllowedVideo(file.name)) {
-    showError("Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…");
+    showError(
+      t(
+        "compress.unsupported",
+        "Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…"
+      )
+    );
     return;
   }
   if (file.size > maxUploadMb * 1024 * 1024) {
-    showError(`El archivo pesa ${formatBytes(file.size)} y el máximo es ${maxUploadMb} MB.`);
+    showError(
+      t(
+        "compress.tooHeavy",
+        `El archivo pesa ${formatBytes(file.size)} y el máximo es ${maxUploadMb} MB.`,
+        { size: formatBytes(file.size), max: maxUploadMb }
+      )
+    );
     return;
   }
 
@@ -100,7 +116,11 @@ function handleFile(file) {
 
   fileCard.classList.remove("hidden");
   compressBtn.disabled = false;
-  actionHint.textContent = `Objetivo: que quepa en ${targetMb} MB.`;
+  actionHint.textContent = t(
+    "compress.target",
+    `Objetivo: que quepa en ${targetMb} MB.`,
+    { mb: targetMb }
+  );
 }
 
 function clearFile() {
@@ -108,7 +128,7 @@ function clearFile() {
   fileInput.value = "";
   fileCard.classList.add("hidden");
   compressBtn.disabled = true;
-  actionHint.textContent = "Elige primero un vídeo.";
+  actionHint.textContent = t("compress.chooseFirst", "Elige primero un vídeo.");
   if (localPreviewUrl) {
     URL.revokeObjectURL(localPreviewUrl);
     localPreviewUrl = null;
@@ -136,8 +156,12 @@ document.querySelectorAll(".preset").forEach((btn) => {
         : clampMb(parseFloat(btn.dataset.mb));
 
     actionHint.textContent = selectedFile
-      ? `Objetivo: que quepa en ${targetMb} MB.`
-      : "Elige primero un vídeo.";
+      ? t(
+          "compress.target",
+          `Objetivo: que quepa en ${targetMb} MB.`,
+          { mb: targetMb }
+        )
+      : t("compress.chooseFirst", "Elige primero un vídeo.");
   });
 });
 
@@ -146,8 +170,12 @@ $("custom-mb").addEventListener("input", () => {
   if (!custom.classList.contains("active")) return;
   targetMb = clampMb(parseFloat($("custom-mb").value));
   actionHint.textContent = selectedFile
-    ? `Objetivo: que quepa en ${targetMb} MB.`
-    : "Elige primero un vídeo.";
+    ? t(
+        "compress.target",
+        `Objetivo: que quepa en ${targetMb} MB.`,
+        { mb: targetMb }
+      )
+    : t("compress.chooseFirst", "Elige primero un vídeo.");
 });
 
 // Estado inicial de accesibilidad de los presets.
@@ -176,7 +204,7 @@ compressBtn.addEventListener("click", () => {
   $("pr-fill").style.width = "0%";
   $("pr-track").setAttribute("aria-valuenow", "0");
   $("pr-percent").textContent = "0%";
-  $("pr-status").textContent = "Subiendo el vídeo…";
+  $("pr-status").textContent = t("compress.uploading", "Subiendo el vídeo…");
   $("pr-detail").textContent = formatBytes(selectedFile.size);
 
   const form = new FormData();
@@ -202,8 +230,14 @@ compressBtn.addEventListener("click", () => {
     if (xhr.status >= 200 && xhr.status < 300) {
       try {
         jobId = JSON.parse(xhr.responseText).id;
-        $("pr-status").textContent = "Analizando el vídeo…";
-        $("pr-detail").textContent = "Preparando la compresión";
+        $("pr-status").textContent = t(
+          "compress.analyzing",
+          "Analizando el vídeo…"
+        );
+        $("pr-detail").textContent = t(
+          "compress.preparing",
+          "Preparando la compresión"
+        );
         pollJob();
         return;
       } catch {
@@ -213,8 +247,20 @@ compressBtn.addEventListener("click", () => {
     failCompress(extractError(xhr));
   };
 
-  xhr.onerror = () => failCompress("No se pudo enviar el vídeo al servidor. Revisa tu conexión.");
-  xhr.ontimeout = () => failCompress("La subida tardó demasiado. Prueba con un vídeo más pequeño.");
+  xhr.onerror = () =>
+    failCompress(
+      t(
+        "compress.uploadFailed",
+        "No se pudo enviar el vídeo al servidor. Revisa tu conexión."
+      )
+    );
+  xhr.ontimeout = () =>
+    failCompress(
+      t(
+        "compress.uploadTimeout",
+        "La subida tardó demasiado. Prueba con un vídeo más pequeño."
+      )
+    );
   xhr.send(form);
 });
 
@@ -225,8 +271,18 @@ function extractError(xhr) {
   } catch {
     /* sin cuerpo JSON */
   }
-  if (xhr.status === 413) return `El archivo supera el límite de ${maxUploadMb} MB.`;
-  return `No se pudo comprimir el vídeo (error ${xhr.status || "de red"}).`;
+  if (xhr.status === 413) {
+    return t(
+      "compress.tooLarge",
+      `El archivo supera el límite de ${maxUploadMb} MB.`,
+      { max: maxUploadMb }
+    );
+  }
+  return t(
+    "compress.failedStatus",
+    `No se pudo comprimir el vídeo (error ${xhr.status || "de red"}).`,
+    { status: xhr.status || t("compress.network", "de red") }
+  );
 }
 
 function failCompress(msg) {
@@ -255,11 +311,15 @@ async function pollJob() {
     else if (job.status === "error") {
       progressBox.classList.add("hidden");
       compressBtn.disabled = false;
-      showError(job.error || "No se pudo comprimir el vídeo.");
+      showError(
+        job.error
+          ? t("compress.failed", job.error)
+          : t("compress.failed", "No se pudo comprimir el vídeo.")
+      );
     } else if (job.status === "cancelled") {
       progressBox.classList.add("hidden");
       compressBtn.disabled = false;
-      showToast("Compresión cancelada");
+      showToast(t("compress.cancelled", "Compresión cancelada"));
     }
   } catch (err) {
     if (runId !== pollRunId) return;
@@ -274,15 +334,22 @@ function updateCompressProgress(job) {
   $("pr-fill").style.width = `${pct}%`;
   $("pr-percent").textContent = `${pct.toFixed(0)}%`;
   $("pr-track").setAttribute("aria-valuenow", String(Math.round(pct)));
-  $("pr-status").textContent = job.message || "Comprimiendo…";
+  $("pr-status").textContent = t(
+    "compress.progress",
+    job.message || "Comprimiendo…"
+  );
   if (job.status === "compressing") {
-    $("pr-detail").textContent = `Objetivo: ${job.target_mb} MB`;
+    $("pr-detail").textContent = t(
+      "compress.targetDetail",
+      `Objetivo: ${job.target_mb} MB`,
+      { mb: job.target_mb }
+    );
   }
 }
 
 $("pr-cancel").addEventListener("click", async () => {
   if (!jobId) return;
-  $("pr-status").textContent = "Cancelando…";
+  $("pr-status").textContent = t("compress.cancelling", "Cancelando…");
   try {
     await fetch(`/api/compress/${jobId}/cancel`, { method: "POST" });
   } catch {
@@ -291,7 +358,8 @@ $("pr-cancel").addEventListener("click", async () => {
 });
 
 async function finishCompress(job) {
-  outName = job.filename || "video-comprimido.mp4";
+  outName =
+    job.filename || t("compress.defaultName", "video-comprimido.mp4");
 
   // Se descarga el resultado como blob: así el servidor puede borrar el
   // archivo inmediatamente y el botón "Descargar" funciona al instante.
@@ -308,7 +376,7 @@ async function finishCompress(job) {
 
   if (!blob) {
     triggerDownload(`/api/compress/${job.id}/file`, outName);
-    showToast("Descarga iniciada");
+    showToast(t("compress.downloadStarted", "Descarga iniciada"));
     return;
   }
 
@@ -322,21 +390,31 @@ async function finishCompress(job) {
   const saved = job.input_size > 0 ? (1 - job.output_size / job.input_size) * 100 : 0;
   $("out-saved").textContent =
     saved > 0
-      ? `−${saved.toFixed(0)} % de tamaño (${formatBytes(job.input_size - job.output_size)} menos)`
-      : "Sin cambios de tamaño";
+      ? t(
+          "compress.saved",
+          `−${saved.toFixed(0)} % de tamaño (${formatBytes(job.input_size - job.output_size)} menos)`,
+          {
+            percent: saved.toFixed(0),
+            size: formatBytes(job.input_size - job.output_size),
+          }
+        )
+      : t("compress.sameSize", "Sin cambios de tamaño");
 
   resultSection.classList.remove("hidden");
   resultSection.scrollIntoView({ behavior: "smooth", block: "center" });
-  showToast("¡Vídeo comprimido listo!");
+  showToast(t("compress.ready", "¡Vídeo comprimido listo!"));
 }
 
 $("download-btn").addEventListener("click", () => {
   if (!outUrl) {
-    showToast("La descarga aún no está lista", { error: true });
+    showToast(
+      t("compress.notReady", "La descarga aún no está lista"),
+      { error: true }
+    );
     return;
   }
   triggerDownload(outUrl, outName);
-  showToast("Descargando el vídeo comprimido…");
+  showToast(t("compress.downloading", "Descargando el vídeo comprimido…"));
 });
 
 $("again-btn").addEventListener("click", () => {

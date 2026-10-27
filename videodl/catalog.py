@@ -8,8 +8,10 @@ listas duplicadas en HTML ni en JavaScript.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
+
+from . import i18n
 
 Status = Literal["available", "soon"]
 
@@ -81,6 +83,20 @@ TOOLS: tuple[Tool, ...] = (
         keywords=("gif", "convertir", "animación"),
     ),
     # --- Audio -------------------------------------------------------------
+    Tool(
+        slug="transcribir-audio",
+        name="Transcribir audio a texto",
+        description="Convierte la voz de un audio o vídeo en texto editable y descarga TXT, SRT o VTT.",
+        category="audio",
+        icon="📝",
+        keywords=(
+            "transcribir", "transcripción", "audio", "texto", "voz", "subtítulos",
+            "srt", "vtt", "whisper", "dictado",
+        ),
+        route="/transcribir-audio",
+        status="available",
+        featured=True,
+    ),
     Tool(
         slug="extraer-audio",
         name="Extraer audio (MP3)",
@@ -186,6 +202,20 @@ TOOLS: tuple[Tool, ...] = (
     ),
     # --- Productividad -----------------------------------------------------
     Tool(
+        slug="generador-qr",
+        name="Generador de códigos QR",
+        description="Crea QR de enlaces, texto, WiFi, email, teléfono o SMS y descárgalos en PNG o SVG.",
+        category="productividad",
+        icon="🔳",
+        keywords=(
+            "qr", "código qr", "generador", "wifi", "enlace", "url", "email",
+            "teléfono", "sms", "svg", "png",
+        ),
+        route="/generador-qr",
+        status="available",
+        featured=True,
+    ),
+    Tool(
         slug="link-whatsapp",
         name="Enlace y QR de WhatsApp",
         description="Genera un enlace wa.me con el mensaje ya escrito y descarga su código QR.",
@@ -215,27 +245,75 @@ def category_by_slug(slug: str) -> Category | None:
     return next((category for category in CATEGORIES if category.slug == slug), None)
 
 
-def category_name(slug: str) -> str:
+def localized_category(category: Category, lang: str = i18n.DEFAULT_LANG) -> Category:
+    """Devuelve la categoría con nombre y descripción en el idioma pedido."""
+    if i18n.normalize_lang(lang) == i18n.DEFAULT_LANG:
+        return category
+    return replace(
+        category,
+        name=i18n.tr(lang, f"catalog.categories.{category.slug}.name", category.name),
+        description=i18n.tr(
+            lang,
+            f"catalog.categories.{category.slug}.description",
+            category.description,
+        ),
+    )
+
+
+def localized_tool(tool: Tool, lang: str = i18n.DEFAULT_LANG) -> Tool:
+    """Devuelve la herramienta traducida y con su ruta bajo ``/en`` si toca."""
+    if i18n.normalize_lang(lang) == i18n.DEFAULT_LANG:
+        return tool
+    catalog = i18n.get_translations(lang).get("catalog", {})
+    tools = catalog.get("tools", {}) if isinstance(catalog, dict) else {}
+    data = tools.get(tool.slug, {}) if isinstance(tools, dict) else {}
+    keywords = data.get("keywords") if isinstance(data, dict) else None
+    return replace(
+        tool,
+        name=i18n.tr(lang, f"catalog.tools.{tool.slug}.name", tool.name),
+        description=i18n.tr(
+            lang, f"catalog.tools.{tool.slug}.description", tool.description
+        ),
+        keywords=tuple(keywords) if isinstance(keywords, list) else tool.keywords,
+        route=i18n.localize_path(lang, tool.route) if tool.route else None,
+    )
+
+
+def localized_categories(lang: str = i18n.DEFAULT_LANG) -> tuple[Category, ...]:
+    return tuple(localized_category(category, lang) for category in CATEGORIES)
+
+
+def localized_tools(lang: str = i18n.DEFAULT_LANG) -> tuple[Tool, ...]:
+    return tuple(localized_tool(tool, lang) for tool in TOOLS)
+
+
+def category_name(slug: str, lang: str = i18n.DEFAULT_LANG) -> str:
     category = category_by_slug(slug)
-    return category.name if category else slug
+    if category is None:
+        return slug
+    return localized_category(category, lang).name
 
 
-def available_tools() -> tuple[Tool, ...]:
+def available_tools(lang: str = i18n.DEFAULT_LANG) -> tuple[Tool, ...]:
+    if i18n.normalize_lang(lang) != i18n.DEFAULT_LANG:
+        return tuple(tool for tool in localized_tools(lang) if tool.available)
     return tuple(tool for tool in TOOLS if tool.available)
 
 
-def featured_tools() -> tuple[Tool, ...]:
-    return tuple(tool for tool in available_tools() if tool.featured)
+def featured_tools(lang: str = i18n.DEFAULT_LANG) -> tuple[Tool, ...]:
+    return tuple(tool for tool in available_tools(lang) if tool.featured)
 
 
-def related_tools(slug: str, limit: int = 2) -> tuple[Tool, ...]:
+def related_tools(
+    slug: str, limit: int = 2, lang: str = i18n.DEFAULT_LANG
+) -> tuple[Tool, ...]:
     """Herramientas disponibles que complementan a la indicada.
 
     Primero las de la misma categoría y después el resto, para que una página de
     productividad (por ejemplo) siga teniendo relaciones útiles.
     """
     current = tool_by_slug(slug)
-    candidates = [tool for tool in available_tools() if tool.slug != slug]
+    candidates = [tool for tool in available_tools(lang) if tool.slug != slug]
     if current is not None:
         same = [tool for tool in candidates if tool.category == current.category]
         rest = [tool for tool in candidates if tool.category != current.category]

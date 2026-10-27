@@ -8,6 +8,20 @@
   // desplegado y los controles que dependen de JS quedan ocultos.
   root.classList.add("js");
   const STORAGE_KEY = "videodl-theme";
+  const tr = (key, fallback) => {
+    if (typeof window.t === "function") return window.t(key, fallback);
+    const root = window.I18N_STRINGS || {};
+    const lookup = (source) =>
+      key.split(".").reduce((current, part) => {
+        return current && typeof current === "object"
+          ? current[part]
+          : undefined;
+      }, source);
+    const value = lookup(root.js || {});
+    if (typeof value === "string") return value;
+    const rootValue = lookup(root);
+    return typeof rootValue === "string" ? rootValue : fallback;
+  };
 
   function storedTheme() {
     try {
@@ -36,12 +50,18 @@
       button.setAttribute("aria-pressed", String(isLight));
       button.setAttribute(
         "aria-label",
-        isLight ? "Cambiar a modo oscuro" : "Cambiar a modo claro"
+        isLight
+          ? tr("nav.theme_dark", "Cambiar a modo oscuro")
+          : tr("nav.theme_light", "Cambiar a modo claro")
       );
       const icon = button.querySelector("[data-theme-icon]");
       if (icon) icon.textContent = isLight ? "☾" : "☀";
       const text = button.querySelector("[data-theme-text]");
-      if (text) text.textContent = isLight ? "Modo oscuro" : "Modo claro";
+      if (text) {
+        text.textContent = isLight
+          ? tr("nav.theme_text_dark", "Modo oscuro")
+          : tr("nav.theme_text_light", "Modo claro");
+      }
     });
   }
 
@@ -64,7 +84,9 @@
       toggle.setAttribute("aria-expanded", String(open));
       toggle.setAttribute(
         "aria-label",
-        open ? "Cerrar menú de navegación" : "Abrir menú de navegación"
+        open
+          ? tr("nav.menu_toggle_close", "Cerrar menú de navegación")
+          : tr("nav.menu_toggle", "Abrir menú de navegación")
       );
       menu.classList.toggle("is-open", open);
     }

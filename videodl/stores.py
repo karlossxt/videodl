@@ -8,8 +8,9 @@ from .jobs import JobStore
 downloads = JobStore(session="downloads")
 compressions = JobStore(session="compressions")
 clips = JobStore(session="clips")
+transcriptions = JobStore(session="transcriptions")
 
-ALL_STORES: tuple[JobStore, ...] = (downloads, compressions, clips)
+ALL_STORES: tuple[JobStore, ...] = (downloads, compressions, clips, transcriptions)
 
 
 def cleanup_all() -> int:

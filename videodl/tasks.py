@@ -16,12 +16,13 @@ from .runtime import job_limiter
 logger = logging.getLogger("videodl.tasks")
 
 
-def spawn_job(target, *args) -> None:
+def spawn_job(target, *args, busy_detail: str | None = None) -> None:
     """Lanza un trabajo en un hilo, respetando el límite de concurrencia."""
     if not job_limiter.acquire():
         raise HTTPException(
             status_code=429,
-            detail=(
+            detail=busy_detail
+            or (
                 "El servidor está procesando demasiados vídeos ahora mismo. "
                 "Inténtalo de nuevo en unos segundos."
             ),

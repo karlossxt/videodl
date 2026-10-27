@@ -3,7 +3,8 @@
    número no sale del navegador). Del servidor solo se pide el código QR.
    Utilidades compartidas en common.js (window.VD). */
 
-const { $, showToast, showError, clearError, api, errorFromResponse } = window.VD;
+const { $, t, showToast, showError, clearError, api, errorFromResponse } =
+  window.VD;
 
 const countrySel = $("wa-country");
 const prefixInput = $("wa-prefix");
@@ -102,15 +103,15 @@ function update() {
 
   if (!link) {
     statusEl.textContent = anyCheckbox.checked
-      ? "Sin número fijo"
-      : "Escribe tu número";
+      ? t("whatsapp.noNumber", "Sin número fijo")
+      : t("whatsapp.enterNumber", "Escribe tu número");
     setActionsEnabled(false);
     clearQr();
     return;
   }
 
   setActionsEnabled(true);
-  statusEl.textContent = "Enlace listo";
+  statusEl.textContent = t("whatsapp.linkReady", "Enlace listo");
   scheduleQr(link);
 }
 
@@ -140,7 +141,7 @@ function clearQr() {
 
 async function refreshQr(link) {
   const runId = ++qrRunId;
-  qrHint.textContent = "Generando el código QR…";
+  qrHint.textContent = t("whatsapp.generatingQr", "Generando el código QR…");
 
   try {
     const res = await api("/api/whatsapp/qr", { link }, { timeoutMs: 20000 });
@@ -156,13 +157,24 @@ async function refreshQr(link) {
     qrEmpty.classList.add("hidden");
     qrHint.textContent =
       link.length > 320
-        ? "El mensaje es largo: el QR queda muy denso. Para imprimirlo, usa un texto más corto."
-        : "El QR se genera en el servidor a partir del enlace y no se guarda.";
+        ? t(
+            "whatsapp.longMessage",
+            "El mensaje es largo: el QR queda muy denso. Para imprimirlo, usa un texto más corto."
+          )
+        : t(
+            "whatsapp.qrGenerated",
+            "El QR se genera en el servidor a partir del enlace y no se guarda."
+          );
     setActionsEnabled(true);
   } catch (err) {
     if (runId !== qrRunId) return;
-    qrHint.textContent = "No se pudo generar el código QR.";
-    showError(err.message || "No se pudo generar el código QR.");
+    qrHint.textContent = t(
+      "whatsapp.qrFailed",
+      "No se pudo generar el código QR."
+    );
+    showError(
+      err.message || t("whatsapp.qrFailed", "No se pudo generar el código QR.")
+    );
   }
 }
 
@@ -203,8 +215,13 @@ $("wa-templates").addEventListener("click", (event) => {
 // ---------------------------------------------------------------------------
 
 $("wa-copy").addEventListener("click", async () => {
-  if (await copyText(linkInput.value)) showToast("Enlace copiado");
-  else showToast("No se pudo copiar el enlace", { error: true });
+  if (await copyText(linkInput.value)) {
+    showToast(t("whatsapp.linkCopied", "Enlace copiado"));
+  } else {
+    showToast(t("whatsapp.linkCopyFailed", "No se pudo copiar el enlace"), {
+      error: true,
+    });
+  }
 });
 
 $("wa-open").addEventListener("click", () => {
@@ -216,25 +233,48 @@ $("wa-share").addEventListener("click", async () => {
   const text = messageInput.value.trim();
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Escríbeme por WhatsApp", text, url: link });
+      await navigator.share({
+        title: t("whatsapp.shareTitle", "Escríbeme por WhatsApp"),
+        text,
+        url: link,
+      });
       return;
     } catch {
       return; // el usuario ha cerrado el diálogo de compartir
     }
   }
-  if (await copyText(link)) showToast("Enlace copiado (tu navegador no permite compartir)");
-  else showToast("No se pudo compartir el enlace", { error: true });
+  if (await copyText(link)) {
+    showToast(
+      t(
+        "whatsapp.shareFallback",
+        "Enlace copiado (tu navegador no permite compartir)"
+      )
+    );
+  } else {
+    showToast(t("whatsapp.shareFailed", "No se pudo compartir el enlace"), {
+      error: true,
+    });
+  }
 });
 
 $("wa-html").addEventListener("click", async () => {
-  const snippet = `<a href="${linkInput.value}" target="_blank" rel="noopener">Escríbeme por WhatsApp</a>`;
-  if (await copyText(snippet)) showToast("Botón HTML copiado");
-  else showToast("No se pudo copiar el código", { error: true });
+  const label = t("whatsapp.shareTitle", "Escríbeme por WhatsApp");
+  const snippet = `<a href="${linkInput.value}" target="_blank" rel="noopener">${label}</a>`;
+  if (await copyText(snippet)) {
+    showToast(t("whatsapp.htmlCopied", "Botón HTML copiado"));
+  } else {
+    showToast(t("whatsapp.htmlCopyFailed", "No se pudo copiar el código"), {
+      error: true,
+    });
+  }
 });
 
 $("wa-qr-download").addEventListener("click", () => {
   if (!qrUrl) {
-    showToast("El código QR aún no está listo", { error: true });
+    showToast(
+      t("whatsapp.qrNotReady", "El código QR aún no está listo"),
+      { error: true }
+    );
     return;
   }
   const a = document.createElement("a");
@@ -243,7 +283,7 @@ $("wa-qr-download").addEventListener("click", () => {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  showToast("Descargando el código QR…");
+  showToast(t("whatsapp.downloadingQr", "Descargando el código QR…"));
 });
 
 // Estado inicial.

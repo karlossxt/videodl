@@ -1,128 +1,149 @@
-"""Rutas que sirven las páginas HTML (URLs pensadas para SEO)."""
+"""Rutas que sirven las páginas HTML (URLs pensadas para SEO).
+
+El español conserva las URLs sin prefijo. El inglés se sirve bajo ``/en/`` y
+``/es/...`` redirige a la variante española para evitar contenido duplicado.
+"""
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from . import image_pages, pdf_pages, views
 
 router = APIRouter(include_in_schema=False)
 
+# Ruta pública -> clave del catálogo de metadatos.
+PAGE_ROUTES: dict[str, str] = {
+    "/": "home",
+    "/herramientas": "directory",
+    "/comprimir-video-whatsapp": "comprimir",
+    "/recortar-clip-vertical": "clips",
+    "/link-whatsapp": "whatsapp",
+    "/generador-qr": "generador-qr",
+    "/transcribir-audio": "transcribir-audio",
+    "/comprimir-imagen": "comprimir-imagen",
+    "/convertir-imagen": "convertir-imagen",
+    "/redimensionar-imagen": "redimensionar-imagen",
+    "/unir-pdf": "unir-pdf",
+    "/dividir-pdf": "dividir-pdf",
+    "/imagenes-a-pdf": "imagenes-a-pdf",
+    "/pdf-a-jpg": "pdf-a-jpg",
+    "/comprimir-pdf": "comprimir-pdf",
+    "/privacidad": "privacy",
+}
 
-# ---------------------------------------------------------------------------
-# Portada y directorio: se generan desde el catálogo único.
-# ---------------------------------------------------------------------------
+IMAGE_KEYS = {"comprimir-imagen", "convertir-imagen", "redimensionar-imagen"}
+PDF_KEYS = {"unir-pdf", "dividir-pdf", "imagenes-a-pdf", "pdf-a-jpg", "comprimir-pdf"}
 
-
-@router.get("/", response_class=HTMLResponse)
-async def page_home(q: str = "", categoria: str = "all"):
-    """Portada con buscador, categorías y catálogo de herramientas."""
-    return HTMLResponse(views.home_page(q, categoria))
-
-
-@router.get("/herramientas", response_class=HTMLResponse)
-async def page_herramientas(q: str = "", categoria: str = "all"):
-    """Directorio reutilizable con todas las herramientas del sitio."""
-    return HTMLResponse(views.directory_page(q, categoria))
-
-
-# ---------------------------------------------------------------------------
-# Herramientas que mantienen su propio HTML.
-# ---------------------------------------------------------------------------
-
-
-@router.get("/comprimir-video-whatsapp", response_class=HTMLResponse)
-async def page_comprimir():
-    """Página dedicada al compresor."""
-    return HTMLResponse(views.render_static("comprimir"))
-
-
-@router.get("/recortar-clip-vertical", response_class=HTMLResponse)
-async def page_clips():
-    """Página del recortador de clips verticales."""
-    return HTMLResponse(views.render_static("clips"))
+ALIASES: dict[str, str] = {
+    "/comprimir": "/comprimir-video-whatsapp",
+    "/clips-verticales": "/recortar-clip-vertical",
+    "/clips-twitch-vertical": "/recortar-clip-vertical",
+    "/generador-enlace-whatsapp": "/link-whatsapp",
+    "/legal": "/privacidad",
+}
 
 
-@router.get("/link-whatsapp", response_class=HTMLResponse)
-async def page_whatsapp():
-    """Página del generador de enlaces de WhatsApp con código QR."""
-    return HTMLResponse(views.render_static("whatsapp"))
+def _render_page(
+    key: str,
+    lang: str,
+    q: str = "",
+    categoria: str = "all",
+) -> str:
+    if key == "home":
+        return views.home_page(q, categoria, lang)
+    if key == "directory":
+        return views.directory_page(q, categoria, lang)
+    if key in views.PAGE_FILES:
+        return views.render_static(key, lang)
+    if key in IMAGE_KEYS:
+        return image_pages.render_image_page(key, lang)
+    if key in PDF_KEYS:
+        return pdf_pages.render_pdf_page(key, lang)
+    raise HTTPException(status_code=404, detail="Página no encontrada")
 
 
-@router.get("/comprimir-imagen", response_class=HTMLResponse)
-async def page_comprimir_imagen():
-    """Compresor de imágenes JPG, PNG y WebP en el navegador."""
-    return HTMLResponse(image_pages.render_image_page("comprimir-imagen"))
+def _page_endpoint(key: str, lang: str):
+    async def endpoint(q: str = "", categoria: str = "all") -> HTMLResponse:
+        return HTMLResponse(_render_page(key, lang, q, categoria))
+
+    endpoint.__name__ = f"page_{key}_{lang}"
+    return endpoint
 
 
-@router.get("/convertir-imagen", response_class=HTMLResponse)
-async def page_convertir_imagen():
-    """Conversor de imágenes entre JPG, PNG y WebP en el navegador."""
-    return HTMLResponse(image_pages.render_image_page("convertir-imagen"))
-
-
-@router.get("/redimensionar-imagen", response_class=HTMLResponse)
-async def page_redimensionar_imagen():
-    """Redimensionador de imágenes por píxeles o porcentaje."""
-    return HTMLResponse(image_pages.render_image_page("redimensionar-imagen"))
-
-
-@router.get("/unir-pdf", response_class=HTMLResponse)
-async def page_unir_pdf():
-    """Unión de varios PDF en el orden elegido."""
-    return HTMLResponse(pdf_pages.render_pdf_page("unir-pdf"))
-
-
-@router.get("/dividir-pdf", response_class=HTMLResponse)
-async def page_dividir_pdf():
-    """Extracción de páginas o rangos de un PDF."""
-    return HTMLResponse(pdf_pages.render_pdf_page("dividir-pdf"))
-
-
-@router.get("/imagenes-a-pdf", response_class=HTMLResponse)
-async def page_imagenes_a_pdf():
-    """Creación de un PDF a partir de imágenes JPG o PNG."""
-    return HTMLResponse(pdf_pages.render_pdf_page("imagenes-a-pdf"))
-
-
-@router.get("/pdf-a-jpg", response_class=HTMLResponse)
-async def page_pdf_a_jpg():
-    """Conversión de páginas PDF a imágenes JPG."""
-    return HTMLResponse(pdf_pages.render_pdf_page("pdf-a-jpg"))
-
-
-@router.get("/comprimir-pdf", response_class=HTMLResponse)
-async def page_comprimir_pdf():
-    """Compresión de un PDF en el navegador."""
-    return HTMLResponse(pdf_pages.render_pdf_page("comprimir-pdf"))
-
-
-@router.get("/legal", response_class=HTMLResponse)
-async def page_legal():
-    """Aviso legal, privacidad, términos y contacto."""
-    return HTMLResponse(views.render_static("legal"))
+# Rutas españolas (sin prefijo) e inglesas (con /en).
+for _path, _key in PAGE_ROUTES.items():
+    router.add_api_route(
+        _path,
+        _page_endpoint(_key, "es"),
+        methods=["GET"],
+        response_class=HTMLResponse,
+        name=f"page_{_key}_es",
+    )
+    _en_path = "/en/" if _path == "/" else f"/en{_path}"
+    router.add_api_route(
+        _en_path,
+        _page_endpoint(_key, "en"),
+        methods=["GET"],
+        response_class=HTMLResponse,
+        name=f"page_{_key}_en",
+    )
 
 
 # ---------------------------------------------------------------------------
-# Alias antiguos: redirección permanente a la URL canónica.
+# Redirecciones de idioma y alias antiguos
 # ---------------------------------------------------------------------------
 
 
-@router.get("/comprimir")
-async def alias_comprimir():
-    return RedirectResponse("/comprimir-video-whatsapp", status_code=301)
+def _target(path: str, request: Request) -> str:
+    query = request.url.query
+    return f"{path}?{query}" if query else path
 
 
-@router.get("/clips-verticales")
-@router.get("/clips-twitch-vertical")
-async def alias_clips():
-    return RedirectResponse("/recortar-clip-vertical", status_code=301)
+@router.get("/en")
+async def english_root_redirect(request: Request):
+    return RedirectResponse(_target("/en/", request), status_code=301)
 
 
-@router.get("/generador-enlace-whatsapp")
-async def alias_whatsapp():
-    return RedirectResponse("/link-whatsapp", status_code=301)
+@router.get("/es")
+async def spanish_root_redirect(request: Request):
+    return RedirectResponse(_target("/", request), status_code=301)
+
+
+@router.get("/es/")
+async def spanish_root_slash_redirect(request: Request):
+    return RedirectResponse(_target("/", request), status_code=301)
+
+
+@router.get("/es/{path:path}")
+async def spanish_prefixed_redirect(path: str, request: Request):
+    base = f"/{path}".rstrip("/") or "/"
+    canonical_path = ALIASES.get(base, base)
+    return RedirectResponse(_target(canonical_path, request), status_code=301)
+
+
+for _alias, _canonical in ALIASES.items():
+    async def _alias_es(request: Request, canonical: str = _canonical):
+        return RedirectResponse(_target(canonical, request), status_code=301)
+
+    async def _alias_en(request: Request, canonical: str = _canonical):
+        return RedirectResponse(
+            _target(f"/en{canonical}", request), status_code=301
+        )
+
+    router.add_api_route(
+        _alias,
+        _alias_es,
+        methods=["GET"],
+        name=f"alias_es_{_alias.strip('/')}",
+    )
+    router.add_api_route(
+        f"/en{_alias}",
+        _alias_en,
+        methods=["GET"],
+        name=f"alias_en_{_alias.strip('/')}",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -132,8 +153,13 @@ async def alias_whatsapp():
 
 @router.get("/sitemap.xml")
 async def sitemap():
-    """Sitemap con las URLs canónicas y solo herramientas publicadas."""
+    """Sitemap con las URLs canónicas de ambos idiomas."""
     return Response(content=views.sitemap_xml(), media_type="application/xml")
+
+
+@router.get("/en/sitemap.xml")
+async def sitemap_en():
+    return RedirectResponse("/sitemap.xml", status_code=301)
 
 
 @router.get("/robots.txt")

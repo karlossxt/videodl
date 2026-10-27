@@ -19,6 +19,26 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Transcripción opcional. Se activa en el build con:
+#   docker build --build-arg INSTALL_TRANSCRIBE=1 \
+#     --build-arg PRELOAD_TRANSCRIBE=1 -t fasTools .
+# PRELOAD_TRANSCRIBE descarga el modelo en la imagen (build más lento y pesado)
+# para que la primera transcripción no tenga que esperar a Hugging Face.
+ARG INSTALL_TRANSCRIBE=0
+ARG PRELOAD_TRANSCRIBE=0
+ARG TRANSCRIBE_MODEL=base
+COPY requirements-transcribe.txt ./
+RUN if [ "$INSTALL_TRANSCRIBE" = "1" ]; then \
+        pip install --no-cache-dir -r requirements-transcribe.txt; \
+    fi
+
+# Caché de modelos fuera de /home (la imagen corre con un usuario sin privilegios).
+ENV HF_HOME=/app/.cache/huggingface
+
+RUN if [ "$INSTALL_TRANSCRIBE" = "1" ] && [ "$PRELOAD_TRANSCRIBE" = "1" ]; then \
+        python -c "from faster_whisper import WhisperModel; WhisperModel('${TRANSCRIBE_MODEL}', device='cpu', compute_type='int8')"; \
+    fi
+
 # Usuario sin privilegios.
 RUN useradd --create-home --uid 10001 appuser
 
@@ -26,6 +46,8 @@ RUN useradd --create-home --uid 10001 appuser
 COPY --chown=appuser:appuser main.py ./
 COPY --chown=appuser:appuser videodl ./videodl
 COPY --chown=appuser:appuser static ./static
+
+RUN mkdir -p "$HF_HOME" && chown -R appuser:appuser /app/.cache
 
 USER appuser
 

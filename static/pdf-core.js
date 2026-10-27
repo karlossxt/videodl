@@ -21,6 +21,12 @@
   const PDF_EXTENSIONS = ["pdf"];
   const IMAGE_MIMES = ["image/jpeg", "image/png"];
 
+  /** Usa window.t cuando common.js está cargado; en Node mantiene el texto base. */
+  function translate(key, fallback, values) {
+    const t = typeof global.t === "function" ? global.t : null;
+    return t ? t(key, fallback, values) : fallback;
+  }
+
   function toBytes(value) {
     if (value instanceof Uint8Array) return value;
     if (value instanceof ArrayBuffer) return new Uint8Array(value);
@@ -60,17 +66,32 @@
   async function validatePdfFile(file, options = {}) {
     const maxBytes = options.maxBytes || MAX_FILE_BYTES;
     if (!file) {
-      return { ok: false, code: "empty", error: "No se ha seleccionado ningún archivo." };
+      return {
+        ok: false,
+        code: "empty",
+        error: translate(
+          "pdf.coreNoFile",
+          "No se ha seleccionado ningún archivo."
+        ),
+      };
     }
     const name = file.name || "documento.pdf";
     if (!file.size) {
-      return { ok: false, code: "empty", error: `“${name}” está vacío.` };
+      return {
+        ok: false,
+        code: "empty",
+        error: translate("pdf.coreEmpty", `“${name}” está vacío.`, { name }),
+      };
     }
     if (file.size > maxBytes) {
       return {
         ok: false,
         code: "too-large",
-        error: `“${name}” supera el límite de ${Math.round(maxBytes / (1024 * 1024))} MB.`,
+        error: translate(
+          "pdf.coreTooLarge",
+          `“${name}” supera el límite de ${Math.round(maxBytes / (1024 * 1024))} MB.`,
+          { name, limit: Math.round(maxBytes / (1024 * 1024)) }
+        ),
       };
     }
 
@@ -82,7 +103,11 @@
       return {
         ok: false,
         code: "unreadable",
-        error: `No se pudo leer “${name}”. Comprueba que el archivo no esté dañado.`,
+        error: translate(
+          "pdf.coreUnreadable",
+          `No se pudo leer “${name}”. Comprueba que el archivo no esté dañado.`,
+          { name }
+        ),
       };
     }
 
@@ -90,15 +115,19 @@
       return {
         ok: false,
         code: "corrupt",
-        error: `“${name}” no parece un PDF válido. El contenido no coincide con la extensión.`,
+        error: translate(
+          "pdf.coreInvalid",
+          `“${name}” no parece un PDF válido. El contenido no coincide con la extensión.`,
+          { name }
+        ),
       };
     }
 
     return { ok: true, code: null, error: null, name, size: file.size };
   }
 
-  function friendlyPdfError(error, filename = "el documento") {
-    const name = filename || "el documento";
+  function friendlyPdfError(error, filename = "") {
+    const name = filename || translate("pdf.defaultDocument", "el documento");
     const errorName = error && error.name ? String(error.name) : "";
     const message = error && error.message ? String(error.message) : String(error || "");
 
@@ -108,10 +137,11 @@
     ) {
       return {
         code: "encrypted",
-        message:
-          `“${name}” está protegido con contraseña o cifrado. ` +
-          "Quita la protección con la aplicación con la que lo creaste y vuelve a intentarlo. " +
-          "Esta herramienta no puede descifrar documentos.",
+        message: translate(
+          "pdf.coreEncrypted",
+          `“${name}” está protegido con contraseña o cifrado. Quita la protección con la aplicación con la que lo creaste y vuelve a intentarlo. Esta herramienta no puede descifrar documentos.`,
+          { name }
+        ),
       };
     }
 
@@ -124,24 +154,32 @@
     ) {
       return {
         code: "corrupt",
-        message:
-          `“${name}” está dañado o no es un PDF legible. ` +
-          "Prueba a abrirlo en tu visor habitual o vuelve a descargarlo desde el origen.",
+        message: translate(
+          "pdf.coreCorrupt",
+          `“${name}” está dañado o no es un PDF legible. Prueba a abrirlo en tu visor habitual o vuelve a descargarlo desde el origen.`,
+          { name }
+        ),
       };
     }
 
     if (errorName === "MissingPDFException") {
       return {
         code: "missing",
-        message: `No se encontró “${name}”. Vuelve a seleccionarlo.`,
+        message: translate(
+          "pdf.coreMissing",
+          `No se encontró “${name}”. Vuelve a seleccionarlo.`,
+          { name }
+        ),
       };
     }
 
     return {
       code: "unknown",
-      message:
-        `No se pudo procesar “${name}”. ` +
-        "El archivo puede estar dañado o usar una protección no compatible.",
+      message: translate(
+        "pdf.coreUnknown",
+        `No se pudo procesar “${name}”. El archivo puede estar dañado o usar una protección no compatible.`,
+        { name }
+      ),
     };
   }
 
@@ -153,12 +191,26 @@
     const maxPages = options.maxPages || MAX_PDF_PAGES;
     const total = Number(pageCount);
     if (!Number.isInteger(total) || total < 1) {
-      return { ok: false, pages: [], error: "El documento no tiene páginas legibles." };
+      return {
+        ok: false,
+        pages: [],
+        error: translate(
+          "pdf.coreNoPages",
+          "El documento no tiene páginas legibles."
+        ),
+      };
     }
 
     const raw = String(input || "").trim();
     if (!raw) {
-      return { ok: false, pages: [], error: "Escribe al menos una página o un rango." };
+      return {
+        ok: false,
+        pages: [],
+        error: translate(
+          "pdf.coreRangeEmpty",
+          "Escribe al menos una página o un rango."
+        ),
+      };
     }
 
     const normalized = raw.replace(/[;]+/g, ",").replace(/\s+/g, " ");
@@ -168,7 +220,14 @@
       .filter(Boolean);
 
     if (!tokens.length) {
-      return { ok: false, pages: [], error: "Escribe al menos una página o un rango." };
+      return {
+        ok: false,
+        pages: [],
+        error: translate(
+          "pdf.coreRangeEmpty",
+          "Escribe al menos una página o un rango."
+        ),
+      };
     }
 
     const pages = [];
@@ -178,7 +237,11 @@
         return {
           ok: false,
           pages: [],
-          error: `“${token}” no es un rango válido. Usa el formato 1-3, 5 u 8-10.`,
+          error: translate(
+            "pdf.coreRangeInvalid",
+            `“${token}” no es un rango válido. Usa el formato 1-3, 5 u 8-10.`,
+            { token }
+          ),
         };
       }
 
@@ -190,7 +253,11 @@
         return {
           ok: false,
           pages: [],
-          error: `Las páginas deben estar entre 1 y ${total}. Revisa “${token}”.`,
+          error: translate(
+            "pdf.coreRangeBounds",
+            `Las páginas deben estar entre 1 y ${total}. Revisa “${token}”.`,
+            { total, token }
+          ),
         };
       }
 
@@ -200,7 +267,11 @@
           return {
             ok: false,
             pages: [],
-            error: `Puedes extraer como máximo ${maxPages} páginas en una sola operación.`,
+            error: translate(
+              "pdf.coreRangeMax",
+              `Puedes extraer como máximo ${maxPages} páginas en una sola operación.`,
+              { max: maxPages }
+            ),
           };
         }
       }
@@ -381,28 +452,39 @@
   }
 
   function mergedPdfName() {
-    return "documento-unido.pdf";
+    return translate("pdf.nameMerged", "documento-unido.pdf");
   }
 
   function splitPdfName(name) {
-    return outputName(name, "-paginas", "pdf");
+    return outputName(name, translate("pdf.suffixPages", "-paginas"), "pdf");
   }
 
   function compressedPdfName(name) {
-    return outputName(name, "-comprimido", "pdf");
+    return outputName(
+      name,
+      translate("pdf.suffixCompressed", "-comprimido"),
+      "pdf"
+    );
   }
 
   function imagesPdfName(items) {
     if (Array.isArray(items) && items.length === 1) {
-      return outputName(items[0].name || items[0], "-imagenes", "pdf");
+      return outputName(
+        items[0].name || items[0],
+        translate("pdf.suffixImages", "-imagenes"),
+        "pdf"
+      );
     }
-    return "imagenes-a-pdf.pdf";
+    return translate("pdf.nameImages", "imagenes-a-pdf.pdf");
   }
 
   function jpgPageName(name, pageNumber, totalPages) {
     const digits = Math.max(2, String(totalPages || 1).length);
     const number = String(pageNumber).padStart(digits, "0");
-    return `${sanitizeBaseName(name)}-pagina-${number}.jpg`;
+    return `${sanitizeBaseName(name)}${translate(
+      "pdf.suffixPage",
+      "-pagina-"
+    )}${number}.jpg`;
   }
 
   function zipName(name) {

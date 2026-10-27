@@ -6,6 +6,10 @@
   const grid = document.querySelector("[data-tools-grid]");
   if (!input || !grid) return;
 
+  const i18n = window.I18N_STRINGS || {};
+  const lang = i18n.lang || "es";
+  const common = i18n.common || {};
+
   const cards = Array.from(grid.querySelectorAll("[data-tool-card]"));
   // Solo los chips del filtro: las tarjetas también llevan data-category y no
   // deben interceptar la navegación ni recibir aria-current.
@@ -20,7 +24,7 @@
 
   function normalize(value) {
     return String(value)
-      .toLocaleLowerCase("es")
+      .toLocaleLowerCase(lang)
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
   }
@@ -53,8 +57,11 @@
     });
 
     if (count) {
-      count.textContent =
-        visible === 1 ? "1 herramienta" : visible + " herramientas";
+      const template =
+        visible === 1
+          ? common.count_one || "1 herramienta"
+          : common.count_many || "{count} herramientas";
+      count.textContent = template.replace("{count}", String(visible));
     }
     if (empty) empty.hidden = visible !== 0;
     setActiveChip();

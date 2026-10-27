@@ -10,23 +10,23 @@ from __future__ import annotations
 
 import html
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from xml.sax.saxutils import escape as xml_escape
 
-from . import config
+from . import config, i18n
 from .catalog import (
-    CATEGORIES,
-    TOOLS,
     Tool,
     category_by_slug,
     category_name,
     featured_tools,
+    localized_categories,
+    localized_tools,
     related_tools,
 )
 from .paths import STATIC_DIR
 
-SITE_NAME = "FasTools.app"
+SITE_NAME = config.SITE_NAME
 SITE_TAGLINE = "Herramientas gratuitas para tus archivos"
 
 
@@ -58,8 +58,8 @@ PAGE_META: dict[str, PageMeta] = {
         title="Directorio de herramientas gratis — FasTools.app",
         description=(
             "Explora todas las herramientas de FasTools.app: comprimir vídeo, recortar "
-            "clips, comprimir y convertir imágenes, unir o dividir PDF, enlaces de WhatsApp "
-            "y próximas utilidades de audio y productividad."
+            "clips, transcribir audio, comprimir y convertir imágenes, unir o dividir PDF, "
+            "generar códigos QR y crear enlaces de WhatsApp."
         ),
         nav="tools",
     ),
@@ -95,6 +95,28 @@ PAGE_META: dict[str, PageMeta] = {
         ),
         nav="whatsapp",
         tool_slug="link-whatsapp",
+    ),
+    "generador-qr": PageMeta(
+        key="generador-qr",
+        path="/generador-qr",
+        title="Generador de códigos QR gratis (enlace, WiFi, email) — FasTools.app",
+        description=(
+            "Crea códigos QR para enlaces, texto, WiFi, email, teléfono o SMS. Elige "
+            "colores y tamaño y descárgalo en PNG o SVG, gratis y sin registro."
+        ),
+        nav="tools",
+        tool_slug="generador-qr",
+    ),
+    "transcribir-audio": PageMeta(
+        key="transcribir-audio",
+        path="/transcribir-audio",
+        title="Transcribir audio a texto gratis (TXT, SRT y VTT) — FasTools.app",
+        description=(
+            "Convierte la voz de un audio o vídeo en texto editable con marcas de "
+            "tiempo. Descarga la transcripción en TXT, SRT o VTT, gratis y sin registro."
+        ),
+        nav="tools",
+        tool_slug="transcribir-audio",
     ),
     "comprimir-imagen": PageMeta(
         key="comprimir-imagen",
@@ -184,22 +206,49 @@ PAGE_META: dict[str, PageMeta] = {
         nav="pdf",
         tool_slug="comprimir-pdf",
     ),
-    "legal": PageMeta(
-        key="legal",
-        path="/legal",
-        title="Legal y privacidad — FasTools.app",
-        description="Aviso legal, política de privacidad, términos de uso y contacto de FasTools.app.",
+    "privacy": PageMeta(
+        key="privacy",
+        path="/privacidad",
+        title="Privacidad — FasTools.app",
+        description="Qué ocurre con los archivos y los datos que usas en FasTools.app.",
         nav=None,
         robots="noindex, follow",
     ),
 }
+
+# Si se configuró otra marca (por ejemplo, FasTools.es), se aplica a los títulos
+# y descripciones sin repetir el nombre en cada PageMeta.
+if SITE_NAME != "FasTools.app":
+    PAGE_META = {
+        key: replace(
+            meta,
+            title=meta.title.replace("FasTools.app", SITE_NAME),
+            description=meta.description.replace("FasTools.app", SITE_NAME),
+        )
+        for key, meta in PAGE_META.items()
+    }
+
+def meta_for(key: str, lang: str = i18n.DEFAULT_LANG) -> PageMeta:
+    """Metadatos SEO en el idioma pedido, con la marca configurada aplicada."""
+    meta = PAGE_META[key]
+    if i18n.normalize_lang(lang) == i18n.DEFAULT_LANG:
+        return meta
+    title = i18n.tr(lang, f"meta.{key}.title", meta.title)
+    description = i18n.tr(lang, f"meta.{key}.description", meta.description)
+    if SITE_NAME != "FasTools.app":
+        title = title.replace("FasTools.app", SITE_NAME)
+        description = description.replace("FasTools.app", SITE_NAME)
+    return replace(meta, title=title, description=description)
+
 
 # Archivo HTML de las páginas que mantienen su estructura propia.
 PAGE_FILES = {
     "comprimir": "comprimir.html",
     "clips": "clips.html",
     "whatsapp": "whatsapp.html",
-    "legal": "legal.html",
+    "generador-qr": "qr.html",
+    "transcribir-audio": "transcribe.html",
+    "privacy": "privacidad.html",
 }
 
 NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
@@ -217,6 +266,7 @@ SITEMAP_KEYS = (
     "directory",
     "comprimir",
     "clips",
+    "transcribir-audio",
     "comprimir-imagen",
     "convertir-imagen",
     "redimensionar-imagen",
@@ -225,6 +275,7 @@ SITEMAP_KEYS = (
     "imagenes-a-pdf",
     "pdf-a-jpg",
     "comprimir-pdf",
+    "generador-qr",
     "whatsapp",
 )
 
@@ -252,28 +303,40 @@ def _normalize(text: str) -> str:
     return "".join(char for char in decomposed if unicodedata.category(char) != "Mn")
 
 
-def tool_search_text(tool: Tool) -> str:
+def tool_search_text(
+    tool: Tool, lang: str = i18n.DEFAULT_LANG
+) -> str:
     return " ".join(
-        (tool.name, tool.description, category_name(tool.category), *tool.keywords)
+        (
+            tool.name,
+            tool.description,
+            category_name(tool.category, lang),
+            *tool.keywords,
+        )
     )
 
 
-def matches(tool: Tool, query: str) -> bool:
+def matches(tool: Tool, query: str, lang: str = i18n.DEFAULT_LANG) -> bool:
     needle = _normalize(query.strip())
-    return not needle or needle in _normalize(tool_search_text(tool))
+    return not needle or needle in _normalize(tool_search_text(tool, lang))
 
 
-def filter_tools(query: str = "", category: str = "all") -> tuple[Tool, ...]:
+def filter_tools(
+    query: str = "", category: str = "all", lang: str = i18n.DEFAULT_LANG
+) -> tuple[Tool, ...]:
     category = category if category_by_slug(category) else "all"
     return tuple(
         tool
-        for tool in TOOLS
-        if matches(tool, query) and (category == "all" or tool.category == category)
+        for tool in localized_tools(lang)
+        if matches(tool, query, lang)
+        and (category == "all" or tool.category == category)
     )
 
 
-def _count_label(count: int) -> str:
-    return "1 herramienta" if count == 1 else f"{count} herramientas"
+def _count_label(count: int, lang: str = i18n.DEFAULT_LANG) -> str:
+    key = "common.count_one" if count == 1 else "common.count_many"
+    fallback = "1 herramienta" if count == 1 else f"{count} herramientas"
+    return i18n.tr(lang, key, fallback, count=count)
 
 
 # ---------------------------------------------------------------------------
@@ -281,17 +344,30 @@ def _count_label(count: int) -> str:
 # ---------------------------------------------------------------------------
 
 
-def head_html(meta: PageMeta) -> str:
-    url = canonical(meta.path)
-    return f"""  <title>{e(meta.title)}</title>
+def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
+    normalized = i18n.normalize_lang(lang)
+    localized_path = i18n.localize_path(normalized, meta.path)
+    url = canonical(localized_path)
+    urls = i18n.language_urls(meta.path)
+    alternates = "\n".join(
+        f'  <link rel="alternate" hreflang="{code}" href="{e(canonical(href))}" />'
+        for code, href in urls.items()
+    )
+    og_locale = "es_ES" if normalized == "es" else "en_US"
+    alternate_locale = "en_US" if normalized == "es" else "es_ES"
+    inline = i18n.inline_script(normalized)
+    return f"""  <base href="/" />
+  <title>{e(meta.title)}</title>
   <meta name="description" content="{e(meta.description)}" />
   <meta name="robots" content="{e(meta.robots)}" />
   <link rel="canonical" href="{e(url)}" />
+{alternates}
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#080c14" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="{e(SITE_NAME)}" />
-  <meta property="og:locale" content="es_ES" />
+  <meta property="og:locale" content="{og_locale}" />
+  <meta property="og:locale:alternate" content="{alternate_locale}" />
   <meta property="og:title" content="{e(meta.title)}" />
   <meta property="og:description" content="{e(meta.description)}" />
   <meta property="og:url" content="{e(url)}" />
@@ -301,56 +377,98 @@ def head_html(meta: PageMeta) -> str:
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <script>{inline}</script>
   <script src="/site.js"></script>"""
 
 
-def nav_html(active: str | None) -> str:
+def _brand_html() -> str:
+    """Marca visible, con el sufijo del dominio separado si lo hay."""
+    base, dot, suffix = SITE_NAME.rpartition(".")
+    if not dot:
+        return e(SITE_NAME)
+    base_html = 'Fas<span class="accent">Tools</span>' if base == "FasTools" else e(base)
+    return f'{base_html} <span class="brand-tools">.{e(suffix)}</span>'
+
+
+def language_switch_html(
+    current_path: str, lang: str = i18n.DEFAULT_LANG
+) -> str:
+    """Selector ES/EN que conserva la página actual."""
+    normalized = i18n.normalize_lang(lang)
+    urls = i18n.language_urls(current_path)
+    label = i18n.t(normalized, "nav.language_label")
+    es_current = ' aria-current="true"' if normalized == "es" else ""
+    en_current = ' aria-current="true"' if normalized == "en" else ""
+    return f"""<div class="lang-switch" role="group" aria-label="{e(label)}" translate="no" data-i18n-skip>
+      <a href="{e(urls['es'])}" hreflang="es" lang="es"{es_current}>ES</a>
+      <a href="{e(urls['en'])}" hreflang="en" lang="en"{en_current}>EN</a>
+    </div>"""
+
+
+def nav_html(
+    active: str | None,
+    lang: str = i18n.DEFAULT_LANG,
+    current_path: str = "/",
+) -> str:
+    normalized = i18n.normalize_lang(lang)
+    nav_data = i18n.get_translations(normalized).get("nav", {})
+    items = nav_data.get("items") if isinstance(nav_data, dict) else None
+    if not isinstance(items, list):
+        items = [
+            {"key": key, "label": label, "path": href}
+            for key, label, href in NAV_ITEMS
+        ]
     links = []
-    for key, label, href in NAV_ITEMS:
+    for item in items:
+        key = str(item.get("key", ""))
+        label = str(item.get("label", key))
+        href = i18n.localize_path(normalized, str(item.get("path", "/")))
         current = ' aria-current="page"' if key == active else ""
         links.append(f'<a href="{e(href)}"{current}>{e(label)}</a>')
-    return f"""<a class="skip-link" href="#main">Saltar al contenido</a>
-<header class="site-header">
+    return f"""<a class="skip-link" href="#main">{e(i18n.t(normalized, "nav.skip"))}</a>
+<header class="site-header" translate="no" data-i18n-skip>
   <div class="page-shell nav-shell">
-    <a class="site-brand" href="/" aria-label="FasTools.app, inicio">
+    <a class="site-brand" href="{e(i18n.localize_path(normalized, "/"))}" aria-label="{e(i18n.t(normalized, "nav.brand_aria", site=SITE_NAME))}" translate="no" data-i18n-skip>
       <span class="brand-mark" aria-hidden="true">F</span>
-      <span class="brand-text">Fas<span class="accent">Tools</span> <span class="brand-tools">.app</span></span>
+      <span class="brand-text">{_brand_html()}</span>
     </a>
-    <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-menu" aria-label="Abrir menú de navegación">
+    <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-menu" aria-label="{e(i18n.t(normalized, "nav.menu_toggle"))}">
       <span class="nav-toggle-bar" aria-hidden="true"></span>
       <span class="nav-toggle-bar" aria-hidden="true"></span>
       <span class="nav-toggle-bar" aria-hidden="true"></span>
     </button>
-    <nav id="site-menu" class="site-menu" aria-label="Navegación principal">
+    <nav id="site-menu" class="site-menu" aria-label="{e(i18n.t(normalized, "nav.menu_label"))}">
       {"".join(links)}
     </nav>
-    <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambiar a modo claro">
+    {language_switch_html(current_path, normalized)}
+    <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="{e(i18n.t(normalized, "nav.theme_light"))}">
       <span class="theme-toggle-icon" data-theme-icon aria-hidden="true">☀</span>
-      <span class="theme-toggle-text" data-theme-text>Modo claro</span>
+      <span class="theme-toggle-text" data-theme-text>{e(i18n.t(normalized, "nav.theme_text_light"))}</span>
     </button>
   </div>
 </header>"""
 
 
-def footer_html() -> str:
+def footer_html(lang: str = i18n.DEFAULT_LANG) -> str:
+    normalized = i18n.normalize_lang(lang)
     year = date.today().year
-    return f"""<footer class="site-footer">
+    home = i18n.localize_path(normalized, "/")
+    tools = i18n.localize_path(normalized, "/herramientas")
+    privacy = i18n.localize_path(normalized, "/privacidad")
+    return f"""<footer class="site-footer" translate="no" data-i18n-skip>
   <div class="page-shell footer-shell">
     <div class="footer-brand">
-      <a class="site-brand" href="/" aria-label="FasTools.app, inicio">
+      <a class="site-brand" href="{e(home)}" aria-label="{e(i18n.t(normalized, "nav.brand_aria", site=SITE_NAME))}" translate="no" data-i18n-skip>
         <span class="brand-mark" aria-hidden="true">F</span>
-        <span class="brand-text">Fas<span class="accent">Tools</span> <span class="brand-tools">.app</span></span>
+        <span class="brand-text">{_brand_html()}</span>
       </a>
-      <p>{e(SITE_TAGLINE)}. Sin registro y sin instalar nada.</p>
+      <p>{e(i18n.t(normalized, "footer.tagline"))}. {e(i18n.t(normalized, "footer.note"))}</p>
     </div>
-    <nav class="footer-links" aria-label="Enlaces legales y de navegación">
-      <a href="/herramientas">Herramientas</a>
-      <a href="/legal#aviso-legal">Aviso legal</a>
-      <a href="/legal#privacidad">Privacidad</a>
-      <a href="/legal#terminos">Términos</a>
-      <a href="/legal#contacto">Contacto</a>
+    <nav class="footer-links" aria-label="{e(i18n.t(normalized, "footer.links_label"))}">
+      <a href="{e(tools)}">{e(i18n.t(normalized, "footer.tools"))}</a>
+      <a href="{e(privacy)}">{e(i18n.t(normalized, "footer.privacy"))}</a>
     </nav>
-    <p class="footer-note">© {year} {e(SITE_NAME)} · Hecho en español</p>
+    <p class="footer-note">{e(i18n.t(normalized, "footer.copyright", year=year, site=SITE_NAME))}</p>
   </div>
 </footer>"""
 
@@ -360,15 +478,21 @@ def footer_html() -> str:
 # ---------------------------------------------------------------------------
 
 
-def tool_card(tool: Tool, *, hidden: bool = False, compact: bool = False) -> str:
-    search_text = e(tool_search_text(tool))
-    category = e(category_name(tool.category))
+def tool_card(
+    tool: Tool,
+    *,
+    hidden: bool = False,
+    compact: bool = False,
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
+    search_text = e(tool_search_text(tool, lang))
+    category = e(category_name(tool.category, lang))
     classes = "tool-card" + (" is-soon" if not tool.available else "")
     classes += " tool-card-compact" if compact else ""
     hidden_attr = " hidden" if hidden else ""
 
     if tool.available:
-        badge = '<span class="tool-badge">Gratis</span>'
+        badge = f'<span class="tool-badge">{e(i18n.t(lang, "common.free"))}</span>'
         open_tag = (
             f'<a class="{classes}" href="{e(tool.route)}" data-tool-card '
             f'data-category="{e(tool.category)}" data-search="{search_text}" '
@@ -376,10 +500,11 @@ def tool_card(tool: Tool, *, hidden: bool = False, compact: bool = False) -> str
         )
         close_tag = "</a>"
     else:
-        badge = '<span class="tool-badge soon">Próximamente</span>'
+        soon = e(i18n.t(lang, "common.soon"))
+        badge = f'<span class="tool-badge soon">{soon}</span>'
         open_tag = (
             f'<article class="{classes}" data-tool-card data-category="{e(tool.category)}" '
-            f'data-search="{search_text}" aria-label="{e(tool.name)}: próximamente"{hidden_attr}>'
+            f'data-search="{search_text}" aria-label="{e(tool.name)}: {e(soon)}"{hidden_attr}>'
         )
         close_tag = "</article>"
 
@@ -402,10 +527,17 @@ def tools_grid(
     hidden_slugs: set[str] | None = None,
     compact: bool = False,
     searchable: bool = False,
+    lang: str = i18n.DEFAULT_LANG,
 ) -> str:
     hidden_slugs = hidden_slugs or set()
     cards = "".join(
-        tool_card(tool, hidden=tool.slug in hidden_slugs, compact=compact) for tool in tools
+        tool_card(
+            tool,
+            hidden=tool.slug in hidden_slugs,
+            compact=compact,
+            lang=lang,
+        )
+        for tool in tools
     )
     search_attr = " data-tools-grid" if searchable else ""
     return (
@@ -414,70 +546,79 @@ def tools_grid(
     )
 
 
-def featured_section() -> str:
-    tools = featured_tools()
+def featured_section(lang: str = i18n.DEFAULT_LANG) -> str:
+    tools = featured_tools(lang)
     if not tools:
         return ""
     return f"""<section class="tools-section" aria-labelledby="featured-title">
   <div class="section-heading">
     <div>
-      <p class="section-kicker">Listas para usar</p>
-      <h2 id="featured-title">Herramientas destacadas</h2>
-      <p class="section-sub">Empieza por las utilidades que ya funcionan hoy.</p>
+      <p class="section-kicker">{e(i18n.t(lang, "common.featured_kicker"))}</p>
+      <h2 id="featured-title">{e(i18n.t(lang, "common.featured_title"))}</h2>
+      <p class="section-sub">{e(i18n.t(lang, "common.featured_sub"))}</p>
     </div>
   </div>
-  {tools_grid(tools, compact=True)}
+  {tools_grid(tools, compact=True, lang=lang)}
 </section>"""
 
 
-def workflows_section() -> str:
+def workflows_section(lang: str = i18n.DEFAULT_LANG) -> str:
     """Dos combinaciones reales entre las herramientas disponibles."""
-    return """<section class="workflow-section" aria-labelledby="workflow-title">
+    compress = i18n.localize_path(lang, "/comprimir-video-whatsapp")
+    whatsapp = i18n.localize_path(lang, "/link-whatsapp")
+    clips = i18n.localize_path(lang, "/recortar-clip-vertical")
+    return f"""<section class="workflow-section" aria-labelledby="workflow-title">
   <div class="section-heading">
     <div>
-      <p class="section-kicker">Herramientas relacionadas</p>
-      <h2 id="workflow-title">Combínalas según lo que necesites</h2>
-      <p class="section-sub">Flujos rápidos con enlaces reales, sin pasos de más.</p>
+      <p class="section-kicker">{e(i18n.t(lang, "common.workflow_kicker"))}</p>
+      <h2 id="workflow-title">{e(i18n.t(lang, "common.workflow_title"))}</h2>
+      <p class="section-sub">{e(i18n.t(lang, "common.workflow_sub"))}</p>
     </div>
   </div>
   <div class="workflow-grid">
     <article class="workflow-card">
-      <h3>Comprime y comparte</h3>
-      <p>Deja el vídeo en el tamaño que acepta WhatsApp y genera el enlace del chat.</p>
+      <h3>{e(i18n.t(lang, "common.workflow_compress_title"))}</h3>
+      <p>{e(i18n.t(lang, "common.workflow_compress_text"))}</p>
       <p class="workflow-links">
-        <a href="/comprimir-video-whatsapp">Comprimir vídeo</a>
+        <a href="{e(compress)}">{e(i18n.t(lang, "common.workflow_compress_link"))}</a>
         <span aria-hidden="true">+</span>
-        <a href="/link-whatsapp">Enlace de WhatsApp</a>
+        <a href="{e(whatsapp)}">{e(i18n.t(lang, "common.workflow_whatsapp_link"))}</a>
       </p>
     </article>
     <article class="workflow-card">
-      <h3>Recorta y publica</h3>
-      <p>Saca el momento que te interesa en 9:16 y comprímelo si pesa demasiado.</p>
+      <h3>{e(i18n.t(lang, "common.workflow_clip_title"))}</h3>
+      <p>{e(i18n.t(lang, "common.workflow_clip_text"))}</p>
       <p class="workflow-links">
-        <a href="/recortar-clip-vertical">Recortar clip</a>
+        <a href="{e(clips)}">{e(i18n.t(lang, "common.workflow_clip_link"))}</a>
         <span aria-hidden="true">+</span>
-        <a href="/comprimir-video-whatsapp">Comprimir vídeo</a>
+        <a href="{e(compress)}">{e(i18n.t(lang, "common.workflow_compress_link"))}</a>
       </p>
     </article>
   </div>
 </section>"""
 
 
-def explorer_section(query: str, category: str, hidden_slugs: set[str], visible_count: int) -> str:
+def explorer_section(
+    query: str,
+    category: str,
+    hidden_slugs: set[str],
+    visible_count: int,
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
     empty_hidden = "" if visible_count == 0 else " hidden"
     return f"""<section class="tools-section" id="todas-las-herramientas" aria-labelledby="tools-title">
   <div class="section-heading">
     <div>
-      <p class="section-kicker">Catálogo completo</p>
-      <h2 id="tools-title">Todas las herramientas</h2>
-      <p class="section-sub">Filtra por categoría o busca por nombre y palabra clave.</p>
+      <p class="section-kicker">{e(i18n.t(lang, "common.catalog_kicker"))}</p>
+      <h2 id="tools-title">{e(i18n.t(lang, "common.catalog_title"))}</h2>
+      <p class="section-sub">{e(i18n.t(lang, "common.catalog_sub"))}</p>
     </div>
-    <p class="tools-count" data-tools-count role="status" aria-live="polite">{_count_label(visible_count)}</p>
+    <p class="tools-count" data-tools-count role="status" aria-live="polite">{e(_count_label(visible_count, lang))}</p>
   </div>
   <!-- Hueco publicitario preparado: oculto y sin scripts de terceros. -->
   <div class="ad-slot" data-ad-slot="catalog-inline" aria-hidden="true" hidden></div>
-  {tools_grid(TOOLS, hidden_slugs=hidden_slugs, searchable=True)}
-  <p class="tools-empty" data-tools-empty{empty_hidden}>No hay herramientas que coincidan. Prueba con otra palabra o categoría.</p>
+  {tools_grid(localized_tools(lang), hidden_slugs=hidden_slugs, searchable=True, lang=lang)}
+  <p class="tools-empty" data-tools-empty{empty_hidden}>{e(i18n.t(lang, "common.empty"))}</p>
 </section>"""
 
 
@@ -486,15 +627,22 @@ def explorer_section(query: str, category: str, hidden_slugs: set[str], visible_
 # ---------------------------------------------------------------------------
 
 
-def _hero(title: str, subtitle: str, query: str, category: str, base_path: str) -> str:
+def _hero(
+    title: str,
+    subtitle: str,
+    query: str,
+    category: str,
+    base_path: str,
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
     active = category if category_by_slug(category) else "all"
     chips = [
         f'<a class="category-chip{" is-active" if active == "all" else ""}" '
         f'href="{e(base_path)}" data-category="all" data-category-chip'
         + (' aria-current="true"' if active == "all" else "")
-        + ">Todas</a>"
+        + f'>{e(i18n.t(lang, "common.all"))}</a>'
     ]
-    for item in CATEGORIES:
+    for item in localized_categories(lang):
         chips.append(
             f'<a class="category-chip{" is-active" if active == item.slug else ""}" '
             f'href="{e(base_path)}?categoria={e(item.slug)}" data-category="{e(item.slug)}" '
@@ -506,35 +654,41 @@ def _hero(title: str, subtitle: str, query: str, category: str, base_path: str) 
     return f"""<section class="hero-v2" aria-labelledby="hero-title">
   <div class="hero-orbit" aria-hidden="true"></div>
   <div class="page-shell hero-shell">
-    <p class="hero-kicker">{e(SITE_NAME)} · gratis y sin registro</p>
+    <p class="hero-kicker">{e(i18n.t(lang, "common.hero_kicker", site=SITE_NAME))}</p>
     <h1 id="hero-title" class="hero-title">{e(title)}</h1>
     <p class="hero-lede">{e(subtitle)}</p>
     <form class="tools-search" role="search" method="get" action="{e(base_path)}">
-      <label class="sr-only" for="tool-search">Buscar herramientas</label>
+      <label class="sr-only" for="tool-search">{e(i18n.t(lang, "common.search_label"))}</label>
       <svg class="tools-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7"></circle>
         <path d="m20 20-3.6-3.6"></path>
       </svg>
-      <input id="tool-search" name="q" type="search" value="{e(query)}" placeholder="Busca: comprimir, clip, PDF, audio…" autocomplete="off" data-tool-search />
+      <input id="tool-search" name="q" type="search" value="{e(query)}" placeholder="{e(i18n.t(lang, "common.search_placeholder"))}" autocomplete="off" data-tool-search />
       <input type="hidden" name="categoria" value="{e(active)}" data-category-input />
-      <button class="tools-search-btn" type="submit">Buscar</button>
+      <button class="tools-search-btn" type="submit">{e(i18n.t(lang, "common.search_button"))}</button>
     </form>
-    <nav class="category-chips" aria-label="Filtrar por categoría">
+    <nav class="category-chips" aria-label="{e(i18n.t(lang, "common.category_filter"))}">
       {"".join(chips)}
     </nav>
-    <p class="hero-note">Solo procesamos los archivos que subes tú. Nada de descargas de plataformas de terceros.</p>
+    <p class="hero-note">{e(i18n.t(lang, "common.hero_note"))}</p>
   </div>
 </section>"""
 
 
-def page_document(meta: PageMeta, body: str, scripts: tuple[str, ...] = ()) -> str:
+def page_document(
+    meta: PageMeta,
+    body: str,
+    scripts: tuple[str, ...] = (),
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
+    normalized = i18n.normalize_lang(lang)
     script_tags = "".join(f'  <script src="{e(src)}"></script>\n' for src in scripts)
     return f"""<!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="{normalized}" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-{head_html(meta)}
+{head_html(meta, normalized)}
 </head>
 <body>
 {body}
@@ -542,52 +696,68 @@ def page_document(meta: PageMeta, body: str, scripts: tuple[str, ...] = ()) -> s
 </html>"""
 
 
-def home_page(query: str = "", category: str = "all") -> str:
-    meta = PAGE_META["home"]
-    filtered = filter_tools(query, category)
+def home_page(
+    query: str = "",
+    category: str = "all",
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
+    normalized = i18n.normalize_lang(lang)
+    meta = meta_for("home", normalized)
+    filtered = filter_tools(query, category, normalized)
     filtered_slugs = {tool.slug for tool in filtered}
-    hidden = {tool.slug for tool in TOOLS if tool.slug not in filtered_slugs}
+    hidden = {
+        tool.slug for tool in localized_tools(normalized) if tool.slug not in filtered_slugs
+    }
     filtering = bool(query.strip()) or category_by_slug(category) is not None
-    extra = "" if filtering else featured_section() + workflows_section()
+    extra = "" if filtering else featured_section(normalized) + workflows_section(normalized)
 
-    body = f"""{nav_html("home")}
+    body = f"""{nav_html("home", normalized, meta.path)}
 <main id="main">
   {_hero(
-      "Todas tus herramientas en un solo lugar",
-      "Convierte, comprime y edita archivos gratis, sin instalaciones",
+      i18n.t(normalized, "common.home_title"),
+      i18n.t(normalized, "common.home_subtitle"),
       query,
       category,
-      "/",
+      i18n.localize_path(normalized, "/"),
+      normalized,
   )}
   <div class="page-shell">
     {extra}
-    {explorer_section(query, category, hidden, len(filtered))}
+    {explorer_section(query, category, hidden, len(filtered), normalized)}
   </div>
 </main>
-{footer_html()}"""
-    return page_document(meta, body, scripts=("/tools.js",))
+{footer_html(normalized)}"""
+    return page_document(meta, body, scripts=("/tools.js",), lang=normalized)
 
 
-def directory_page(query: str = "", category: str = "all") -> str:
-    meta = PAGE_META["directory"]
-    filtered = filter_tools(query, category)
+def directory_page(
+    query: str = "",
+    category: str = "all",
+    lang: str = i18n.DEFAULT_LANG,
+) -> str:
+    normalized = i18n.normalize_lang(lang)
+    meta = meta_for("directory", normalized)
+    filtered = filter_tools(query, category, normalized)
     filtered_slugs = {tool.slug for tool in filtered}
-    hidden = {tool.slug for tool in TOOLS if tool.slug not in filtered_slugs}
-    body = f"""{nav_html("tools")}
+    hidden = {
+        tool.slug for tool in localized_tools(normalized) if tool.slug not in filtered_slugs
+    }
+    body = f"""{nav_html("tools", normalized, meta.path)}
 <main id="main">
   {_hero(
-      "Directorio de herramientas",
-      "Todas las utilidades de FasTools.app, ordenadas por categoría y listas para usar",
+      i18n.t(normalized, "common.directory_title"),
+      i18n.t(normalized, "common.directory_subtitle", site=SITE_NAME),
       query,
       category,
-      "/herramientas",
+      i18n.localize_path(normalized, "/herramientas"),
+      normalized,
   )}
   <div class="page-shell">
-    {explorer_section(query, category, hidden, len(filtered))}
+    {explorer_section(query, category, hidden, len(filtered), normalized)}
   </div>
 </main>
-{footer_html()}"""
-    return page_document(meta, body, scripts=("/tools.js",))
+{footer_html(normalized)}"""
+    return page_document(meta, body, scripts=("/tools.js",), lang=normalized)
 
 
 # ---------------------------------------------------------------------------
@@ -595,33 +765,40 @@ def directory_page(query: str = "", category: str = "all") -> str:
 # ---------------------------------------------------------------------------
 
 
-def related_html(tool_slug: str) -> str:
-    tools = related_tools(tool_slug)
+def related_html(
+    tool_slug: str, lang: str = i18n.DEFAULT_LANG
+) -> str:
+    normalized = i18n.normalize_lang(lang)
+    tools = related_tools(tool_slug, lang=normalized)
     if not tools:
         return ""
     return f"""<section class="tools-section related-tools" aria-labelledby="related-title">
   <div class="section-heading">
     <div>
-      <p class="section-kicker">Sigue con</p>
-      <h2 id="related-title">Herramientas relacionadas</h2>
+      <p class="section-kicker">{e(i18n.t(normalized, "common.related_kicker"))}</p>
+      <h2 id="related-title">{e(i18n.t(normalized, "common.related_title"))}</h2>
     </div>
   </div>
-  {tools_grid(tools, compact=True)}
+  {tools_grid(tools, compact=True, lang=normalized)}
 </section>"""
 
 
-def render_static(key: str) -> str:
-    meta = PAGE_META[key]
+def render_static(key: str, lang: str = i18n.DEFAULT_LANG) -> str:
+    normalized = i18n.normalize_lang(lang)
+    meta = meta_for(key, normalized)
     html_text = (STATIC_DIR / PAGE_FILES[key]).read_text(encoding="utf-8")
     replacements = {
-        "<!-- HEAD -->": head_html(meta),
-        "<!-- NAV -->": nav_html(meta.nav),
-        "<!-- FOOTER -->": footer_html(),
-        "<!-- RELATED -->": related_html(meta.tool_slug) if meta.tool_slug else "",
+        "<!-- HEAD -->": head_html(meta, normalized),
+        "<!-- NAV -->": nav_html(meta.nav, normalized, meta.path),
+        "<!-- FOOTER -->": footer_html(normalized),
+        "<!-- RELATED -->": (
+            related_html(meta.tool_slug, normalized) if meta.tool_slug else ""
+        ),
     }
     for marker, value in replacements.items():
         html_text = html_text.replace(marker, value)
-    return html_text
+    html_text = html_text.replace('<html lang="es"', f'<html lang="{normalized}"', 1)
+    return i18n.translate_html(html_text, normalized)
 
 
 # ---------------------------------------------------------------------------
@@ -634,16 +811,25 @@ def sitemap_xml() -> str:
     for key in SITEMAP_KEYS:
         meta = PAGE_META[key]
         priority = "1.0" if key == "home" else "0.8" if key != "directory" else "0.9"
-        urls.append(
-            "  <url>\n"
-            f"    <loc>{xml_escape(canonical(meta.path))}</loc>\n"
-            "    <changefreq>weekly</changefreq>\n"
-            f"    <priority>{priority}</priority>\n"
-            "  </url>"
-        )
+        urls_variants = i18n.language_urls(meta.path)
+        for code in ("es", "en"):
+            alternates = "".join(
+                f'    <xhtml:link rel="alternate" hreflang="{alt_code}" '
+                f'href="{xml_escape(canonical(alt_path))}" />\n'
+                for alt_code, alt_path in urls_variants.items()
+            )
+            urls.append(
+                "  <url>\n"
+                f"    <loc>{xml_escape(canonical(urls_variants[code]))}</loc>\n"
+                f"{alternates}"
+                "    <changefreq>weekly</changefreq>\n"
+                f"    <priority>{priority}</priority>\n"
+                "  </url>"
+            )
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
         + "\n".join(urls)
         + "\n</urlset>\n"
     )

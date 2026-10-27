@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Generador de códigos QR</h1>
+      <p class="hero-sub">
+        Crea un QR para un enlace, un texto, una red WiFi, un correo, un teléfono o un SMS.
+        Elige tamaño y colores, y descárgalo en PNG o SVG. Gratis y sin registro.
+      </p>
+      <span class="hero-badge">🔳 Vista previa al instante · PNG y SVG</span>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" type="button" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <section aria-labelledby="qr-type-title">
+      <div class="section-head">
+        <h3 id="qr-type-title">Paso 1 · ¿Qué quieres codificar?</h3>
+        <span class="muted-small">El contenido no se guarda</span>
+      </div>
+
+      <div class="qr-tabs" role="tablist" aria-label="Tipo de contenido del QR">
+        <button type="button" class="qr-tab is-active" role="tab" aria-selected="true" aria-controls="qr-panel-text" id="qr-tab-text" data-qr-type="text">🔗 Enlace o texto</button>
+        <button type="button" class="qr-tab" role="tab" aria-selected="false" aria-controls="qr-panel-wifi" id="qr-tab-wifi" data-qr-type="wifi" tabindex="-1">📶 WiFi</button>
+        <button type="button" class="qr-tab" role="tab" aria-selected="false" aria-controls="qr-panel-email" id="qr-tab-email" data-qr-type="email" tabindex="-1">✉️ Email</button>
+        <button type="button" class="qr-tab" role="tab" aria-selected="false" aria-controls="qr-panel-phone" id="qr-tab-phone" data-qr-type="phone" tabindex="-1">📞 Teléfono</button>
+        <button type="button" class="qr-tab" role="tab" aria-selected="false" aria-controls="qr-panel-sms" id="qr-tab-sms" data-qr-type="sms" tabindex="-1">💬 SMS</button>
+      </div>
+
+      <div id="qr-panel-text" class="qr-panel" role="tabpanel" aria-labelledby="qr-tab-text" data-qr-panel="text">
+        <label class="option-field" for="qr-text">
+          <span>Enlace o texto</span>
+          <textarea id="qr-text" class="wa-textarea" rows="3" maxlength="1200" data-qr-field placeholder="https://tu-web.com o cualquier texto que quieras compartir"></textarea>
+        </label>
+        <p class="image-note">Si empieza por <code>https://</code>, la cámara ofrecerá abrir el enlace. También vale texto libre, una dirección o una frase corta.</p>
+      </div>
+
+      <div id="qr-panel-wifi" class="qr-panel hidden" role="tabpanel" aria-labelledby="qr-tab-wifi" data-qr-panel="wifi">
+        <div class="image-options">
+          <label class="option-field" for="qr-wifi-ssid">
+            <span>Nombre de la red (SSID)</span>
+            <input id="qr-wifi-ssid" type="text" maxlength="64" autocomplete="off" data-qr-field placeholder="MiWiFi" />
+          </label>
+          <label class="option-field" for="qr-wifi-encryption">
+            <span>Seguridad</span>
+            <select id="qr-wifi-encryption" data-qr-field>
+              <option value="WPA" selected>WPA / WPA2 / WPA3</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">Red abierta (sin contraseña)</option>
+            </select>
+          </label>
+        </div>
+        <label class="option-field" for="qr-wifi-password">
+          <span>Contraseña</span>
+          <input id="qr-wifi-password" type="text" maxlength="64" autocomplete="off" data-qr-field placeholder="La contraseña de la red" />
+        </label>
+        <label class="check-field">
+          <input type="checkbox" id="qr-wifi-hidden" data-qr-field />
+          <span>La red está oculta</span>
+        </label>
+        <p class="image-note">Al escanearlo, el móvil pregunta si quieres conectarte a esa red. La contraseña viaja dentro del QR: no lo compartas con desconocidos.</p>
+      </div>
+
+      <div id="qr-panel-email" class="qr-panel hidden" role="tabpanel" aria-labelledby="qr-tab-email" data-qr-panel="email">
+        <label class="option-field" for="qr-email-to">
+          <span>Correo de destino</span>
+          <input id="qr-email-to" type="email" maxlength="200" autocomplete="email" data-qr-field placeholder="hola@tu-dominio.com" />
+        </label>
+        <div class="image-options">
+          <label class="option-field" for="qr-email-subject">
+            <span>Asunto (opcional)</span>
+            <input id="qr-email-subject" type="text" maxlength="200" data-qr-field placeholder="Quiero información" />
+          </label>
+          <label class="option-field" for="qr-email-body">
+            <span>Mensaje (opcional)</span>
+            <input id="qr-email-body" type="text" maxlength="300" data-qr-field placeholder="Hola, me gustaría…" />
+          </label>
+        </div>
+        <p class="image-note">El QR abre la app de correo con el destinatario, el asunto y el mensaje ya preparados. El usuario decide si lo envía.</p>
+      </div>
+
+      <div id="qr-panel-phone" class="qr-panel hidden" role="tabpanel" aria-labelledby="qr-tab-phone" data-qr-panel="phone">
+        <label class="option-field" for="qr-phone-number">
+          <span>Número de teléfono</span>
+          <input id="qr-phone-number" type="tel" maxlength="30" autocomplete="tel" data-qr-field placeholder="+34 600 123 456" />
+        </label>
+        <p class="image-note">Al escanearlo se abre el marcador con el número listo para llamar. Incluye el prefijo del país.</p>
+      </div>
+
+      <div id="qr-panel-sms" class="qr-panel hidden" role="tabpanel" aria-labelledby="qr-tab-sms" data-qr-panel="sms">
+        <label class="option-field" for="qr-sms-number">
+          <span>Número de teléfono</span>
+          <input id="qr-sms-number" type="tel" maxlength="30" autocomplete="tel" data-qr-field placeholder="+34 600 123 456" />
+        </label>
+        <label class="option-field" for="qr-sms-message">
+          <span>Mensaje (opcional)</span>
+          <input id="qr-sms-message" type="text" maxlength="300" data-qr-field placeholder="Hola, quiero información" />
+        </label>
+        <p class="image-note">El QR abre la app de mensajes con el número y el texto preparados. No se envía nada hasta que el usuario pulsa enviar.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="qr-style-title">
+      <div class="section-head" style="margin-top:26px">
+        <h3 id="qr-style-title">Paso 2 · Tamaño y colores</h3>
+        <span class="muted-small">Contraste alto para que se lea bien</span>
+      </div>
+
+      <div class="image-options qr-settings">
+        <label class="option-field" for="qr-size">
+          <span>Tamaño de descarga</span>
+          <select id="qr-size">
+            <option value="256">256 × 256 px</option>
+            <option value="512" selected>512 × 512 px</option>
+            <option value="1024">1024 × 1024 px</option>
+          </select>
+        </label>
+        <label class="option-field" for="qr-format">
+          <span>Formato</span>
+          <select id="qr-format">
+            <option value="png" selected>PNG · para web y redes</option>
+            <option value="svg">SVG · vectorial para imprimir</option>
+          </select>
+        </label>
+        <label class="option-field" for="qr-margin">
+          <span>Margen (módulos)</span>
+          <select id="qr-margin">
+            <option value="0">0 · sin margen</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3 · recomendado</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+        <label class="option-field" for="qr-error">
+          <span>Corrección de errores</span>
+          <select id="qr-error">
+            <option value="l">L · 7 % (menos denso)</option>
+            <option value="m" selected>M · 15 % (equilibrado)</option>
+            <option value="q">Q · 25 %</option>
+            <option value="h">H · 30 % (más resistente)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="image-options qr-colors">
+        <label class="option-field qr-color-field" for="qr-dark">
+          <span>Color del QR</span>
+          <input id="qr-dark" type="color" value="#000000" />
+        </label>
+        <label class="option-field qr-color-field" for="qr-light">
+          <span>Color del fondo</span>
+          <input id="qr-light" type="color" value="#ffffff" />
+        </label>
+        <button type="button" id="qr-reset-colors" class="soft-btn">↺ Blanco y negro</button>
+      </div>
+      <p class="image-note">Un QR invertido (claro sobre oscuro) falla en muchos lectores. Mantén los módulos más oscuros que el fondo y un contraste alto.</p>
+    </section>
+
+    <section id="qr-result" class="result" aria-labelledby="qr-result-title">
+      <div class="section-head">
+        <h3 id="qr-result-title">Tu código QR</h3>
+        <span id="qr-status" class="status-live" role="status" aria-live="polite"><i aria-hidden="true"></i> Escribe el contenido</span>
+      </div>
+
+      <div class="qr-workspace">
+        <div class="qr-preview-box">
+          <img id="qr-image" class="hidden" alt="Vista previa del código QR" />
+          <span id="qr-empty" class="wa-qr-empty">El código QR aparecerá aquí</span>
+        </div>
+        <div class="qr-preview-info">
+          <p class="muted-small qr-label">Contenido codificado</p>
+          <p id="qr-payload" class="qr-payload mono">—</p>
+          <div class="wa-actions">
+            <button type="button" id="qr-download" class="download-btn" disabled>⬇ Descargar QR</button>
+            <button type="button" id="qr-copy" class="soft-btn" disabled>📋 Copiar contenido</button>
+          </div>
+          <p id="qr-hint" class="muted-small">El QR se dibuja en el servidor y no se guarda.</p>
+          <p id="qr-contrast" class="warning-box hidden" role="status"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>Qué tipos de código QR puedes crear</h2>
+      <table class="limits-table">
+        <thead>
+          <tr><th>Tipo</th><th>Al escanearlo</th><th>Cuándo usarlo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Enlace o texto</strong></td><td>Abre la web o muestra el texto.</td><td>Carteles, tarjetas, menús, redes sociales.</td></tr>
+          <tr><td><strong>WiFi</strong></td><td>Ofrece conectarse a la red.</td><td>Bares, oficinas, casas rurales, invitados.</td></tr>
+          <tr><td><strong>Email</strong></td><td>Abre el correo con asunto y mensaje.</td><td>Contacto, soporte, presupuestos.</td></tr>
+          <tr><td><strong>Teléfono</strong></td><td>Abre el marcador con el número.</td><td>Llamadas rápidas desde un cartel.</td></tr>
+          <tr><td><strong>SMS</strong></td><td>Abre los mensajes con número y texto.</td><td>Reservas, confirmaciones, campañas.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Cómo hacer un código QR</h2>
+      <ol class="steps">
+        <li><strong>Elige el tipo</strong> y rellena los datos. La vista previa se actualiza sola.</li>
+        <li><strong>Ajusta el tamaño</strong>: 512 px para web, 1024 px o SVG para imprimir.</li>
+        <li><strong>Comprueba el contraste</strong>: negro sobre blanco es lo más seguro.</li>
+        <li><strong>Descarga y prueba</strong> el QR con la cámara de tu móvil antes de publicarlo.</li>
+      </ol>
+
+      <h2>PNG o SVG: cuál elegir</h2>
+      <p>El PNG es una imagen de mapa de bits: cómodo para web, WhatsApp y redes sociales, pero
+      se puede pixelar si lo amplías mucho. El SVG es vectorial: se imprime a cualquier tamaño
+      sin perder nitidez. Para carteles, vinilos o imprenta, usa SVG o un PNG de 1024 px como
+      mínimo.</p>
+
+      <h2>Por qué el QR no se lee</h2>
+      <p>Las causas más comunes son un contraste bajo, un contenido demasiado largo (más módulos
+      y menos espacio entre ellos), imprimirlo muy pequeño o tapar los márgenes. Deja siempre
+      el margen de 3–4 módulos, usa colores oscuros sobre fondo claro y prueba el resultado con
+      dos móviles distintos antes de llevarlo a imprenta.</p>
+
+      <h2>Privacidad y límites</h2>
+      <p>El contenido se escribe en tu navegador y solo se envía al servidor para dibujar el QR.
+      No se guarda, no se registra y no se comparte con terceros. El límite es de 1200 bytes
+      (unos 1200 caracteres ASCII) para que el código siga siendo legible; una contraseña de
+      WiFi o un enlace normal caben de sobra. El servidor no consulta el enlace ni accede a él.</p>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿El código QR caduca?</summary>
+        <p>No. Es una imagen estática con el contenido dentro: no depende de ningún servicio,
+        así que funciona mientras el enlace o el dato sigan siendo válidos. Si cambias el
+        contenido, tienes que generar y sustituir el QR.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo cambiar el enlace sin cambiar el QR?</summary>
+        <p>No con un QR estático. Para eso necesitas un enlace intermedio (un acortador propio)
+        que puedas redirigir después. Esta herramienta genera QR estáticos, sin cuentas ni
+        seguimiento.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Funciona con la cámara del iPhone y de Android?</summary>
+        <p>Sí. Las cámaras actuales de iOS y Android leen QR de forma nativa. Si el QR es muy
+        denso o tiene poco contraste, acerca la cámara y prueba con buena luz.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo usar mis colores de marca?</summary>
+        <p>Sí, siempre que los módulos sean más oscuros que el fondo y el contraste sea alto.
+        La herramienta avisa y el servidor rechaza combinaciones que no se puedan escanear.
+        Para máxima compatibilidad, blanco y negro.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Se guarda mi contraseña de WiFi?</summary>
+        <p>No. La contraseña se usa para construir el contenido del QR y se descarta al devolver
+        la imagen. Aun así, recuerda que cualquiera que vea el QR puede leer la contraseña:
+        no lo publiques fuera del local.</p>
+      </details>
+
+      <p>¿Necesitas un QR que abra directamente un chat? Usa el
+      <a href="/link-whatsapp">generador de enlaces y QR de WhatsApp</a>.</p>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="qr-core.js"></script>
+  <script src="qr.js"></script>
+</body>
+</html>

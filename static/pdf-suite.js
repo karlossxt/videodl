@@ -7,9 +7,13 @@
 const core = window.VDPdfCore;
 const ImageTools = window.VDImage;
 const VD = window.VD;
+const tr = (key, fallback, values) =>
+  typeof window.t === "function" ? window.t(key, fallback, values) : fallback;
 
 if (!core || !VD) {
-  throw new Error("No se cargaron las utilidades locales de la suite PDF.");
+  throw new Error(
+    tr("pdf.missingCore", "No se cargaron las utilidades locales de la suite PDF.")
+  );
 }
 
 const {
@@ -28,41 +32,41 @@ const MODES = {
     kind: "pdf",
     maxFiles: core.MAX_FILES,
     accept: "application/pdf,.pdf",
-    action: "Unir PDF",
+    action: tr("pdf.actionMerge", "Unir PDF"),
   },
   split: {
     multiple: false,
     kind: "pdf",
     maxFiles: 1,
     accept: "application/pdf,.pdf",
-    action: "Extraer páginas",
+    action: tr("pdf.actionSplit", "Extraer páginas"),
   },
   compress: {
     multiple: false,
     kind: "pdf",
     maxFiles: 1,
     accept: "application/pdf,.pdf",
-    action: "Comprimir PDF",
+    action: tr("pdf.actionCompress", "Comprimir PDF"),
   },
   images: {
     multiple: true,
     kind: "image",
     maxFiles: core.MAX_IMAGES,
     accept: "image/jpeg,image/png,.jpg,.jpeg,.png",
-    action: "Crear PDF",
+    action: tr("pdf.actionImages", "Crear PDF"),
   },
   jpg: {
     multiple: false,
     kind: "pdf",
     maxFiles: 1,
     accept: "application/pdf,.pdf",
-    action: "Convertir a JPG",
+    action: tr("pdf.actionJpg", "Convertir a JPG"),
   },
 };
 
 const CONFIG = MODES[MODE];
 if (!CONFIG) {
-  throw new Error("Modo de herramienta PDF desconocido.");
+  throw new Error(tr("pdf.unknownMode", "Modo de herramienta PDF desconocido."));
 }
 
 const state = {
@@ -151,33 +155,56 @@ function totalPages() {
 }
 
 function fileLabel(count) {
-  return count === 1 ? "1 archivo" : `${count} archivos`;
+  return count === 1
+    ? tr("pdf.fileOne", "1 archivo")
+    : tr("pdf.filesMany", `${count} archivos`, { count });
 }
 
 function pagesLabel(count) {
-  return count === 1 ? "1 página" : `${count} páginas`;
+  return count === 1
+    ? tr("pdf.pageOne", "1 página")
+    : tr("pdf.pagesMany", `${count} páginas`, { count });
 }
 
 function imagesLabel(count) {
-  return count === 1 ? "1 imagen" : `${count} imágenes`;
+  return count === 1
+    ? tr("pdf.imageOne", "1 imagen")
+    : tr("pdf.imagesMany", `${count} imágenes`, { count });
 }
 
 function updateLimitHint() {
   const limitHint = $("limit-hint");
   if (!limitHint) return;
   if (MODE === "images") {
-    limitHint.textContent =
-      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por imagen · ` +
-      `${core.MAX_IMAGES} imágenes · ${core.MAX_IMAGE_PIXELS / 1_000_000} MP · ` +
-      `${core.MAX_TOTAL_BYTES / (1024 * 1024)} MB en total`;
+    limitHint.textContent = tr(
+      "pdf.limitImages",
+      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por imagen · ${core.MAX_IMAGES} imágenes · ${core.MAX_IMAGE_PIXELS / 1_000_000} MP · ${core.MAX_TOTAL_BYTES / (1024 * 1024)} MB en total`,
+      {
+        mb: core.MAX_FILE_BYTES / (1024 * 1024),
+        images: core.MAX_IMAGES,
+        megapixels: core.MAX_IMAGE_PIXELS / 1_000_000,
+        total: core.MAX_TOTAL_BYTES / (1024 * 1024),
+      }
+    );
   } else if (MODE === "jpg" || MODE === "compress") {
-    limitHint.textContent =
-      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB · ` +
-      `${core.MAX_RENDER_PAGES} páginas por ${MODE === "jpg" ? "conversión" : "compresión"}`;
+    limitHint.textContent = tr(
+      "pdf.limitRender",
+      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB · ${core.MAX_RENDER_PAGES} páginas por ${MODE === "jpg" ? "conversión" : "compresión"}`,
+      {
+        mb: core.MAX_FILE_BYTES / (1024 * 1024),
+        pages: core.MAX_RENDER_PAGES,
+        operation: MODE === "jpg" ? "conversión" : "compresión",
+      }
+    );
   } else {
-    limitHint.textContent =
-      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por PDF · ` +
-      `${core.MAX_PDF_PAGES} ${MODE === "merge" ? "páginas combinadas" : "páginas"}`;
+    limitHint.textContent = tr(
+      "pdf.limitPdf",
+      `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por PDF · ${core.MAX_PDF_PAGES} ${MODE === "merge" ? "páginas combinadas" : "páginas"}`,
+      {
+        mb: core.MAX_FILE_BYTES / (1024 * 1024),
+        pages: core.MAX_PDF_PAGES,
+      }
+    );
   }
 }
 
@@ -186,19 +213,30 @@ function updateSizeWarning() {
   const total = totalSize();
   let text = "";
   if (total > core.MAX_TOTAL_BYTES) {
-    text = "La selección supera el límite total. Quita algún archivo antes de continuar.";
+    text = tr(
+      "pdf.warningTotal",
+      "La selección supera el límite total. Quita algún archivo antes de continuar."
+    );
   } else if (total > 30 * 1024 * 1024) {
-    text =
-      "La selección es grande. El procesamiento puede tardar y consumir bastante memoria, " +
-      "sobre todo en móviles. Si falla, prueba con menos archivos.";
-  } else if ((MODE === "jpg" || MODE === "compress") && state.items[0] && state.items[0].pageCount > 40) {
-    text =
-      `Este PDF tiene ${state.items[0].pageCount} páginas. Procesarlas todas puede consumir ` +
-      "mucha memoria; si el navegador falla, divide el documento y prueba por partes.";
+    text = tr(
+      "pdf.warningLarge",
+      "La selección es grande. El procesamiento puede tardar y consumir bastante memoria, sobre todo en móviles. Si falla, prueba con menos archivos."
+    );
+  } else if (
+    (MODE === "jpg" || MODE === "compress") &&
+    state.items[0] &&
+    state.items[0].pageCount > 40
+  ) {
+    text = tr(
+      "pdf.warningPages",
+      `Este PDF tiene ${state.items[0].pageCount} páginas. Procesarlas todas puede consumir mucha memoria; si el navegador falla, divide el documento y prueba por partes.`,
+      { pages: state.items[0].pageCount }
+    );
   } else if (state.items.some((item) => item.size > 10 * 1024 * 1024)) {
-    text =
-      "Hay un archivo de más de 10 MB. El navegador lo cargará completo en memoria; " +
-      "cierra otras pestañas pesadas si notas que va lento.";
+    text = tr(
+      "pdf.warningBigFile",
+      "Hay un archivo de más de 10 MB. El navegador lo cargará completo en memoria; cierra otras pestañas pesadas si notas que va lento."
+    );
   }
   sizeWarning.textContent = text;
   sizeWarning.classList.toggle("hidden", !text);
@@ -222,7 +260,7 @@ function clearResult() {
   if (resultSection) resultSection.classList.add("hidden");
   if (downloadBtn) {
     downloadBtn.disabled = true;
-    downloadBtn.textContent = "Descargar resultado";
+    downloadBtn.textContent = tr("pdf.downloadResult", "Descargar resultado");
   }
 }
 
@@ -265,7 +303,9 @@ function hideProgress() {
     progress.textContent = "0 %";
   }
   if (progressValue) progressValue.textContent = "0 %";
-  if (progressLabel) progressLabel.textContent = "Preparando…";
+  if (progressLabel) {
+    progressLabel.textContent = tr("pdf.preparing", "Preparando…");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -283,7 +323,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "unreadable",
-      error: `No se pudo leer “${file.name}”. Comprueba que el archivo siga disponible.`,
+      error: tr(
+        "pdf.unreadableFile",
+        `No se pudo leer “${file.name}”. Comprueba que el archivo siga disponible.`,
+        { name: file.name }
+      ),
     };
   }
 
@@ -300,7 +344,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "empty-pdf",
-      error: `“${file.name}” no tiene páginas legibles.`,
+      error: tr(
+        "pdf.noReadablePages",
+        `“${file.name}” no tiene páginas legibles.`,
+        { name: file.name }
+      ),
     };
   }
 
@@ -308,9 +356,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "too-many-pages",
-      error:
-        `"${file.name}" tiene ${pageCount} páginas y el límite para convertir a JPG es ` +
-        `${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
+      error: tr(
+        "pdf.limitJpgPages",
+        `"${file.name}" tiene ${pageCount} páginas y el límite para convertir a JPG es ${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
+        { name: file.name, pages: pageCount, limit: core.MAX_RENDER_PAGES }
+      ),
     };
   }
 
@@ -318,9 +368,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "too-many-pages",
-      error:
-        `"${file.name}" tiene ${pageCount} páginas y el límite para comprimir es ` +
-        `${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
+      error: tr(
+        "pdf.limitCompressPages",
+        `"${file.name}" tiene ${pageCount} páginas y el límite para comprimir es ${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
+        { name: file.name, pages: pageCount, limit: core.MAX_RENDER_PAGES }
+      ),
     };
   }
 
@@ -328,8 +380,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "too-many-pages",
-      error:
+      error: tr(
+        "pdf.limitPdfPages",
         `“${file.name}” tiene ${pageCount} páginas y el límite es ${core.MAX_PDF_PAGES}.`,
+        { name: file.name, pages: pageCount, limit: core.MAX_PDF_PAGES }
+      ),
     };
   }
 
@@ -337,9 +392,11 @@ async function inspectPdf(file) {
     return {
       ok: false,
       code: "too-many-pages",
-      error:
-        `La unión superaría el límite de ${core.MAX_PDF_PAGES} páginas. ` +
-        "Quita algún documento o divide el PDF antes de unirlo.",
+      error: tr(
+        "pdf.limitMergeTotal",
+        `La unión superaría el límite de ${core.MAX_PDF_PAGES} páginas. Quita algún documento o divide el PDF antes de unirlo.`,
+        { limit: core.MAX_PDF_PAGES }
+      ),
     };
   }
 
@@ -361,7 +418,10 @@ async function inspectImage(file) {
     return {
       ok: false,
       code: "no-image-engine",
-      error: "No se cargó el motor de imágenes. Recarga la página.",
+      error: tr(
+        "pdf.noImageEngine",
+        "No se cargó el motor de imágenes. Recarga la página."
+      ),
     };
   }
 
@@ -372,9 +432,11 @@ async function inspectImage(file) {
     return {
       ok: false,
       code: "unsupported",
-      error:
-        `“${file.name}” es WebP. Para crear un PDF acepta solo JPG o PNG; ` +
-        "convierte la imagen primero si lo necesitas.",
+      error: tr(
+        "pdf.webpUnsupported",
+        `“${file.name}” es WebP. Para crear un PDF acepta solo JPG o PNG; convierte la imagen primero si lo necesitas.`,
+        { name: file.name }
+      ),
     };
   }
 
@@ -385,7 +447,11 @@ async function inspectImage(file) {
     return {
       ok: false,
       code: "unreadable",
-      error: `No se pudo leer “${file.name}”. Comprueba que el archivo siga disponible.`,
+      error: tr(
+        "pdf.unreadableFile",
+        `No se pudo leer “${file.name}”. Comprueba que el archivo siga disponible.`,
+        { name: file.name }
+      ),
     };
   }
 
@@ -393,7 +459,9 @@ async function inspectImage(file) {
   try {
     const image = await ImageTools.loadImage(thumbUrl);
     const dimensions = ImageTools.imageDimensions(image);
-    if (!dimensions) throw new Error("Dimensiones no válidas");
+    if (!dimensions) {
+      throw new Error(tr("pdf.invalidDimensions", "Dimensiones no válidas"));
+    }
     const pixels = dimensions.width * dimensions.height;
     if (pixels > core.MAX_IMAGE_PIXELS) {
       safeRevoke(thumbUrl);
@@ -401,9 +469,15 @@ async function inspectImage(file) {
       return {
         ok: false,
         code: "too-many-pixels",
-        error:
-          `“${file.name}” mide ${megapixels} MP y el límite es ` +
-          `${core.MAX_IMAGE_PIXELS / 1_000_000} MP por imagen. Redúcela antes de crear el PDF.`,
+        error: tr(
+          "pdf.tooManyPixels",
+          `“${file.name}” mide ${megapixels} MP y el límite es ${core.MAX_IMAGE_PIXELS / 1_000_000} MP por imagen. Redúcela antes de crear el PDF.`,
+          {
+            name: file.name,
+            megapixels,
+            limit: core.MAX_IMAGE_PIXELS / 1_000_000,
+          }
+        ),
       };
     }
     return {
@@ -425,9 +499,11 @@ async function inspectImage(file) {
     return {
       ok: false,
       code: "unreadable-image",
-      error:
-        `“${file.name}” no se pudo decodificar como imagen JPG o PNG. ` +
-        "El archivo puede estar dañado.",
+      error: tr(
+        "pdf.imageDecode",
+        `“${file.name}” no se pudo decodificar como imagen JPG o PNG. El archivo puede estar dañado.`,
+        { name: file.name }
+      ),
     };
   }
 }
@@ -442,9 +518,13 @@ async function handleFiles(fileListValue) {
 
   let incoming = files;
   if (!CONFIG.multiple && incoming.length > 1) {
-    showToast("Esta herramienta procesa un archivo cada vez. Se usará el primero.", {
-      error: true,
-    });
+    showToast(
+      tr(
+        "pdf.oneFileOnly",
+        "Esta herramienta procesa un archivo cada vez. Se usará el primero."
+      ),
+      { error: true }
+    );
     incoming = incoming.slice(0, 1);
   }
 
@@ -453,13 +533,28 @@ async function handleFiles(fileListValue) {
     if (remaining <= 0) {
       showError(
         MODE === "images"
-          ? `Ya tienes ${core.MAX_IMAGES} imágenes. Quita alguna antes de añadir más.`
-          : `Ya tienes ${core.MAX_FILES} PDF. Quita alguno antes de añadir más.`
+          ? tr(
+              "pdf.maxImages",
+              `Ya tienes ${core.MAX_IMAGES} imágenes. Quita alguna antes de añadir más.`,
+              { limit: core.MAX_IMAGES }
+            )
+          : tr(
+              "pdf.maxFiles",
+              `Ya tienes ${core.MAX_FILES} PDF. Quita alguno antes de añadir más.`,
+              { limit: core.MAX_FILES }
+            )
       );
       return;
     }
     if (incoming.length > remaining) {
-      showToast(`Solo caben ${remaining} archivo(s) más en esta operación.`, { error: true });
+      showToast(
+        tr(
+          "pdf.remainingFiles",
+          `Solo caben ${remaining} archivo(s) más en esta operación.`,
+          { remaining }
+        ),
+        { error: true }
+      );
       incoming = incoming.slice(0, remaining);
     }
   }
@@ -489,9 +584,11 @@ async function handleFiles(fileListValue) {
     if (baseSize + accepted.reduce((sum, item) => sum + item.size, 0) + result.item.size >
       core.MAX_TOTAL_BYTES) {
       if (!firstError) {
-        firstError =
-          `La selección supera el límite de ${core.MAX_TOTAL_BYTES / (1024 * 1024)} MB en total. ` +
-          "Quita algún archivo o usa documentos más pequeños.";
+        firstError = tr(
+          "pdf.totalLimit",
+          `La selección supera el límite de ${core.MAX_TOTAL_BYTES / (1024 * 1024)} MB en total. Quita algún archivo o usa documentos más pequeños.`,
+          { limit: core.MAX_TOTAL_BYTES / (1024 * 1024) }
+        );
       }
       if (result.item.thumbUrl) safeRevoke(result.item.thumbUrl);
       continue;
@@ -500,9 +597,11 @@ async function handleFiles(fileListValue) {
     if (MODE === "merge" && basePages + accepted.reduce((sum, item) => sum + item.pageCount, 0) +
       result.item.pageCount > core.MAX_PDF_PAGES) {
       if (!firstError) {
-        firstError =
-          `La unión supera el límite de ${core.MAX_PDF_PAGES} páginas. ` +
-          "Quita algún documento o divide el PDF antes de unirlo.";
+        firstError = tr(
+          "pdf.mergeLimit",
+          `La unión supera el límite de ${core.MAX_PDF_PAGES} páginas. Quita algún documento o divide el PDF antes de unirlo.`,
+          { limit: core.MAX_PDF_PAGES }
+        );
       }
       continue;
     }
@@ -526,7 +625,13 @@ async function handleFiles(fileListValue) {
   if (firstError) {
     showError(firstError);
   } else if (accepted.length < incoming.length) {
-    showToast("Algunos archivos no se añadieron. Revisa el aviso.", { error: true });
+    showToast(
+      tr(
+        "pdf.someFilesSkipped",
+        "Algunos archivos no se añadieron. Revisa el aviso."
+      ),
+      { error: true }
+    );
   }
 }
 
@@ -581,19 +686,28 @@ function updateFileList() {
 
     if (CONFIG.multiple && state.items.length > 1) {
       actions.append(
-        makeActionButton("↑", "Subir archivo", index === 0, () => {
-          moveItem(index, index - 1);
-        }),
-        makeActionButton("↓", "Bajar archivo", index === state.items.length - 1, () => {
-          moveItem(index, index + 1);
-        })
+        makeActionButton(
+          "↑",
+          tr("pdf.moveUp", "Subir archivo"),
+          index === 0,
+          () => moveItem(index, index - 1)
+        ),
+        makeActionButton(
+          "↓",
+          tr("pdf.moveDown", "Bajar archivo"),
+          index === state.items.length - 1,
+          () => moveItem(index, index + 1)
+        )
       );
     }
 
     actions.append(
-      makeActionButton("Quitar", `Quitar ${item.name}`, false, () => {
-        removeItem(item.id);
-      })
+      makeActionButton(
+        tr("pdf.remove", "Quitar"),
+        tr("pdf.removeNamed", `Quitar ${item.name}`, { name: item.name }),
+        false,
+        () => removeItem(item.id)
+      )
     );
 
     li.append(icon, info, actions);
@@ -733,7 +847,7 @@ function noPreviewFigure(message) {
   frame.className = "pdf-preview-frame pdf-preview-empty";
   frame.textContent = message;
   const caption = document.createElement("figcaption");
-  caption.textContent = "Vista previa no disponible";
+  caption.textContent = tr("pdf.previewUnavailable", "Vista previa no disponible");
   figure.append(frame, caption);
   return figure;
 }
@@ -749,15 +863,31 @@ async function renderPreview() {
 
   previewHint.textContent =
     MODE === "merge"
-      ? "Primera página de cada documento, en el orden actual."
+      ? tr(
+          "pdf.previewMergeHint",
+          "Primera página de cada documento, en el orden actual."
+        )
       : MODE === "images"
-        ? "Cada imagen será una página, en el orden actual."
-        : `Primeras ${previewLimit} páginas como referencia.`;
+        ? tr(
+            "pdf.previewImagesHint",
+            "Cada imagen será una página, en el orden actual."
+          )
+        : tr(
+            "pdf.previewLimitHint",
+            `Primeras ${previewLimit} páginas como referencia.`,
+            { count: previewLimit }
+          );
 
   if (MODE === "images") {
     state.items.forEach((item) => previewGrid.append(imagePreviewFigure(item)));
-    previewNote.textContent =
-      `${imagesLabel(state.items.length)} → ${pagesLabel(state.items.length)} de PDF.`;
+    previewNote.textContent = tr(
+      "pdf.imagesToPages",
+      `${imagesLabel(state.items.length)} → ${pagesLabel(state.items.length)} de PDF.`,
+      {
+        images: imagesLabel(state.items.length),
+        pages: pagesLabel(state.items.length),
+      }
+    );
     return;
   }
 
@@ -778,7 +908,13 @@ async function renderPreview() {
         );
       } catch (_) {
         if (token === state.previewToken) {
-          previewGrid.append(noPreviewFigure(`Sin vista previa de ${item.name}`));
+          previewGrid.append(
+            noPreviewFigure(
+              tr("pdf.noPreviewItem", `Sin vista previa de ${item.name}`, {
+                name: item.name,
+              })
+            )
+          );
         }
       } finally {
         if (pdf) {
@@ -803,18 +939,42 @@ async function renderPreview() {
       if (token !== state.previewToken) return;
       const canvas = await renderPageToCanvas(pdf, pageNumber, 140, 210);
       if (token !== state.previewToken) return;
-      previewGrid.append(previewFigure(canvas, `Página ${pageNumber}`, ""));
+      previewGrid.append(
+        previewFigure(
+          canvas,
+          tr("pdf.previewPage", `Página ${pageNumber}`, { page: pageNumber }),
+          ""
+        )
+      );
       if (pageNumber % 4 === 0) await yieldToUi();
     }
+    const allHint =
+      MODE === "split"
+        ? tr(
+            "pdf.previewRangesAll",
+            "Los rangos funcionan con todas las páginas."
+          )
+        : MODE === "compress"
+          ? tr(
+              "pdf.previewCompressAll",
+              "La compresión procesará todas las páginas permitidas."
+            )
+          : tr(
+              "pdf.previewConvertAll",
+              "La conversión procesará todas las páginas permitidas."
+            );
     previewNote.textContent =
       item.pageCount > shown
-        ? `Vista previa de ${shown} de ${pagesLabel(item.pageCount)}. ` +
-          (MODE === "split"
-            ? "Los rangos funcionan con todas las páginas."
-            : MODE === "compress"
-              ? "La compresión procesará todas las páginas permitidas."
-              : "La conversión procesará todas las páginas permitidas.")
-        : `${pagesLabel(item.pageCount)} en el documento.`;
+        ? tr(
+            "pdf.previewPartial",
+            `Vista previa de ${shown} de ${pagesLabel(item.pageCount)}. `,
+            { shown, pages: pagesLabel(item.pageCount) }
+          ) + allHint
+        : tr(
+            "pdf.previewAll",
+            `${pagesLabel(item.pageCount)} en el documento.`,
+            { pages: pagesLabel(item.pageCount) }
+          );
   } catch (error) {
     if (token === state.previewToken) {
       const info = core.friendlyPdfError(error, item.name);
@@ -838,7 +998,14 @@ async function renderPreview() {
 function currentRange() {
   const item = state.items[0];
   if (MODE !== "split" || !item) {
-    return { ok: false, pages: [], error: "Selecciona un PDF para definir los rangos." };
+    return {
+      ok: false,
+      pages: [],
+      error: tr(
+        "pdf.rangeNoPdf",
+        "Selecciona un PDF para definir los rangos."
+      ),
+    };
   }
   return core.parsePageRanges(rangeInput ? rangeInput.value : "", item.pageCount);
 }
@@ -847,7 +1014,10 @@ function updateRangeSummary() {
   if (MODE !== "split" || !rangeSummary) return;
   const item = state.items[0];
   if (!item) {
-    rangeSummary.textContent = "Selecciona un PDF para ver sus páginas.";
+    rangeSummary.textContent = tr(
+      "pdf.selectPdf",
+      "Selecciona un PDF para ver sus páginas."
+    );
     rangeSummary.classList.remove("is-error");
     return;
   }
@@ -859,9 +1029,17 @@ function updateRangeSummary() {
   }
   rangeSummary.classList.remove("is-error");
   const repeated = parsed.pages.length !== new Set(parsed.pages).size;
+  const suffix = repeated
+    ? tr("pdf.rangeRepeated", " (con repeticiones)")
+    : "";
   rangeSummary.textContent =
-    `${parsed.pages.length} de ${pagesLabel(item.pageCount)}: ` +
-    `${core.pagesToRangeText(parsed.pages)}${repeated ? " (con repeticiones)" : ""}`;
+    tr(
+      "pdf.rangeSummary",
+      `${parsed.pages.length} de ${pagesLabel(item.pageCount)}: `,
+      { selected: parsed.pages.length, pages: pagesLabel(item.pageCount) }
+    ) +
+    core.pagesToRangeText(parsed.pages) +
+    suffix;
 }
 
 function canProcess() {
@@ -877,42 +1055,74 @@ function updateActionHint() {
 
   if (MODE === "merge") {
     if (state.items.length === 0) {
-      actionHint.textContent = "Añade al menos dos PDF.";
+      actionHint.textContent = tr("pdf.addTwo", "Añade al menos dos PDF.");
     } else if (state.items.length === 1) {
-      actionHint.textContent = "Añade otro PDF para activar la unión.";
+      actionHint.textContent = tr(
+        "pdf.addAnother",
+        "Añade otro PDF para activar la unión."
+      );
     } else {
-      actionHint.textContent =
-        `${state.items.length} documentos · ${pagesLabel(totalPages())}. ` +
-        "El orden de la lista será el orden final.";
+      actionHint.textContent = tr(
+        "pdf.mergeReady",
+        `${state.items.length} documentos · ${pagesLabel(totalPages())}. El orden de la lista será el orden final.`,
+        {
+          documents: state.items.length,
+          pages: pagesLabel(totalPages()),
+        }
+      );
     }
   } else if (MODE === "split") {
     const item = state.items[0];
     if (!item) {
-      actionHint.textContent = "Selecciona un PDF para activar la extracción.";
+      actionHint.textContent = tr(
+        "pdf.selectPdfExtract",
+        "Selecciona un PDF para activar la extracción."
+      );
     } else {
       const parsed = currentRange();
       if (!parsed.ok) {
         actionHint.textContent = parsed.error;
         actionHint.classList.add("is-error");
       } else {
-        actionHint.textContent =
-          `Selección: ${parsed.pages.length} de ${pagesLabel(item.pageCount)}.`;
+        actionHint.textContent = tr(
+          "pdf.splitReady",
+          `Selección: ${parsed.pages.length} de ${pagesLabel(item.pageCount)}.`,
+          { selected: parsed.pages.length, pages: pagesLabel(item.pageCount) }
+        );
       }
     }
   } else if (MODE === "images") {
     actionHint.textContent = state.items.length
-      ? `${imagesLabel(state.items.length)} → ${pagesLabel(state.items.length)} de PDF.`
-      : "Añade al menos una imagen JPG o PNG.";
+      ? tr(
+          "pdf.imagesToPages",
+          `${imagesLabel(state.items.length)} → ${pagesLabel(state.items.length)} de PDF.`,
+          {
+            images: imagesLabel(state.items.length),
+            pages: pagesLabel(state.items.length),
+          }
+        )
+      : tr("pdf.imagesNeedOne", "Añade al menos una imagen JPG o PNG.");
   } else if (MODE === "jpg") {
     const item = state.items[0];
     actionHint.textContent = item
-      ? `${pagesLabel(item.pageCount)} · el resultado se descargará como JPG o ZIP.`
-      : "Selecciona un PDF para activar la conversión.";
+      ? tr(
+          "pdf.jpgHint",
+          `${pagesLabel(item.pageCount)} · el resultado se descargará como JPG o ZIP.`,
+          { pages: pagesLabel(item.pageCount) }
+        )
+      : tr("pdf.jpgSelect", "Selecciona un PDF para activar la conversión.");
   } else if (MODE === "compress") {
     const item = state.items[0];
     actionHint.textContent = item
-      ? `${pagesLabel(item.pageCount)} · se rasterizarán a JPG y se reconstruirá el PDF.`
-      : "Selecciona un PDF para activar la compresión.";
+      ? tr(
+          "pdf.compressHint",
+          `${pagesLabel(item.pageCount)} · se rasterizarán a JPG y se reconstruirá el PDF.`,
+          { pages: pagesLabel(item.pageCount) }
+        )
+      : tr(
+          "pdf.compressSelect",
+          "Selecciona un PDF para activar la compresión."
+        );
   }
 
   if (processBtn) processBtn.disabled = state.busy || !canProcess();
@@ -959,18 +1169,24 @@ function showPdfResult({ blob, name, beforeBytes, beforeDetail, afterDetail, not
     const diff = beforeBytes > 0 ? ((beforeBytes - blob.size) / beforeBytes) * 100 : 0;
     outSaved.classList.remove("is-increase");
     if (Math.abs(diff) < 0.05) {
-      outSaved.textContent = "Mismo tamaño";
+      outSaved.textContent = tr("pdf.sameSize", "Mismo tamaño");
     } else if (diff > 0) {
-      outSaved.textContent = `${diff.toFixed(1)} % menos`;
+      outSaved.textContent = tr("pdf.less", `${diff.toFixed(1)} % menos`, {
+        value: diff.toFixed(1),
+      });
     } else {
-      outSaved.textContent = `${Math.abs(diff).toFixed(1)} % más`;
+      outSaved.textContent = tr(
+        "pdf.more",
+        `${Math.abs(diff).toFixed(1)} % más`,
+        { value: Math.abs(diff).toFixed(1) }
+      );
       outSaved.classList.add("is-increase");
     }
   }
 
   if (resultNote) resultNote.textContent = note;
   if (downloadBtn) {
-    downloadBtn.textContent = "Descargar PDF";
+    downloadBtn.textContent = tr("pdf.downloadPdf", "Descargar PDF");
     downloadBtn.disabled = false;
   }
   if (resultSection) {
@@ -990,20 +1206,48 @@ function showJpgResult({ blob, name, beforeBytes, pageCount, zip, previewItems, 
   };
 
   if (outBefore) outBefore.textContent = formatBytes(beforeBytes);
-  if (outBeforeDetail) outBeforeDetail.textContent = `${pagesLabel(pageCount)} de entrada`;
+  if (outBeforeDetail) {
+    outBeforeDetail.textContent = tr(
+      "pdf.pagesInput",
+      `${pagesLabel(pageCount)} de entrada`,
+      { pages: pagesLabel(pageCount) }
+    );
+  }
   if (outAfter) outAfter.textContent = formatBytes(blob.size);
   if (outAfterDetail) {
     outAfterDetail.textContent = zip
-      ? `${previewItems.length} JPG en un ZIP`
-      : `${previewItems[0] ? `${previewItems[0].width} × ${previewItems[0].height} px` : "1 JPG"}`;
+      ? tr(
+          "pdf.jpgsInZip",
+          `${previewItems.length} JPG en un ZIP`,
+          { count: previewItems.length }
+        )
+      : previewItems[0]
+        ? tr(
+            "pdf.jpgDimensions",
+            `${previewItems[0].width} × ${previewItems[0].height} px`,
+            {
+              width: previewItems[0].width,
+              height: previewItems[0].height,
+            }
+          )
+        : tr("pdf.oneJpg", "1 JPG");
   }
   if (outSaved) {
     const diff = beforeBytes > 0 ? ((beforeBytes - blob.size) / beforeBytes) * 100 : 0;
     outSaved.classList.remove("is-increase");
-    if (Math.abs(diff) < 0.05) outSaved.textContent = "Mismo tamaño";
-    else if (diff > 0) outSaved.textContent = `${diff.toFixed(1)} % menos`;
+    if (Math.abs(diff) < 0.05) {
+      outSaved.textContent = tr("pdf.sameSize", "Mismo tamaño");
+    } else if (diff > 0) {
+      outSaved.textContent = tr("pdf.less", `${diff.toFixed(1)} % menos`, {
+        value: diff.toFixed(1),
+      });
+    }
     else {
-      outSaved.textContent = `${Math.abs(diff).toFixed(1)} % más`;
+      outSaved.textContent = tr(
+        "pdf.more",
+        `${Math.abs(diff).toFixed(1)} % más`,
+        { value: Math.abs(diff).toFixed(1) }
+      );
       outSaved.classList.add("is-increase");
     }
   }
@@ -1015,10 +1259,18 @@ function showJpgResult({ blob, name, beforeBytes, pageCount, zip, previewItems, 
       figure.className = "pdf-result-preview";
       const image = document.createElement("img");
       image.src = item.previewUrl;
-      image.alt = `Página ${index + 1} convertida a JPG`;
+      image.alt = tr(
+        "pdf.jpgAlt",
+        `Página ${index + 1} convertida a JPG`,
+        { page: index + 1 }
+      );
       image.loading = "lazy";
       const caption = document.createElement("figcaption");
-      caption.textContent = `Página ${index + 1} · ${item.width} × ${item.height} px`;
+      caption.textContent = tr(
+        "pdf.jpgCaption",
+        `Página ${index + 1} · ${item.width} × ${item.height} px`,
+        { page: index + 1, width: item.width, height: item.height }
+      );
       figure.append(image, caption);
       resultPreviews.append(figure);
     });
@@ -1026,17 +1278,29 @@ function showJpgResult({ blob, name, beforeBytes, pageCount, zip, previewItems, 
   }
 
   if (resultNote) {
+    const clampedNote = clamped
+      ? tr(
+          "pdf.jpgZipClamped",
+          "Algunas páginas se redujeron automáticamente para no superar el límite de píxeles. "
+        )
+      : "";
     resultNote.textContent = zip
-      ? "Se generó un ZIP con un JPG por página. El ZIP no recomprime las imágenes. " +
-        (clamped
-          ? "Algunas páginas se redujeron automáticamente para no superar el límite de píxeles. "
-          : "") +
-        "Esta conversión no aplica OCR."
-      : "Se generó un JPG con el aspecto renderizado de la página. No conserva texto " +
-        "seleccionable ni enlaces. El fondo se pintó en blanco.";
+      ? tr(
+          "pdf.jpgZipNote",
+          "Se generó un ZIP con un JPG por página. El ZIP no recomprime las imágenes. " +
+            clampedNote +
+            "Esta conversión no aplica OCR.",
+          { clamped: clampedNote }
+        )
+      : tr(
+          "pdf.jpgSingleNote",
+          "Se generó un JPG con el aspecto renderizado de la página. No conserva texto seleccionable ni enlaces. El fondo se pintó en blanco."
+        );
   }
   if (downloadBtn) {
-    downloadBtn.textContent = zip ? "Descargar ZIP" : "Descargar JPG";
+    downloadBtn.textContent = zip
+      ? tr("pdf.downloadZip", "Descargar ZIP")
+      : tr("pdf.downloadJpg", "Descargar JPG");
     downloadBtn.disabled = false;
   }
   if (resultSection) {
@@ -1049,9 +1313,10 @@ function operationError(error, filename) {
   if (error && error.userMessage) return error.userMessage;
   const info = core.friendlyPdfError(error, filename);
   if (info.code !== "unknown") return info.message;
-  return (
-    `No se pudo completar la operación con “${filename}”. ` +
-    "El archivo puede estar dañado o ser demasiado complejo para este navegador."
+  return tr(
+    "pdf.operationFailed",
+    `No se pudo completar la operación con “${filename}”. El archivo puede estar dañado o ser demasiado complejo para este navegador.`,
+    { name: filename }
   );
 }
 
@@ -1061,13 +1326,20 @@ function operationError(error, filename) {
 
 async function mergePdfs(items) {
   const out = await PDFDocument.create();
-  out.setProducer("FasTools.app");
-  out.setCreator("FasTools.app");
+  out.setProducer("FasTools");
+  out.setCreator("FasTools");
   const total = items.length;
 
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];
-    setProgress(5 + (index / total) * 85, `Leyendo ${index + 1} de ${total}: ${item.name}`);
+    setProgress(
+      5 + (index / total) * 85,
+      tr(
+        "pdf.readingDocument",
+        `Leyendo ${index + 1} de ${total}: ${item.name}`,
+        { current: index + 1, total, name: item.name }
+      )
+    );
     await yieldToUi();
 
     let source;
@@ -1081,25 +1353,36 @@ async function mergePdfs(items) {
 
     const pages = await out.copyPages(source, source.getPageIndices());
     pages.forEach((page) => out.addPage(page));
-    setProgress(5 + ((index + 1) / total) * 85, `Documento ${index + 1} de ${total} añadido`);
+    setProgress(
+      5 + ((index + 1) / total) * 85,
+      tr(
+        "pdf.documentAdded",
+        `Documento ${index + 1} de ${total} añadido`,
+        { current: index + 1, total }
+      )
+    );
     await yieldToUi();
   }
 
-  setProgress(94, "Guardando el PDF unido…");
+  setProgress(94, tr("pdf.savingMerged", "Guardando el PDF unido…"));
   await yieldToUi();
   const bytes = await out.save({ useObjectStreams: true });
   const blob = new Blob([bytes], { type: "application/pdf" });
-  setProgress(100, "PDF unido");
+  setProgress(100, tr("pdf.mergedDone", "PDF unido"));
   return {
     blob,
     name: core.mergedPdfName(),
     beforeBytes: totalSize(),
     beforeDetail: `${fileLabel(items.length)} · ${pagesLabel(totalPages())}`,
-    afterDetail: `${pagesLabel(totalPages())} en el documento final`,
-    note:
-      "Unir no comprime: el resultado puede pesar igual o más que la suma de los originales. " +
-      "Se copiaron las páginas visibles; formularios, marcadores, firmas y adjuntos pueden no " +
-      "conservarse. Revisa el PDF antes de usarlo en un trámite importante.",
+    afterDetail: tr(
+      "pdf.mergeFinalDetail",
+      `${pagesLabel(totalPages())} en el documento final`,
+      { pages: pagesLabel(totalPages()) }
+    ),
+    note: tr(
+      "pdf.mergeNote",
+      "Unir no comprime: el resultado puede pesar igual o más que la suma de los originales. Se copiaron las páginas visibles; formularios, marcadores, firmas y adjuntos pueden no conservarse. Revisa el PDF antes de usarlo en un trámite importante."
+    ),
   };
 }
 
@@ -1119,8 +1402,8 @@ async function splitPdf(item) {
   }
 
   const out = await PDFDocument.create();
-  out.setProducer("FasTools.app");
-  out.setCreator("FasTools.app");
+  out.setProducer("FasTools");
+  out.setCreator("FasTools");
   const total = parsed.pages.length;
 
   for (let index = 0; index < total; index += 1) {
@@ -1129,39 +1412,61 @@ async function splitPdf(item) {
     out.addPage(page);
     setProgress(
       5 + ((index + 1) / total) * 85,
-      `Copiando página ${pageNumber} (${index + 1} de ${total})`
+      tr(
+        "pdf.copyingPage",
+        `Copiando página ${pageNumber} (${index + 1} de ${total})`,
+        { page: pageNumber, current: index + 1, total }
+      )
     );
     await yieldToUi();
   }
 
-  setProgress(94, "Guardando el PDF con las páginas elegidas…");
+  setProgress(
+    94,
+    tr("pdf.savingSplit", "Guardando el PDF con las páginas elegidas…")
+  );
   await yieldToUi();
   const bytes = await out.save({ useObjectStreams: true });
   const blob = new Blob([bytes], { type: "application/pdf" });
-  setProgress(100, "Páginas extraídas");
+  setProgress(100, tr("pdf.splitDone", "Páginas extraídas"));
   return {
     blob,
     name: core.splitPdfName(item.name),
     beforeBytes: item.size,
-    beforeDetail: `${pagesLabel(item.pageCount)} de origen · ${total} seleccionadas`,
-    afterDetail: `${pagesLabel(total)} en el PDF final`,
-    note:
-      "La extracción no recomprime las imágenes ni las fuentes: el peso baja porque hay menos " +
-      "páginas, no porque se aplique compresión. El orden sigue los rangos escritos. " +
-      "Marcadores, formularios y firmas pueden no conservarse.",
+    beforeDetail: tr(
+      "pdf.splitBeforeDetail",
+      `${pagesLabel(item.pageCount)} de origen · ${total} seleccionadas`,
+      { pages: pagesLabel(item.pageCount), selected: total }
+    ),
+    afterDetail: tr(
+      "pdf.splitAfterDetail",
+      `${pagesLabel(total)} en el PDF final`,
+      { pages: pagesLabel(total) }
+    ),
+    note: tr(
+      "pdf.splitNote",
+      "La extracción no recomprime las imágenes ni las fuentes: el peso baja porque hay menos páginas, no porque se aplique compresión. El orden sigue los rangos escritos. Marcadores, formularios y firmas pueden no conservarse."
+    ),
   };
 }
 
 async function imagesToPdf(items) {
   const out = await PDFDocument.create();
-  out.setProducer("FasTools.app");
-  out.setCreator("FasTools.app");
+  out.setProducer("FasTools");
+  out.setCreator("FasTools");
   const total = items.length;
   const sizeMode = pageSize ? pageSize.value : "a4";
 
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];
-    setProgress(5 + (index / total) * 85, `Incrustando ${index + 1} de ${total}: ${item.name}`);
+    setProgress(
+      5 + (index / total) * 85,
+      tr(
+        "pdf.embeddingImage",
+        `Incrustando ${index + 1} de ${total}: ${item.name}`,
+        { current: index + 1, total, name: item.name }
+      )
+    );
     await yieldToUi();
 
     let embedded;
@@ -1171,17 +1476,23 @@ async function imagesToPdf(items) {
           ? await out.embedPng(item.bytes)
           : await out.embedJpg(item.bytes);
     } catch (error) {
-      throw Object.assign(new Error("Imagen no compatible"), {
-        userMessage:
-          `“${item.name}” no se pudo incrustar en el PDF. ` +
-          "El archivo puede usar una variante de PNG o JPG no compatible.",
+      throw Object.assign(new Error("image not supported"), {
+        userMessage: tr(
+          "pdf.imageEmbedFailed",
+          `“${item.name}” no se pudo incrustar en el PDF. El archivo puede usar una variante de PNG o JPG no compatible.`,
+          { name: item.name }
+        ),
       });
     }
 
     const plan = core.imagePagePlan(item.width, item.height, sizeMode, 24);
     if (!plan) {
       throw Object.assign(new Error("Dimensiones no válidas"), {
-        userMessage: `“${item.name}” no tiene dimensiones válidas.`,
+        userMessage: tr(
+          "pdf.invalidDimensionsItem",
+          `“${item.name}” no tiene dimensiones válidas.`,
+          { name: item.name }
+        ),
       });
     }
 
@@ -1192,31 +1503,42 @@ async function imagesToPdf(items) {
       width: plan.drawWidth,
       height: plan.drawHeight,
     });
-    setProgress(5 + ((index + 1) / total) * 85, `Imagen ${index + 1} de ${total} colocada`);
+    setProgress(
+      5 + ((index + 1) / total) * 85,
+      tr(
+        "pdf.imagePlaced",
+        `Imagen ${index + 1} de ${total} colocada`,
+        { current: index + 1, total }
+      )
+    );
     await yieldToUi();
   }
 
-  setProgress(94, "Guardando el PDF…");
+  setProgress(94, tr("pdf.savingImagesPdf", "Guardando el PDF…"));
   await yieldToUi();
   const bytes = await out.save({ useObjectStreams: true });
   const blob = new Blob([bytes], { type: "application/pdf" });
-  setProgress(100, "PDF creado");
+  setProgress(100, tr("pdf.imagesPdfDone", "PDF creado"));
+  const sizeLabel =
+    sizeMode === "image"
+      ? tr("pdf.sizeEachImage", "tamaño de cada imagen")
+      : sizeMode === "a4-landscape"
+        ? tr("pdf.sizeA4Landscape", "A4 horizontal")
+        : tr("pdf.sizeA4Portrait", "A4 vertical");
   return {
     blob,
     name: core.imagesPdfName(items),
     beforeBytes: totalSize(),
     beforeDetail: `${imagesLabel(items.length)} · ${pagesLabel(items.length)}`,
-    afterDetail:
-      `${pagesLabel(items.length)} · ` +
-      (sizeMode === "image"
-        ? "tamaño de cada imagen"
-        : sizeMode === "a4-landscape"
-          ? "A4 horizontal"
-          : "A4 vertical"),
-    note:
-      "Cada imagen se incrustó como JPG o PNG; no se recomprime a JPG. El PDF no incluye OCR, " +
-      "texto editable ni numeración. La transparencia del PNG se conserva, aunque el visor " +
-      "puede mostrarla sobre un fondo distinto.",
+    afterDetail: tr(
+      "pdf.imagesPdfDetail",
+      `${pagesLabel(items.length)} · ${sizeLabel}`,
+      { pages: pagesLabel(items.length), size: sizeLabel }
+    ),
+    note: tr(
+      "pdf.imagesNote",
+      "Cada imagen se incrustó como JPG o PNG; no se recomprime a JPG. El PDF no incluye OCR, texto editable ni numeración. La transparencia del PNG se conserva, aunque el visor puede mostrarla sobre un fondo distinto."
+    ),
   };
 }
 
@@ -1242,9 +1564,11 @@ async function pdfToJpg(item) {
   if (pageCount > core.MAX_RENDER_PAGES) {
     await pdf.destroy();
     throw Object.assign(new Error("Demasiadas páginas"), {
-      userMessage:
-        `“${item.name}” tiene ${pageCount} páginas y el límite es ${core.MAX_RENDER_PAGES}. ` +
-        "Divide el documento antes de convertirlo.",
+      userMessage: tr(
+        "pdf.jpgPageLimit",
+        `“${item.name}” tiene ${pageCount} páginas y el límite es ${core.MAX_RENDER_PAGES}. Divide el documento antes de convertirlo.`,
+        { name: item.name, pages: pageCount, limit: core.MAX_RENDER_PAGES }
+      ),
     });
   }
 
@@ -1256,7 +1580,11 @@ async function pdfToJpg(item) {
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
       setProgress(
         5 + ((pageNumber - 1) / pageCount) * 85,
-        `Renderizando página ${pageNumber} de ${pageCount}…`
+        tr(
+          "pdf.renderingPage",
+          `Renderizando página ${pageNumber} de ${pageCount}…`,
+          { page: pageNumber, total: pageCount }
+        )
       );
       await yieldToUi();
 
@@ -1271,7 +1599,9 @@ async function pdfToJpg(item) {
         canvas.width = plan.width;
         canvas.height = plan.height;
         const context = canvas.getContext("2d", { alpha: false });
-        if (!context) throw new Error("Canvas no disponible");
+        if (!context) {
+          throw new Error(tr("pdf.canvasMissing", "Canvas no disponible"));
+        }
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({
@@ -1282,7 +1612,11 @@ async function pdfToJpg(item) {
         }).promise;
 
         const blob = await canvasToBlob(canvas, "image/jpeg", quality);
-        if (!blob) throw new Error("El navegador no pudo codificar el JPG");
+        if (!blob) {
+          throw new Error(
+            tr("pdf.jpgEncode", "El navegador no pudo codificar el JPG")
+          );
+        }
 
         const name = core.jpgPageName(item.name, pageNumber, pageCount);
         const data = new Uint8Array(await blob.arrayBuffer());
@@ -1304,7 +1638,11 @@ async function pdfToJpg(item) {
 
       setProgress(
         5 + (pageNumber / pageCount) * 85,
-        `Página ${pageNumber} de ${pageCount} convertida`
+        tr(
+          "pdf.pageConverted",
+          `Página ${pageNumber} de ${pageCount} convertida`,
+          { page: pageNumber, total: pageCount }
+        )
       );
     }
   } finally {
@@ -1315,12 +1653,12 @@ async function pdfToJpg(item) {
     }
   }
 
-  setProgress(93, "Preparando la descarga…");
+  setProgress(93, tr("pdf.preparingDownload", "Preparando la descarga…"));
   await yieldToUi();
 
   if (files.length === 1) {
     const blob = new Blob([files[0].data], { type: "image/jpeg" });
-    setProgress(100, "JPG listo");
+    setProgress(100, tr("pdf.jpgReady", "JPG listo"));
     return {
       blob,
       name: files[0].name,
@@ -1334,7 +1672,7 @@ async function pdfToJpg(item) {
 
   const zipBytes = core.zipStore(files);
   const blob = new Blob([zipBytes], { type: "application/zip" });
-  setProgress(100, "ZIP listo");
+  setProgress(100, tr("pdf.zipReady", "ZIP listo"));
   return {
     blob,
     name: core.zipName(item.name),
@@ -1364,22 +1702,28 @@ async function compressPdf(item) {
   if (pageCount > core.MAX_RENDER_PAGES) {
     await pdf.destroy();
     throw Object.assign(new Error("Demasiadas páginas"), {
-      userMessage:
-        `"${item.name}" tiene ${pageCount} páginas y el límite para comprimir es ` +
-        `${core.MAX_RENDER_PAGES}. Divide el documento antes de comprimirlo.`,
+      userMessage: tr(
+        "pdf.compressPageLimit",
+        `"${item.name}" tiene ${pageCount} páginas y el límite para comprimir es ${core.MAX_RENDER_PAGES}. Divide el documento antes de comprimirlo.`,
+        { name: item.name, pages: pageCount, limit: core.MAX_RENDER_PAGES }
+      ),
     });
   }
 
   const out = await PDFDocument.create();
-  out.setProducer("FasTools.app");
-  out.setCreator("FasTools.app");
+  out.setProducer("FasTools");
+  out.setCreator("FasTools");
   let clamped = false;
 
   try {
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
       setProgress(
         5 + ((pageNumber - 1) / pageCount) * 85,
-        `Comprimiendo página ${pageNumber} de ${pageCount}.`
+        tr(
+          "pdf.compressingPage",
+          `Comprimiendo página ${pageNumber} de ${pageCount}.`,
+          { page: pageNumber, total: pageCount }
+        )
       );
       await yieldToUi();
 
@@ -1394,7 +1738,9 @@ async function compressPdf(item) {
         canvas.width = plan.width;
         canvas.height = plan.height;
         const context = canvas.getContext("2d", { alpha: false });
-        if (!context) throw new Error("Canvas no disponible");
+        if (!context) {
+          throw new Error(tr("pdf.canvasMissing", "Canvas no disponible"));
+        }
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({
@@ -1405,7 +1751,11 @@ async function compressPdf(item) {
         }).promise;
 
         const blob = await canvasToBlob(canvas, "image/jpeg", quality);
-        if (!blob) throw new Error("El navegador no pudo codificar el JPG");
+        if (!blob) {
+          throw new Error(
+            tr("pdf.jpgEncode", "El navegador no pudo codificar el JPG")
+          );
+        }
         const data = new Uint8Array(await blob.arrayBuffer());
         const embedded = await out.embedJpg(data);
         const outPage = out.addPage([base.width, base.height]);
@@ -1425,7 +1775,11 @@ async function compressPdf(item) {
 
       setProgress(
         5 + (pageNumber / pageCount) * 85,
-        `Página ${pageNumber} de ${pageCount} comprimida`
+        tr(
+          "pdf.pageCompressed",
+          `Página ${pageNumber} de ${pageCount} comprimida`,
+          { page: pageNumber, total: pageCount }
+        )
       );
     }
   } finally {
@@ -1436,23 +1790,40 @@ async function compressPdf(item) {
     }
   }
 
-  setProgress(94, "Guardando el PDF comprimido.");
+  setProgress(
+    94,
+    tr("pdf.savingCompressed", "Guardando el PDF comprimido.")
+  );
   await yieldToUi();
   const bytes = await out.save({ useObjectStreams: true });
   const blob = new Blob([bytes], { type: "application/pdf" });
-  setProgress(100, "PDF comprimido");
+  setProgress(100, tr("pdf.compressDone", "PDF comprimido"));
+  const clampedNote = clamped
+    ? tr(
+        "pdf.clampedNote",
+        " Algunas páginas se redujeron para no superar el límite de píxeles."
+      )
+    : "";
   return {
     blob,
     name: core.compressedPdfName(item.name),
     beforeBytes: item.size,
-    beforeDetail: `${pagesLabel(pageCount)} de origen`,
-    afterDetail: `${pagesLabel(pageCount)} · JPG al ${qualityPercent} %`,
-    note:
-      "Para reducir el peso, cada página se rasteriza a JPG y se reconstruye el PDF. " +
-      "Se pierden el texto seleccionable, los enlaces, los formularios y los metadatos. " +
-      "Si el resultado pesa más, baja la calidad o la resolución: los PDF que ya venían " +
-      "muy comprimidos apenas mejoran y pueden aumentar de tamaño." +
-      (clamped ? " Algunas páginas se redujeron para no superar el límite de píxeles." : ""),
+    beforeDetail: tr(
+      "pdf.compressOriginDetail",
+      `${pagesLabel(pageCount)} de origen`,
+      { pages: pagesLabel(pageCount) }
+    ),
+    afterDetail: tr(
+      "pdf.compressDetail",
+      `${pagesLabel(pageCount)} · JPG al ${qualityPercent} %`,
+      { pages: pagesLabel(pageCount), quality: qualityPercent }
+    ),
+    note: tr(
+      "pdf.compressNote",
+      "Para reducir el peso, cada página se rasteriza a JPG y se reconstruye el PDF. Se pierden el texto seleccionable, los enlaces, los formularios y los metadatos. Si el resultado pesa más, baja la calidad o la resolución: los PDF que ya venían muy comprimidos apenas mejoran y pueden aumentar de tamaño." +
+        clampedNote,
+      { clamped: clampedNote }
+    ),
   };
 }
 
@@ -1462,7 +1833,7 @@ async function processFiles() {
   clearResult();
   setBusy(true);
   hideProgress();
-  setProgress(1, "Preparando…");
+  setProgress(1, tr("pdf.preparing", "Preparando…"));
 
   const items = state.items.slice();
   const first = items[0];
@@ -1493,12 +1864,27 @@ async function processFiles() {
       showPdfResult(result);
     }
     if (runId === state.runId) {
-      showToast("Resultado listo. La descarga no envía nada a internet.");
+      showToast(
+        tr(
+          "pdf.resultReady",
+          "Resultado listo. La descarga no envía nada a internet."
+        )
+      );
     }
   } catch (error) {
     if (runId === state.runId) {
-      showError(operationError(error, first ? first.name : "el documento"));
-      if (progressLabel) progressLabel.textContent = "No se pudo completar";
+      showError(
+        operationError(
+          error,
+          first ? first.name : tr("pdf.defaultDocument", "el documento")
+        )
+      );
+      if (progressLabel) {
+        progressLabel.textContent = tr(
+          "pdf.notCompleted",
+          "No se pudo completar"
+        );
+      }
       cleanupCanvases(resultPreviews);
       state.resultPreviewUrls.forEach(safeRevoke);
       state.resultPreviewUrls = [];
@@ -1624,7 +2010,9 @@ async function boot() {
   bindControls();
 
   if (processBtn) processBtn.disabled = true;
-  if (libraryStatus) libraryStatus.textContent = "Cargando bibliotecas locales…";
+  if (libraryStatus) {
+    libraryStatus.textContent = tr("pdf.loadingLibs", "Cargando bibliotecas locales…");
+  }
 
   try {
     const lib = await import("./vendor/pdf/pdf-lib.esm.min.js");
@@ -1635,14 +2023,23 @@ async function boot() {
       "./vendor/pdf/pdf.worker.min.mjs",
       import.meta.url
     ).href;
-    if (!PDFDocument || !getDocument) throw new Error("Exportaciones no encontradas");
+    if (!PDFDocument || !getDocument) {
+      throw new Error(tr("pdf.exportsMissing", "Exportaciones no encontradas"));
+    }
   } catch (_) {
     state.libsReady = false;
-    if (libraryStatus) libraryStatus.textContent = "Bibliotecas no disponibles";
+    if (libraryStatus) {
+      libraryStatus.textContent = tr(
+        "pdf.libsUnavailable",
+        "Bibliotecas no disponibles"
+      );
+    }
     if (processBtn) processBtn.disabled = true;
     showError(
-      "No se pudieron cargar pdf-lib o PDF.js desde este sitio. " +
-        "Recarga la página; si el problema continúa, comprueba que las bibliotecas locales estén disponibles."
+      tr(
+        "pdf.libsLoadFailed",
+        "No se pudieron cargar pdf-lib o PDF.js desde este sitio. Recarga la página; si el problema continúa, comprueba que las bibliotecas locales estén disponibles."
+      )
     );
     return;
   }
@@ -1654,8 +2051,15 @@ async function boot() {
 }
 
 boot().catch((error) => {
-  if (libraryStatus) libraryStatus.textContent = "Error de inicialización";
+  if (libraryStatus) {
+    libraryStatus.textContent = tr("pdf.initError", "Error de inicialización");
+  }
+  const detail = error && error.message ? error.message : "";
   showError(
-    `No se pudo iniciar la herramienta PDF. ${error && error.message ? error.message : ""}`.trim()
+    tr(
+      "pdf.initFailed",
+      `No se pudo iniciar la herramienta PDF. ${detail}`.trim(),
+      { error: detail }
+    )
   );
 });

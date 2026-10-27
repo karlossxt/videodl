@@ -4,8 +4,8 @@
 
 Plataforma de multiherramientas gratuitas en español. **Solo procesa archivos que
 aporta el usuario**: comprime un vídeo para enviarlo por WhatsApp o Discord, recorta un
-clip vertical listo para TikTok, Reels y Shorts, reduce o convierte imágenes, une o
-divide PDF y crea un enlace de WhatsApp con mensaje y código QR.
+clip vertical listo para TikTok, Reels y Shorts, transcribe un audio a texto, reduce o
+convierte imágenes, une o divide PDF y crea códigos QR o enlaces de WhatsApp con mensaje.
 
 > **La descarga desde plataformas externas se ha retirado.** FasTools ya no usa
 > yt-dlp, ni cookies, ni proxies, ni tokens anti-bot. Las rutas antiguas de descarga
@@ -19,6 +19,8 @@ divide PDF y crea un enlace de WhatsApp con mensaje y código QR.
 | `/herramientas` | Directorio reutilizable con el mismo catálogo, búsqueda y filtros. |
 | `/comprimir-video-whatsapp` | **Comprimir vídeo** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
 | `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) a partir de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
+| `/transcribir-audio` | **Transcribir audio o vídeo a texto** con marcas de tiempo y descarga en TXT, SRT o VTT. Requiere la dependencia opcional `faster-whisper`. |
+| `/generador-qr` | **Generar códigos QR** de enlaces, texto, WiFi, email, teléfono o SMS, con tamaño, colores y descarga en PNG o SVG. |
 | `/comprimir-imagen` | **Comprimir imágenes** JPG, PNG o WebP con calidad ajustable, vista previa antes/después y descarga directa, sin subirlas al servidor. |
 | `/convertir-imagen` | **Convertir imágenes** entre JPG, PNG y WebP, con aviso y color de fondo cuando el destino no admite transparencia. |
 | `/redimensionar-imagen` | **Redimensionar imágenes** por píxeles o porcentaje, con proporción bloqueable y presets rápidos. |
@@ -28,7 +30,7 @@ divide PDF y crea un enlace de WhatsApp con mensaje y código QR.
 | `/pdf-a-jpg` | **Convertir PDF a JPG** con calidad y resolución ajustables; varias páginas se descargan en ZIP. |
 | `/comprimir-pdf` | **Comprimir PDF** rasterizando cada página con la calidad y resolución que elijas. |
 | `/link-whatsapp` | **Generar un enlace de WhatsApp** (`wa.me`) con el mensaje ya escrito, y descargarlo como **código QR**. |
-| `/legal` | Aviso legal, privacidad, términos de uso y contacto. |
+| `/privacidad` | Nota de privacidad: archivos temporales, datos técnicos y almacenamiento local. |
 
 El catálogo vive en `videodl/catalog.py`: la portada, el directorio y las herramientas
 relacionadas se generan desde ahí. Las herramientas aún no implementadas aparecen como
@@ -61,6 +63,12 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
 - **ZIP sin dependencias extra**: los JPG de un PDF de varias páginas se empaquetan
   con un escritor ZIP mínimo en JavaScript, validado con `zipfile` de Python.
 - 🔗 **Enlaces de WhatsApp**: enlace `wa.me` con mensaje y **código QR** en PNG.
+- 🔳 **Generador de QR**: enlaces, texto, WiFi (WPA/WEP/abierta y oculta), email, teléfono
+  y SMS; tamaño, margen, nivel de corrección y colores con validación de contraste;
+  descarga en PNG o SVG. El contenido no se guarda.
+- 📝 **Transcripción opcional**: audio o vídeo a texto con faster-whisper, detección de
+  idioma, progreso, cancelación y descarga en TXT, SRT o VTT. El modelo se ejecuta en el
+  servidor y el audio se borra al terminar.
 - 📊 **Progreso en vivo** de compresión y clips, con opción de cancelar.
 - 🗂️ **Limpieza automática**: los archivos viven en una carpeta temporal y se borran
   al descargarlos o en la limpieza periódica del servidor.
@@ -71,22 +79,30 @@ relacionadas se generan desde ahí. Las herramientas aún no implementadas apare
 - 🔎 **Buscador y filtros instantáneos** por categoría, con versión funcional sin
   JavaScript mediante parámetros `q` y `categoria`.
 - 🔗 **Navegación compartida** entre páginas (cabecera, pie, tema y menú móvil).
+- 🌍 **Bilingüe español/inglés**: el español conserva las URLs sin prefijo y el inglés
+  se sirve bajo `/en/...`, con selector de idioma, `hreflang`, `x-default` y sitemap
+  con ambas variantes. Las rutas `/es/...` redirigen a la versión española. Los textos
+  dinámicos de compresión, clips, QR, WhatsApp, transcripción, imágenes y PDF también
+  se traducen sin peticiones adicionales.
 - 🧭 **SEO técnico**: canonical y Open Graph por página, `sitemap.xml`, `robots.txt` y
   URL pública configurable con `SITE_URL`.
 - 📢 **Espacios publicitarios preparados** en el HTML y el CSS, sin anuncios ni
   scripts de terceros activos.
 - 🐳 **Listo para desplegar**: `Dockerfile`, `docker-compose.yml` y plantillas para
   Render y Railway.
-- ✅ Mensajes de error claros en español y cabeceras de seguridad (CSP, nosniff,
-  frame-ancestors…).
+- ✅ Mensajes de error claros, interfaz bilingüe y cabeceras de seguridad (CSP con
+  hashes para los textos JS inline, nosniff, frame-ancestors…).
 
 ## Requisitos
 
 - Python 3.10 o superior
-- **ffmpeg** y **ffprobe** (compresión, clips y lectura de metadatos de vídeo). Las
-  herramientas de imagen no los necesitan: el procesamiento ocurre en el navegador.
-- **Node.js 18 o superior** solo para ejecutar las pruebas de los motores de imagen y
-  PDF. La app no lo usa en tiempo de ejecución.
+- **ffmpeg** y **ffprobe** (compresión, clips, transcripción y lectura de metadatos de
+  vídeo). Las herramientas de imagen no los necesitan: el procesamiento ocurre en el
+  navegador.
+- **Opcional:** `faster-whisper` para la transcripción de audio. Sin esta dependencia la
+  página sigue publicada y la API responde `503`; el resto del sitio funciona igual.
+- **Node.js 18 o superior** solo para ejecutar las pruebas de los motores de imagen, PDF y
+  QR. La app no lo usa en tiempo de ejecución.
 
 En Windows, con [winget](https://learn.microsoft.com/windows/package-manager/winget/):
 
@@ -111,6 +127,18 @@ uvicorn main:app --reload
 Abre <http://127.0.0.1:8000>. La configuración es opcional: copia `.env.example` a
 `.env` si quieres cambiar límites o el preset de x264.
 
+Para activar la transcripción:
+
+```bash
+pip install -r requirements-transcribe.txt
+# El modelo se descarga en el primer uso (caché de Hugging Face).
+TRANSCRIBE_MODEL=base uvicorn main:app --reload
+```
+
+En CPU, `tiny` o `base` son los modelos razonables para un servidor pequeño; `small`
+mejora la precisión en español a cambio de más CPU y RAM. La primera transcripción
+descarga el modelo (cientos de MB según el tamaño) y puede tardar más.
+
 ### Docker
 
 ```bash
@@ -118,11 +146,25 @@ docker build -t videodl .
 docker run --rm -p 8000:8000 videodl
 ```
 
+Para incluir la transcripción en la imagen (y opcionalmente descargar el modelo durante
+el build):
+
+```bash
+docker build \
+  --build-arg INSTALL_TRANSCRIBE=1 \
+  --build-arg PRELOAD_TRANSCRIBE=1 \
+  --build-arg TRANSCRIBE_MODEL=base \
+  -t videodl .
+```
+
 O con Compose:
 
 ```bash
 docker compose up --build
 ```
+
+La caché de modelos se guarda en `/app/.cache/huggingface`; si quieres conservarla entre
+contenedores, monta un volumen sobre esa ruta.
 
 ## API
 
@@ -140,6 +182,12 @@ docker compose up --build
 | `GET` | `/api/clips/{id}/file` | Descarga el clip terminado. |
 | `POST` | `/api/clips/{id}/cancel` | Cancela un clip en curso. |
 | `POST` | `/api/whatsapp/qr` | Devuelve un PNG con el QR de un enlace `wa.me`. |
+| `POST` | `/api/qr` | Devuelve un QR PNG o SVG de un contenido y estilo validados. |
+| `GET` | `/api/transcribe/options` | Capacidades, modelo y límites de la transcripción. |
+| `POST` | `/api/transcribe` | Sube un audio o vídeo y crea un trabajo de transcripción. |
+| `GET` | `/api/transcribe/{id}` | Estado, progreso, idioma detectado y texto. |
+| `GET` | `/api/transcribe/{id}/file?format=txt|srt|vtt` | Descarga la transcripción. |
+| `POST` | `/api/transcribe/{id}/cancel` | Cancela una transcripción en curso. |
 
 Las antiguas rutas de descarga (`/api/info`, `/api/download`, `/api/jobs…`,
 `/api/subtitles`, `/api/thumbnail` y `POST /api/clips`) responden **`410 Gone`** con
@@ -162,6 +210,11 @@ decisión de privacidad y se verifica en las pruebas (ausencia de `fetch`,
   "compressor": true,
   "clips": true,
   "whatsapp": true,
+  "qr": true,
+  "transcribe": true,
+  "transcribe_model": "base",
+  "transcribe_max_seconds": 1800,
+  "transcribe_max_mb": 100,
   "clip_max_seconds": 300,
   "max_upload_mb": 200,
   "max_target_mb": 200
@@ -178,6 +231,7 @@ el valor por defecto.
 | `PORT` | `8000` | Puerto de escucha. |
 | `LOG_LEVEL` | `INFO` | Nivel de logging. |
 | `SITE_URL` | `http://localhost:8000` | URL pública sin barra final para canonical, Open Graph, sitemap y robots. En Render se usa `RENDER_EXTERNAL_URL` si no se define. |
+| `SITE_NAME` | `FasTools.app` | Marca visible en títulos, cabecera, pie y Open Graph. Cámbiala si usas otro dominio (p. ej. `FasTools.es`). |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies de confianza para `X-Forwarded-For`. |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Peticiones por minuto y por IP (`0` = sin límite). |
 | `MAX_CONCURRENT_JOBS` | `4` | Compresiones/clips simultáneos. |
@@ -186,6 +240,13 @@ el valor por defecto.
 | `X264_PRESET` | `veryfast` | Preset de x264 (`ultrafast`…`placebo`). |
 | `CLIP_MAX_SECONDS` | `300` | Duración máxima de un clip. |
 | `FFMPEG_TIMEOUT_SECONDS` | `3600` | Tiempo máximo de un proceso ffmpeg (`0` = sin límite). |
+| `TRANSCRIBE_MODEL` | `base` | Modelo de faster-whisper (`tiny`, `base`, `small`, `medium`, `large-v3`). |
+| `TRANSCRIBE_DEVICE` | `cpu` | `cpu`, `cuda` o `auto`. |
+| `TRANSCRIBE_COMPUTE_TYPE` | `int8` | `int8`, `int8_float16`, `float16` o `float32`. |
+| `TRANSCRIBE_BEAM_SIZE` | `1` | 1 = más rápido; 5 = algo más preciso. |
+| `TRANSCRIBE_MAX_SECONDS` | `1800` | Duración máxima del audio. |
+| `TRANSCRIBE_MAX_MB` | `100` | Tamaño máximo del audio o vídeo subido. |
+| `TRANSCRIBE_LANGUAGE` | vacío | Idioma fijo (`es`, `en`…) o vacío para detección automática. |
 | `CORS_ORIGINS` | vacío | Orígenes CORS separados por comas. |
 | `CONTENT_SECURITY_POLICY` | CSP por defecto | CSP personalizada; vacía la desactiva. |
 
@@ -197,6 +258,7 @@ ruff check .
 pytest
 node --test tests/image-tools.test.js
 node --test tests/pdf-tools.test.js
+node --test tests/qr-core.test.js
 npm ci
 npx playwright install chromium
 npm run test:e2e
@@ -211,10 +273,15 @@ de imagen, la ausencia de código de subida y ejecuta las pruebas Node del motor
 de descarga sin necesidad de DOM. `tests/test_pdf_tools.py` comprueba el contrato de
 las cinco páginas PDF, la integridad SHA-256 de las bibliotecas locales y que el ZIP
 generado en JavaScript se abre con `zipfile`; `tests/pdf-tools.test.js` cubre rangos,
-geometría, nombres y CRC32. `tests/e2e/pdf.spec.js` ejecuta con Playwright los flujos
-reales de las cinco herramientas y valida los archivos descargados. El CI
-(`.github/workflows/ci.yml`) ejecuta ruff, las pruebas Node de imagen y PDF, pytest,
-Playwright y un build de Docker con comprobación de `/api/health`.
+geometría, nombres y CRC32. `tests/qr-core.test.js` cubre los payloads de WiFi, email,
+teléfono y SMS, el escape de caracteres y el contraste de colores. `tests/test_qr.py` y
+`tests/test_transcribe.py` cubren las páginas, la API y los formatos SRT/VTT.
+`tests/e2e/pdf.spec.js` ejecuta con Playwright los flujos
+reales de las cinco herramientas y valida los archivos descargados. `tests/test_i18n.py`
+comprueba la paridad de los locales, las rutas `/en/`, las redirecciones `/es/`, los
+metadatos `hreflang` y el sitemap bilingüe. El CI (`.github/workflows/ci.yml`) ejecuta
+ruff, las pruebas Node de imagen, PDF y QR, pytest, Playwright y un build de Docker con
+comprobación de `/api/health`.
 
 La matriz de pruebas manuales/E2E de las herramientas de imagen (91 comprobaciones con
 Chrome headless), la compatibilidad de navegadores y las limitaciones conocidas están en
@@ -228,6 +295,8 @@ propia documentación de límites, bibliotecas, flujos y pruebas Playwright en
 videodl/
   app.py         # create_app, middlewares, /api/health, montaje de estáticos
   catalog.py     # registro único de categorías, herramientas y estados
+  i18n.py        # carga de locales, traducción, rutas por idioma y hashes CSP
+  locales/       # es.json y en.json (metadatos, catálogo, UI y mapa de plantillas)
   views.py       # cabecera, navegación, tarjetas, portada, directorio y SEO
   pages.py       # rutas HTML amigables, alias 301, sitemap.xml y robots.txt
   image_pages.py # textos, controles y SEO de las tres herramientas de imagen
@@ -236,6 +305,8 @@ videodl/
   compressor.py  # compresión por tamaño objetivo o calidad
   clips.py       # clips verticales a partir de archivos subidos
   whatsapp.py    # validación de enlaces y QR
+  qr.py          # generador de QR genérico (PNG/SVG)
+  transcribe.py  # transcripción opcional con faster-whisper
   media.py       # ffmpeg/ffprobe
   tasks.py       # lanzador de trabajos en segundo plano
   jobs.py        # almacén de trabajos en memoria con TTL
@@ -246,6 +317,9 @@ static/          # HTML de herramientas, CSS y JS sin frameworks
   pdf-tool.html    # plantilla única de las cinco herramientas PDF
   pdf-core.js      # núcleo puro: validación, rangos, geometría, nombres, CRC32 y ZIP
   pdf-suite.js     # interfaz y procesamiento PDF (pdf-lib + PDF.js)
+  qr-core.js       # payloads de QR, validación y contraste (también para Node)
+  qr.js            # interfaz del generador de QR
+  transcribe.js    # interfaz de transcripción (subida, progreso, descargas)
   vendor/pdf/      # pdf-lib 1.17.1, PDF.js 6.4.299 y recursos, con manifest.json
   imagenes.js      # interfaz compartida de las tres herramientas de imagen
 tests/           # pruebas unitarias, de API, de sitio y e2e con ffmpeg
@@ -261,10 +335,19 @@ docs/            # compatibilidad, límites y matrices de pruebas de imagen y PD
 La app debe correr con **un solo worker**: el progreso de los trabajos vive en
 memoria y todas las peticiones de un trabajo tienen que atenderlas el mismo proceso.
 
+La transcripción es la herramienta más exigente. En el plan gratuito de Render (0,1 CPU
+y 512 MB) solo es viable con `TRANSCRIBE_MODEL=tiny` y audios cortos; para `base` o
+`small` conviene un plan con al menos 1–2 GB de RAM. El modelo se carga una vez por
+proceso y se reutiliza. El resto de herramientas no necesitan `faster-whisper`.
+
+Antes de publicar con un dominio propio, revisa la
+[guía de lanzamiento](docs/lanzamiento-dominio.md): dominio, `SITE_URL`, HTTPS,
+analítica y límites de la transcripción.
+
 ## Uso responsable
 
-Sube solo contenido que te pertenezca o que puedas utilizar libremente. Consulta el
-[aviso legal y la política de privacidad](/legal) para más detalle.
+Sube solo contenido que te pertenezca o que puedas utilizar libremente. Consulta la
+[nota de privacidad](/privacidad) para saber qué ocurre con los archivos y los datos.
 
 ## Licencia
 

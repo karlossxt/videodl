@@ -1,6 +1,13 @@
 services:
   videodl:
-    build: .
+    build:
+      context: .
+      # Para activar la transcripción en local:
+      #   INSTALL_TRANSCRIBE: "1"
+      #   PRELOAD_TRANSCRIBE: "1"
+      args:
+        INSTALL_TRANSCRIBE: "0"
+        PRELOAD_TRANSCRIBE: "0"
     image: videodl:latest
     container_name: videodl
     init: true

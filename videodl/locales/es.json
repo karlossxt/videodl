@@ -1,0 +1,808 @@
+{
+  "meta": {
+    "home": {
+      "title": "FasTools.app — Todas tus herramientas en un solo lugar",
+      "description": "Convierte, comprime y edita archivos gratis, sin instalaciones. Herramientas de vídeo, audio, imágenes, PDF y productividad."
+    },
+    "directory": {
+      "title": "Directorio de herramientas gratis — FasTools.app",
+      "description": "Explora todas las herramientas de FasTools.app: comprimir vídeo, recortar clips, transcribir audio, comprimir y convertir imágenes, unir o dividir PDF, generar códigos QR y crear enlaces de WhatsApp."
+    },
+    "comprimir": {
+      "title": "Comprimir vídeo para WhatsApp y Discord — FasTools.app",
+      "description": "Reduce el tamaño de un vídeo para WhatsApp, Discord, Telegram o correo sin perder más calidad de la necesaria. Gratis y sin registro."
+    },
+    "clips": {
+      "title": "Recortar clip vertical para TikTok, Reels y Shorts — FasTools.app",
+      "description": "Sube tu vídeo, elige los segundos y descárgalo en vertical 9:16, cuadrado o formato original. Gratis, sin marca de agua y sin registro."
+    },
+    "whatsapp": {
+      "title": "Generador de enlaces y QR de WhatsApp — FasTools.app",
+      "description": "Crea un enlace wa.me con el mensaje ya escrito y descárgalo como código QR. Ideal para negocios, webs y redes sociales."
+    },
+    "generador-qr": {
+      "title": "Generador de códigos QR gratis (enlace, WiFi, email) — FasTools.app",
+      "description": "Crea códigos QR para enlaces, texto, WiFi, email, teléfono o SMS. Elige colores y tamaño y descárgalo en PNG o SVG, gratis y sin registro."
+    },
+    "transcribir-audio": {
+      "title": "Transcribir audio a texto gratis (TXT, SRT y VTT) — FasTools.app",
+      "description": "Convierte la voz de un audio o vídeo en texto editable con marcas de tiempo. Descarga la transcripción en TXT, SRT o VTT, gratis y sin registro."
+    },
+    "comprimir-imagen": {
+      "title": "Comprimir imágenes JPG, PNG y WebP — FasTools.app",
+      "description": "Comprime imágenes JPG, PNG y WebP con calidad ajustable directamente en tu navegador. Sin subirlas a internet, con vista previa y descarga gratis."
+    },
+    "convertir-imagen": {
+      "title": "Convertir imágenes entre JPG, PNG y WebP — FasTools.app",
+      "description": "Convierte imágenes JPG, PNG y WebP en tu navegador con control de calidad y transparencia. Sin registro, sin servidores y con descarga directa."
+    },
+    "redimensionar-imagen": {
+      "title": "Redimensionar imágenes por píxeles o porcentaje — FasTools.app",
+      "description": "Cambia el ancho y el alto de tus imágenes por píxeles o porcentaje, manteniendo la proporción. Todo en tu navegador y sin perder el original."
+    },
+    "unir-pdf": {
+      "title": "Unir PDF online y ordenar documentos — FasTools.app",
+      "description": "Combina varios PDF en uno solo, elige el orden de cada documento y descarga el resultado. Procesamiento local, sin subir archivos ni registro."
+    },
+    "dividir-pdf": {
+      "title": "Dividir PDF y extraer páginas o rangos — FasTools.app",
+      "description": "Extrae páginas o rangos de un PDF con orden personalizado y vista previa. El documento se procesa en tu navegador y no se sube a ningún servidor."
+    },
+    "imagenes-a-pdf": {
+      "title": "Convertir imágenes JPG y PNG a PDF — FasTools.app",
+      "description": "Crea un PDF con tus imágenes JPG o PNG, ordénalas y elige páginas A4 o el tamaño original. Todo en tu navegador, sin subir las fotos."
+    },
+    "pdf-a-jpg": {
+      "title": "Convertir PDF a JPG y descargar en ZIP — FasTools.app",
+      "description": "Convierte las páginas de un PDF en imágenes JPG con calidad y resolución ajustables. Descarga una imagen o un ZIP, sin subir el PDF."
+    },
+    "comprimir-pdf": {
+      "title": "Comprimir PDF online y reducir su peso — FasTools.app",
+      "description": "Reduce el peso de un PDF con calidad y resolución ajustables. Cada página se rasteriza en tu navegador, sin subir el documento ni registrarte."
+    },
+    "privacy": {
+      "title": "Privacidad — FasTools.app",
+      "description": "Qué ocurre con los archivos y los datos que usas en FasTools.app."
+    }
+  },
+  "nav": {
+    "items": [
+      {
+        "key": "home",
+        "label": "Inicio",
+        "path": "/"
+      },
+      {
+        "key": "tools",
+        "label": "Herramientas",
+        "path": "/herramientas"
+      },
+      {
+        "key": "comprimir",
+        "label": "Comprimir",
+        "path": "/comprimir-video-whatsapp"
+      },
+      {
+        "key": "clips",
+        "label": "Clips",
+        "path": "/recortar-clip-vertical"
+      },
+      {
+        "key": "imagenes",
+        "label": "Imágenes",
+        "path": "/herramientas?categoria=imagenes"
+      },
+      {
+        "key": "pdf",
+        "label": "PDF",
+        "path": "/herramientas?categoria=pdf"
+      },
+      {
+        "key": "whatsapp",
+        "label": "WhatsApp",
+        "path": "/link-whatsapp"
+      }
+    ],
+    "skip": "Saltar al contenido",
+    "brand_aria": "{site}, inicio",
+    "menu_toggle": "Abrir menú de navegación",
+    "menu_toggle_close": "Cerrar menú de navegación",
+    "menu_label": "Navegación principal",
+    "theme_light": "Cambiar a modo claro",
+    "theme_dark": "Cambiar a modo oscuro",
+    "theme_text_light": "Modo claro",
+    "theme_text_dark": "Modo oscuro",
+    "language_label": "Idioma",
+    "language_es": "Español",
+    "language_en": "English"
+  },
+  "footer": {
+    "tagline": "Herramientas gratuitas para tus archivos",
+    "note": "Sin registro y sin instalar nada.",
+    "links_label": "Enlaces de navegación",
+    "tools": "Herramientas",
+    "privacy": "Privacidad",
+    "copyright": "© {year} {site} · Hecho en español"
+  },
+  "common": {
+    "free": "Gratis",
+    "soon": "Próximamente",
+    "search_label": "Buscar herramientas",
+    "search_placeholder": "Busca: comprimir, clip, PDF, audio…",
+    "search_button": "Buscar",
+    "category_filter": "Filtrar por categoría",
+    "all": "Todas",
+    "count_one": "1 herramienta",
+    "count_many": "{count} herramientas",
+    "empty": "No hay herramientas que coincidan. Prueba con otra palabra o categoría.",
+    "hero_kicker": "{site} · gratis y sin registro",
+    "hero_note": "Solo procesamos los archivos que subes tú. Nada de descargas de plataformas de terceros.",
+    "featured_kicker": "Listas para usar",
+    "featured_title": "Herramientas destacadas",
+    "featured_sub": "Empieza por las utilidades que ya funcionan hoy.",
+    "workflow_kicker": "Herramientas relacionadas",
+    "workflow_title": "Combínalas según lo que necesites",
+    "workflow_sub": "Flujos rápidos con enlaces reales, sin pasos de más.",
+    "workflow_compress_title": "Comprime y comparte",
+    "workflow_compress_text": "Deja el vídeo en el tamaño que acepta WhatsApp y genera el enlace del chat.",
+    "workflow_compress_link": "Comprimir vídeo",
+    "workflow_whatsapp_link": "Enlace de WhatsApp",
+    "workflow_clip_title": "Recorta y publica",
+    "workflow_clip_text": "Saca el momento que te interesa en 9:16 y comprímelo si pesa demasiado.",
+    "workflow_clip_link": "Recortar clip",
+    "catalog_kicker": "Catálogo completo",
+    "catalog_title": "Todas las herramientas",
+    "catalog_sub": "Filtra por categoría o busca por nombre y palabra clave.",
+    "related_kicker": "Sigue con",
+    "related_title": "Herramientas relacionadas",
+    "home_title": "Todas tus herramientas en un solo lugar",
+    "home_subtitle": "Convierte, comprime y edita archivos gratis, sin instalaciones",
+    "directory_title": "Directorio de herramientas",
+    "directory_subtitle": "Todas las utilidades de {site}, ordenadas por categoría y listas para usar"
+  },
+  "catalog": {
+    "categories": {
+      "video": {
+        "name": "Vídeo",
+        "description": "Comprime, recorta y convierte vídeo."
+      },
+      "audio": {
+        "name": "Audio",
+        "description": "Extrae, une y convierte pistas de audio."
+      },
+      "imagenes": {
+        "name": "Imágenes",
+        "description": "Comprime, convierte y redimensiona imágenes."
+      },
+      "pdf": {
+        "name": "PDF",
+        "description": "Une, divide, comprime y convierte documentos PDF."
+      },
+      "productividad": {
+        "name": "Productividad",
+        "description": "Enlaces, códigos QR y utilidades del día a día."
+      }
+    },
+    "tools": {
+      "comprimir-video-whatsapp": {
+        "name": "Comprimir vídeo",
+        "description": "Reduce un vídeo para WhatsApp, Discord, Telegram o correo sin perder más calidad de la necesaria.",
+        "keywords": [
+          "comprimir",
+          "whatsapp",
+          "discord",
+          "telegram",
+          "tamaño",
+          "mb",
+          "mp4"
+        ]
+      },
+      "recortar-clip-vertical": {
+        "name": "Recortar clip vertical",
+        "description": "Recorta los segundos que quieras y reencuadra en 9:16, 1:1 o formato original.",
+        "keywords": [
+          "clip",
+          "vertical",
+          "tiktok",
+          "reels",
+          "shorts",
+          "recortar",
+          "9:16"
+        ]
+      },
+      "video-a-gif": {
+        "name": "Convertir vídeo a GIF",
+        "description": "Crea GIFs optimizados a partir de un fragmento de tu vídeo.",
+        "keywords": [
+          "gif",
+          "convertir",
+          "animación"
+        ]
+      },
+      "transcribir-audio": {
+        "name": "Transcribir audio a texto",
+        "description": "Convierte la voz de un audio o vídeo en texto editable y descarga TXT, SRT o VTT.",
+        "keywords": [
+          "transcribir",
+          "transcripción",
+          "audio",
+          "texto",
+          "voz",
+          "subtítulos",
+          "srt",
+          "vtt",
+          "whisper",
+          "dictado"
+        ]
+      },
+      "extraer-audio": {
+        "name": "Extraer audio (MP3)",
+        "description": "Separa la pista de audio de un vídeo y descárgala en MP3.",
+        "keywords": [
+          "mp3",
+          "audio",
+          "extraer",
+          "música",
+          "voz"
+        ]
+      },
+      "unir-audio": {
+        "name": "Unir o cortar audio",
+        "description": "Combina varias pistas o recorta un audio por segundos.",
+        "keywords": [
+          "unir",
+          "cortar",
+          "audio",
+          "mp3",
+          "wav"
+        ]
+      },
+      "comprimir-imagen": {
+        "name": "Comprimir imágenes",
+        "description": "Reduce el peso de JPG, PNG o WebP con calidad ajustable y sin subirlas al servidor.",
+        "keywords": [
+          "imagen",
+          "jpg",
+          "png",
+          "webp",
+          "comprimir",
+          "peso",
+          "calidad"
+        ]
+      },
+      "convertir-imagen": {
+        "name": "Convertir imágenes",
+        "description": "Cambia entre JPG, PNG y WebP en el navegador, con transparencia y calidad configurables.",
+        "keywords": [
+          "convertir",
+          "imagen",
+          "jpg",
+          "jpeg",
+          "png",
+          "webp",
+          "formato"
+        ]
+      },
+      "redimensionar-imagen": {
+        "name": "Redimensionar imágenes",
+        "description": "Cambia el ancho y el alto por píxeles o porcentaje manteniendo la proporción.",
+        "keywords": [
+          "redimensionar",
+          "escalar",
+          "tamaño",
+          "píxeles",
+          "porcentaje",
+          "imagen"
+        ]
+      },
+      "unir-pdf": {
+        "name": "Unir PDF",
+        "description": "Combina varios documentos en un solo PDF y decide el orden de cada uno.",
+        "keywords": [
+          "pdf",
+          "unir",
+          "combinar",
+          "documentos",
+          "orden"
+        ]
+      },
+      "dividir-pdf": {
+        "name": "Dividir PDF",
+        "description": "Extrae páginas o rangos de un PDF y descarga solo lo que necesitas.",
+        "keywords": [
+          "pdf",
+          "dividir",
+          "extraer",
+          "páginas",
+          "rangos",
+          "separar"
+        ]
+      },
+      "imagenes-a-pdf": {
+        "name": "Imágenes a PDF",
+        "description": "Convierte fotos y capturas JPG o PNG en un PDF ordenado.",
+        "keywords": [
+          "pdf",
+          "imágenes",
+          "jpg",
+          "png",
+          "convertir",
+          "fotos"
+        ]
+      },
+      "pdf-a-jpg": {
+        "name": "PDF a JPG",
+        "description": "Convierte las páginas de un PDF en imágenes JPG y descárgalas en ZIP.",
+        "keywords": [
+          "pdf",
+          "jpg",
+          "imagen",
+          "convertir",
+          "páginas",
+          "zip"
+        ]
+      },
+      "comprimir-pdf": {
+        "name": "Comprimir PDF",
+        "description": "Reduce el peso de un PDF rasterizando sus páginas con calidad ajustable.",
+        "keywords": [
+          "pdf",
+          "comprimir",
+          "reducir",
+          "peso",
+          "optimizar"
+        ]
+      },
+      "generador-qr": {
+        "name": "Generador de códigos QR",
+        "description": "Crea QR de enlaces, texto, WiFi, email, teléfono o SMS y descárgalos en PNG o SVG.",
+        "keywords": [
+          "qr",
+          "código qr",
+          "generador",
+          "wifi",
+          "enlace",
+          "url",
+          "email",
+          "teléfono",
+          "sms",
+          "svg",
+          "png"
+        ]
+      },
+      "link-whatsapp": {
+        "name": "Enlace y QR de WhatsApp",
+        "description": "Genera un enlace wa.me con el mensaje ya escrito y descarga su código QR.",
+        "keywords": [
+          "whatsapp",
+          "wa.me",
+          "enlace",
+          "qr",
+          "código qr",
+          "negocio"
+        ]
+      },
+      "acortar-enlaces": {
+        "name": "Acortar enlaces",
+        "description": "Crea enlaces cortos y compártelos con un solo clic.",
+        "keywords": [
+          "acortar",
+          "enlace",
+          "url",
+          "link"
+        ]
+      }
+    }
+  },
+  "js": {
+    "common": {
+      "serverTimeout": "El servidor tardó demasiado en responder. Inténtalo de nuevo.",
+      "connection": "No se pudo conectar con el servidor. Revisa tu conexión.",
+      "unexpected": "Error inesperado",
+      "jobTimeout": "El trabajo tardó demasiado. Inténtalo de nuevo."
+    },
+    "image": {
+      "browserLoad": "Este navegador no puede cargar imágenes.",
+      "decode": "La imagen no se pudo decodificar.",
+      "encode": "El navegador no pudo generar el archivo final.",
+      "tooBig": "El navegador no pudo procesar la imagen. Prueba con una más pequeña.",
+      "unsupported": "El formato de salida no es compatible.",
+      "canvas": "No se pudo preparar el lienzo de la imagen.",
+      "unsupportedSave": "Tu navegador no puede guardar en {format}. Prueba con otro formato.",
+      "tooLarge": "La salida supera el límite de {side} px por lado o {megapixels} megapíxeles.",
+      "corrupt": "El archivo no parece una imagen JPG, PNG o WebP válida. Puede estar dañado.",
+      "empty": "El archivo está vacío o no se puede leer.",
+      "maxSize": "{size} MB (máximo {max} MB)",
+      "missing": "No se ha seleccionado ningún archivo.",
+      "tooHeavy": "La imagen pesa {size}. Usa una imagen más pequeña.",
+      "unreadable": "No se pudo leer el archivo. Comprueba que sigue disponible e inténtalo de nuevo.",
+      "unsupportedDetected": "El formato {format} no es compatible. Convierte la imagen a JPG, PNG o WebP.",
+      "unsupportedExt": "El formato «.{ext}» no es compatible. Acepta JPG, PNG o WebP.",
+      "browserCannotSave": "Tu navegador no puede guardar imágenes en {format}. Elige otro formato.",
+      "browserUnsupported": " · no compatible con este navegador",
+      "checkFailed": "No se pudo comprobar el archivo. Inténtalo de nuevo.",
+      "chooseFirst": "Elige primero una imagen.",
+      "chooseImage": "Elige una imagen para activar la herramienta.",
+      "compressGrew": "El archivo final pesa {percent} más. La compresión no garantiza un archivo más pequeño: prueba una calidad menor o el formato WebP.",
+      "compressSame": "El tamaño es prácticamente el mismo. La compresión no garantiza que el archivo resulte más pequeño, sobre todo si ya estaba optimizado.",
+      "compressSmaller": "El archivo final pesa {percent} menos.{quality}",
+      "convertGrew": "El nuevo formato pesa {percent} más. Convertir no es lo mismo que comprimir; el porcentaje es el resultado real.",
+      "convertSmaller": "El nuevo archivo pesa {percent} menos.",
+      "convertedFrom": "Conversión de {from} a {to}.{quality}",
+      "downloading": "Descargando la imagen…",
+      "enlarged": "Se ha ampliado: la interpolación no crea detalle nuevo.",
+      "finalLarger": "El archivo final pesa {percent} más.",
+      "finalSame": "El peso final es prácticamente el mismo.",
+      "finalSizeHint": "El tamaño final aparecerá aquí.",
+      "finalSmaller": "El archivo final pesa {percent} menos.",
+      "formatsAvailable": "JPG, PNG y WebP disponibles en este navegador.",
+      "formatsMissing": "Sin soporte de {formats} en este navegador.",
+      "fromTo": "De {from} a {to}.",
+      "imageFallback": "imagen",
+      "integerDimensions": "El ancho y el alto deben ser números enteros mayores que 0.",
+      "invalidFormat": "Elige un formato de salida válido.",
+      "jpgDecodeError": "El JPG está dañado o incompleto y el navegador no puede leerlo.",
+      "less": "{percent} menos",
+      "limitHint": "Hasta {mb} MB · {side} px por lado · {mp} MP",
+      "more": "{percent} más",
+      "notProcessed": "Sin procesar",
+      "originalImage": "la imagen original",
+      "originalUnchanged": "Tu archivo original no se ha modificado.",
+      "percentRange": "El porcentaje debe estar entre 1 % y 400 % en ambos lados.",
+      "pngDecodeError": "El PNG está dañado o incompleto y el navegador no puede leerlo.",
+      "pngLossless": "El PNG se guarda sin pérdida: el deslizador de calidad no cambia el resultado.",
+      "practicallySame": "Prácticamente igual",
+      "previewOf": "Vista previa de {name}",
+      "previewOriginal": "Vista previa de la imagen original",
+      "previewResized": "Vista previa de la imagen redimensionada",
+      "previewResult": "Vista previa de la imagen resultante",
+      "previewSafe": "La vista previa no modifica tu archivo original.",
+      "processFailed": "No se pudo procesar la imagen.",
+      "processFirst": "Primero procesa la imagen",
+      "processed": "Imagen procesada. Revisa el resultado antes de descargar.",
+      "qualityApplied": " Calidad aplicada: {quality} %.",
+      "qualityCompress": "A mayor calidad, más peso. Para fotos, 75–85 % suele ser un buen equilibrio.",
+      "qualityConvert": "Solo se aplica a JPG y WebP. A mayor calidad, más peso y más detalle.",
+      "resizedFrom": "Redimensionada de {from} a {to}.",
+      "resultTooLarge": "El resultado supera el límite de {side} px por lado o {mp} megapíxeles.",
+      "staysAt": "Se mantiene en {size}.",
+      "suffixCompress": "-comprimida",
+      "suffixConvert": "-convertida",
+      "suffixResize": "-redimensionada",
+      "tooLargeDimensions": "La imagen mide {size}. El límite es de {side} px por lado y {mp} megapíxeles.",
+      "transparencyFilled": "Las zonas transparentes se rellenaron con el color {color}.",
+      "unnamed": "Imagen sin nombre",
+      "waitProcessing": "Espera mientras se procesa la imagen.",
+      "webpDecodeError": "El archivo es un WebP, pero este navegador no puede decodificarlo. Prueba con JPG o PNG.",
+      "workingCompress": "Comprimiendo la imagen en tu navegador…",
+      "workingConvert": "Convirtiendo la imagen en tu navegador…",
+      "workingResize": "Redimensionando la imagen en tu navegador…"
+    },
+    "pdf": {
+      "missingCore": "No se cargaron las utilidades locales de la suite PDF.",
+      "unknownMode": "Modo de herramienta PDF desconocido.",
+      "downloadResult": "Descargar resultado",
+      "preparing": "Preparando.",
+      "invalidDimensions": "Dimensiones no válidas",
+      "inspectFailed": "No se pudo inspeccionar «{name}». {message}",
+      "previewUnavailable": "Vista previa no disponible",
+      "selectPdf": "Selecciona un PDF para ver sus páginas.",
+      "addTwo": "Añade al menos dos PDF.",
+      "addAnother": "Añade otro PDF para activar la unión.",
+      "selectPdfExtract": "Selecciona un PDF para activar la extracción.",
+      "sameSize": "Mismo tamaño",
+      "less": "{value} % menos",
+      "more": "{value} % más",
+      "downloadPdf": "Descargar PDF",
+      "downloadZip": "Descargar ZIP",
+      "downloadJpg": "Descargar JPG",
+      "page": "Página {page} · {width} × {height} px",
+      "unreadable": "PDF ilegible",
+      "invalidRange": "Rango inválido",
+      "unsupportedImage": "Imagen no compatible",
+      "tooManyPages": "Demasiadas páginas",
+      "canvas": "Canvas no disponible",
+      "encodeJpg": "El navegador no pudo codificar el JPG",
+      "failed": "No se pudo completar",
+      "loadingLibs": "Cargando bibliotecas locales.",
+      "libsUnavailable": "Bibliotecas no disponibles",
+      "libsReady": "pdf-lib 1.17.1 · PDF.js 6.4.299 (local)",
+      "initError": "Error de inicialización",
+      "inputPages": "{pages} de entrada",
+      "zipNote": "Se descarga un ZIP con un JPG por página.",
+      "singleNote": "Se descarga un JPG con la página seleccionada.",
+      "actionMerge": "Unir PDF",
+      "actionSplit": "Extraer páginas",
+      "actionCompress": "Comprimir PDF",
+      "actionImages": "Crear PDF",
+      "actionJpg": "Convertir a JPG",
+      "canvasMissing": "Canvas no disponible",
+      "compressHint": "{pages} · se rasterizarán a JPG y se reconstruirá el PDF.",
+      "compressSelect": "Selecciona un PDF para activar la compresión.",
+      "exportsMissing": "Exportaciones no encontradas",
+      "imagesNeedOne": "Añade al menos una imagen JPG o PNG.",
+      "imagesToPages": "{images} → {pages} de PDF.",
+      "jpgEncode": "El navegador no pudo codificar el JPG",
+      "jpgHint": "{pages} · el resultado se descargará como JPG o ZIP.",
+      "jpgSelect": "Selecciona un PDF para activar la conversión.",
+      "mergeReady": "{documents} documentos · {pages}. El orden de la lista será el orden final.",
+      "noPreviewItem": "Sin vista previa de {name}",
+      "notCompleted": "No se pudo completar",
+      "previewAll": "{pages} en el documento.",
+      "previewCompressAll": "La compresión procesará todas las páginas permitidas.",
+      "previewConvertAll": "La conversión procesará todas las páginas permitidas.",
+      "previewImagesHint": "Cada imagen será una página, en el orden actual.",
+      "previewLimitHint": "Primeras {count} páginas como referencia.",
+      "previewMergeHint": "Primera página de cada documento, en el orden actual.",
+      "previewPage": "Página {page}",
+      "previewPartial": "Vista previa de {shown} de {pages}. ",
+      "previewRangesAll": "Los rangos funcionan con todas las páginas.",
+      "rangeNoPdf": "Selecciona un PDF para definir los rangos.",
+      "rangeRepeated": " (con repeticiones)",
+      "rangeSummary": "{selected} de {pages}: ",
+      "splitReady": "Selección: {selected} de {pages}.",
+      "fileOne": "1 archivo",
+      "filesMany": "{count} archivos",
+      "imageDecode": "“{name}” no se pudo decodificar como imagen JPG o PNG. El archivo puede estar dañado.",
+      "imageOne": "1 imagen",
+      "imagesMany": "{count} imágenes",
+      "jpgDimensions": "{width} × {height} px",
+      "jpgsInZip": "{count} JPG en un ZIP",
+      "limitCompressPages": "\"{name}\" tiene {pages} páginas y el límite para comprimir es {limit}. Divide el PDF primero.",
+      "limitImages": "Hasta {mb} MB por imagen · {images} imágenes · {megapixels} MP · {total} MB en total",
+      "limitJpgPages": "\"{name}\" tiene {pages} páginas y el límite para convertir a JPG es {limit}. Divide el PDF primero.",
+      "limitMergeTotal": "La unión superaría el límite de {limit} páginas. Quita algún documento o divide el PDF antes de unirlo.",
+      "limitPdf": "Hasta {mb} MB por PDF · {pages} páginas",
+      "limitPdfPages": "“{name}” tiene {pages} páginas y el límite es {limit}.",
+      "limitRender": "Hasta {mb} MB · {pages} páginas por {operation}",
+      "maxFiles": "Ya tienes {limit} PDF. Quita alguno antes de añadir más.",
+      "maxImages": "Ya tienes {limit} imágenes. Quita alguna antes de añadir más.",
+      "mergeLimit": "La unión supera el límite de {limit} páginas. Quita algún documento o divide el PDF antes de unirlo.",
+      "noImageEngine": "No se cargó el motor de imágenes. Recarga la página.",
+      "noReadablePages": "“{name}” no tiene páginas legibles.",
+      "oneFileOnly": "Esta herramienta procesa un archivo cada vez. Se usará el primero.",
+      "oneJpg": "1 JPG",
+      "pageOne": "1 página",
+      "pagesInput": "{pages} de entrada",
+      "pagesMany": "{count} páginas",
+      "remainingFiles": "Solo caben {remaining} archivo(s) más en esta operación.",
+      "someFilesSkipped": "Algunos archivos no se añadieron. Revisa el aviso.",
+      "tooManyPixels": "“{name}” mide {megapixels} MP y el límite es {limit} MP por imagen. Redúcela antes de crear el PDF.",
+      "totalLimit": "La selección supera el límite de {limit} MB en total. Quita algún archivo o usa documentos más pequeños.",
+      "unreadableFile": "No se pudo leer “{name}”. Comprueba que el archivo siga disponible.",
+      "warningBigFile": "Hay un archivo de más de 10 MB. El navegador lo cargará completo en memoria; cierra otras pestañas pesadas si notas que va lento.",
+      "warningLarge": "La selección es grande. El procesamiento puede tardar y consumir bastante memoria, sobre todo en móviles. Si falla, prueba con menos archivos.",
+      "warningPages": "Este PDF tiene {pages} páginas. Procesarlas todas puede consumir mucha memoria; si el navegador falla, divide el documento y prueba por partes.",
+      "warningTotal": "La selección supera el límite total. Quita algún archivo antes de continuar.",
+      "webpUnsupported": "“{name}” es WebP. Para crear un PDF acepta solo JPG o PNG; convierte la imagen primero si lo necesitas.",
+      "clampedNote": " Algunas páginas se redujeron para no superar el límite de píxeles.",
+      "compressDetail": "{pages} · JPG al {quality} %",
+      "compressDone": "PDF comprimido",
+      "compressNote": "Para reducir el peso, cada página se rasteriza a JPG y se reconstruye el PDF. Se pierden el texto seleccionable, los enlaces, los formularios y los metadatos. Si el resultado pesa más, baja la calidad o la resolución: los PDF que ya venían muy comprimidos apenas mejoran y pueden aumentar de tamaño.{clamped}",
+      "compressOriginDetail": "{pages} de origen",
+      "compressPageLimit": "\"{name}\" tiene {pages} páginas y el límite para comprimir es {limit}. Divide el documento antes de comprimirlo.",
+      "compressingPage": "Comprimiendo página {page} de {total}.",
+      "copyingPage": "Copiando página {page} ({current} de {total})",
+      "documentAdded": "Documento {current} de {total} añadido",
+      "imagePlaced": "Imagen {current} de {total} colocada",
+      "imagesNote": "Cada imagen se incrustó como JPG o PNG; no se recomprime a JPG. El PDF no incluye OCR, texto editable ni numeración. La transparencia del PNG se conserva, aunque el visor puede mostrarla sobre un fondo distinto.",
+      "imagesPdfDetail": "{pages} · {size}",
+      "imagesPdfDone": "PDF creado",
+      "invalidDimensionsItem": "“{name}” no tiene dimensiones válidas.",
+      "jpgAlt": "Página {page} convertida a JPG",
+      "jpgCaption": "Página {page} · {width} × {height} px",
+      "jpgPageLimit": "“{name}” tiene {pages} páginas y el límite es {limit}. Divide el documento antes de convertirlo.",
+      "jpgReady": "JPG listo",
+      "jpgSingleNote": "Se generó un JPG con el aspecto renderizado de la página. No conserva texto seleccionable ni enlaces. El fondo se pintó en blanco.",
+      "jpgZipClamped": "Algunas páginas se redujeron automáticamente para no superar el límite de píxeles. ",
+      "jpgZipNote": "Se generó un ZIP con un JPG por página. El ZIP no recomprime las imágenes. {clamped}Esta conversión no aplica OCR.",
+      "mergeFinalDetail": "{pages} en el documento final",
+      "mergeNote": "Unir no comprime: el resultado puede pesar igual o más que la suma de los originales. Se copiaron las páginas visibles; formularios, marcadores, firmas y adjuntos pueden no conservarse. Revisa el PDF antes de usarlo en un trámite importante.",
+      "mergedDone": "PDF unido",
+      "operationFailed": "No se pudo completar la operación con “{name}”. El archivo puede estar dañado o ser demasiado complejo para este navegador.",
+      "pageCompressed": "Página {page} de {total} comprimida",
+      "pageConverted": "Página {page} de {total} convertida",
+      "preparingDownload": "Preparando la descarga…",
+      "readingDocument": "Leyendo {current} de {total}: {name}",
+      "resultReady": "Resultado listo. La descarga no envía nada a internet.",
+      "savingCompressed": "Guardando el PDF comprimido.",
+      "savingImagesPdf": "Guardando el PDF…",
+      "savingMerged": "Guardando el PDF unido…",
+      "savingSplit": "Guardando el PDF con las páginas elegidas…",
+      "sizeA4Landscape": "A4 horizontal",
+      "sizeA4Portrait": "A4 vertical",
+      "sizeEachImage": "tamaño de cada imagen",
+      "splitAfterDetail": "{pages} en el PDF final",
+      "splitBeforeDetail": "{pages} de origen · {selected} seleccionadas",
+      "splitDone": "Páginas extraídas",
+      "splitNote": "La extracción no recomprime las imágenes ni las fuentes: el peso baja porque hay menos páginas, no porque se aplique compresión. El orden sigue los rangos escritos. Marcadores, formularios y firmas pueden no conservarse.",
+      "zipReady": "ZIP listo",
+      "coreNoFile": "No se ha seleccionado ningún archivo.",
+      "coreEmpty": "“{name}” está vacío.",
+      "coreTooLarge": "“{name}” supera el límite de {limit} MB.",
+      "coreUnreadable": "No se pudo leer “{name}”. Comprueba que el archivo no esté dañado.",
+      "coreInvalid": "“{name}” no parece un PDF válido. El contenido no coincide con la extensión.",
+      "coreEncrypted": "“{name}” está protegido con contraseña o cifrado. Quita la protección con la aplicación con la que lo creaste y vuelve a intentarlo. Esta herramienta no puede descifrar documentos.",
+      "coreCorrupt": "“{name}” está dañado o no es un PDF legible. Prueba a abrirlo en tu visor habitual o vuelve a descargarlo desde el origen.",
+      "coreMissing": "No se encontró “{name}”. Vuelve a seleccionarlo.",
+      "coreUnknown": "No se pudo procesar “{name}”. El archivo puede estar dañado o usar una protección no compatible.",
+      "coreNoPages": "El documento no tiene páginas legibles.",
+      "coreRangeEmpty": "Escribe al menos una página o un rango.",
+      "coreRangeInvalid": "“{token}” no es un rango válido. Usa el formato 1-3, 5 u 8-10.",
+      "coreRangeBounds": "Las páginas deben estar entre 1 y {total}. Revisa “{token}”.",
+      "coreRangeMax": "Puedes extraer como máximo {max} páginas en una sola operación.",
+      "defaultDocument": "el documento",
+      "libsLoadFailed": "No se pudieron cargar pdf-lib o PDF.js desde este sitio. Recarga la página; si el problema continúa, comprueba que las bibliotecas locales están disponibles.",
+      "initFailed": "No se pudo iniciar la herramienta PDF. {error}",
+      "moveUp": "Subir archivo",
+      "moveDown": "Bajar archivo",
+      "remove": "Quitar",
+      "removeNamed": "Quitar {name}",
+      "embeddingImage": "Incrustando {current} de {total}: {name}",
+      "imageEmbedFailed": "“{name}” no se pudo incrustar en el PDF. El archivo puede usar una variante de PNG o JPG no compatible.",
+      "renderingPage": "Renderizando p?gina {page} de {total}?",
+      "nameMerged": "documento-unido.pdf",
+      "suffixPages": "-paginas",
+      "suffixCompressed": "-comprimido",
+      "suffixImages": "-imagenes",
+      "nameImages": "imagenes-a-pdf.pdf",
+      "suffixPage": "-pagina-"
+    },
+    "compress": {
+      "limitHint": "Máximo {mb} MB por archivo",
+      "unsupported": "Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…",
+      "tooHeavy": "El archivo pesa {size} y el máximo es {max} MB.",
+      "chooseFirst": "Elige primero un vídeo.",
+      "target": "Objetivo: que quepa en {mb} MB.",
+      "uploading": "Subiendo el vídeo…",
+      "analyzing": "Analizando el vídeo…",
+      "preparing": "Preparando la compresión",
+      "uploadFailed": "No se pudo enviar el vídeo al servidor. Revisa tu conexión.",
+      "uploadTimeout": "La subida tardó demasiado. Prueba con un vídeo más pequeño.",
+      "tooLarge": "El archivo supera el límite de {max} MB.",
+      "failedStatus": "No se pudo comprimir el vídeo (error {status}).",
+      "network": "de red",
+      "failed": "No se pudo comprimir el vídeo.",
+      "cancelled": "Compresión cancelada",
+      "progress": "Comprimiendo…",
+      "targetDetail": "Objetivo: {mb} MB",
+      "cancelling": "Cancelando…",
+      "downloadStarted": "Descarga iniciada",
+      "saved": "−{percent} % de tamaño ({size} menos)",
+      "sameSize": "Sin cambios de tamaño",
+      "ready": "¡Vídeo comprimido listo!",
+      "notReady": "La descarga aún no está lista",
+      "downloading": "Descargando el vídeo comprimido…",
+      "defaultName": "video-comprimido.mp4"
+    },
+    "clips": {
+      "limitHint": "Máximo {mb} MB por archivo",
+      "maxHint": "Hasta {minutes} min de clip",
+      "unsupported": "Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…",
+      "tooHeavy": "El archivo pesa {size} y el máximo es {max} MB.",
+      "unreadable": "No se pudo leer el archivo. ¿Está dañado o en un formato que el navegador no entiende?",
+      "durationError": "No se pudo leer la duración del archivo.",
+      "aspectBlur": "9:16 + fondo",
+      "aspectOriginal": "original",
+      "minDuration": "El clip debe durar al menos 1 segundo.",
+      "tooLong": "El clip dura {duration} y el máximo es {max}.",
+      "longRecommended": "Dura {duration}. En TikTok, Reels y Shorts funciona mejor entre 15 y 60 s.",
+      "duration": "Dura {duration}.",
+      "sizeOriginal": "hasta {height}p · original",
+      "willGenerate": "Se generará un clip de {duration}.",
+      "checkRange": "Revisa el fragmento seleccionado.",
+      "chooseFirst": "Elige primero un vídeo.",
+      "overLimit": "El clip no puede durar más de {max}.",
+      "uploading": "Subiendo el vídeo…",
+      "transforming": "Recortando y reencuadrando…",
+      "failedStatus": "No se pudo crear el clip (error {status}).",
+      "network": "de red",
+      "uploadFailed": "No se pudo enviar el vídeo al servidor. Revisa tu conexión.",
+      "uploadTimeout": "La subida tardó demasiado. Prueba con un vídeo más pequeño.",
+      "failed": "No se pudo crear el clip.",
+      "cancelled": "Clip cancelado",
+      "progress": "Creando el clip…",
+      "reencoding": "Recodificando el clip · esto es lo que más tarda",
+      "cancelling": "Cancelando…",
+      "downloadStarted": "Descarga iniciada",
+      "readyNote": "Listo para subir a TikTok, Reels o Shorts",
+      "ready": "¡Clip listo!",
+      "notReady": "La descarga aún no está lista",
+      "downloading": "Descargando el clip…",
+      "defaultName": "clip-vertical.mp4"
+    },
+    "qr": {
+      "checkColors": "Revisa los colores",
+      "generating": "Generando…",
+      "drawing": "Dibujando el código QR…",
+      "generateFailed": "No se pudo generar el código QR.",
+      "readyStatus": "QR listo",
+      "readyHint": "Vista previa en {format}. Si vas a imprimirlo, usa un tamaño grande y deja margen alrededor.",
+      "failedStatus": "No se pudo generar",
+      "failedHint": "Prueba a acortar el contenido o a usar colores con más contraste.",
+      "enterContent": "Escribe el contenido",
+      "emptyHint": "El QR aparecerá aquí mientras escribes.",
+      "preparing": "Preparando vista previa…",
+      "notReady": "El código QR aún no está listo",
+      "downloading": "Descargando el código QR…",
+      "copied": "Contenido copiado",
+      "copyFailed": "No se pudo copiar el contenido",
+      "coreInvalidType": "Tipo de QR no válido.",
+      "coreEmpty": "Escribe el contenido que quieres convertir en QR.",
+      "coreTooLarge": "El contenido ocupa demasiado ({bytes} bytes). El máximo es {max}.",
+      "coreInvalidEmail": "El correo electrónico no parece válido.",
+      "coreInvalidPhone": "El número de teléfono no parece válido.",
+      "coreColorFormat": "Los colores deben tener el formato #rrggbb.",
+      "coreDarkModules": "Los módulos del QR deben ser más oscuros que el fondo.",
+      "coreLowContrast": "El contraste es demasiado bajo. Usa colores más distintos para que se pueda escanear.",
+      "downloadName": "codigo-qr"
+    },
+    "whatsapp": {
+      "noNumber": "Sin número fijo",
+      "enterNumber": "Escribe tu número",
+      "linkReady": "Enlace listo",
+      "generatingQr": "Generando el código QR…",
+      "longMessage": "El mensaje es largo: el QR queda muy denso. Para imprimirlo, usa un texto más corto.",
+      "qrGenerated": "El QR se genera en el servidor a partir del enlace y no se guarda.",
+      "qrFailed": "No se pudo generar el código QR.",
+      "linkCopied": "Enlace copiado",
+      "linkCopyFailed": "No se pudo copiar el enlace",
+      "shareTitle": "Escríbeme por WhatsApp",
+      "shareFallback": "Enlace copiado (tu navegador no permite compartir)",
+      "shareFailed": "No se pudo compartir el enlace",
+      "htmlCopied": "Botón HTML copiado",
+      "htmlCopyFailed": "No se pudo copiar el código",
+      "qrNotReady": "El código QR aún no está listo",
+      "downloadingQr": "Descargando el código QR…"
+    },
+    "transcribe": {
+      "limitHint": "Audio o vídeo · hasta {mb} MB y {minutes} min",
+      "unavailableNote": "La transcripción no está activada en este servidor ahora mismo. Puedes seguir usando el resto de herramientas de FasTools.",
+      "unavailable": "Transcripción no disponible.",
+      "tooLarge": "El archivo supera el límite de {max} MB.",
+      "audioFallback": "audio",
+      "fileMeta": "{size} · {type}",
+      "unknownFormat": "formato desconocido",
+      "ready": "Listo para transcribir. El audio se sube al servidor y se borra al terminar.",
+      "chooseFile": "Elige un archivo para activar la transcripción.",
+      "preparing": "Preparando…",
+      "processing": "Procesando…",
+      "transcribingButton": "⏳ Transcribiendo…",
+      "keepOpen": "No cierres esta pestaña: el progreso se actualiza solo.",
+      "uploading": "Subiendo el archivo…",
+      "startFailed": "No se pudo iniciar la transcripción.",
+      "queued": "En cola…",
+      "statusFailed": "No se pudo consultar el trabajo.",
+      "cancelled": "Transcripción cancelada",
+      "tryAnother": "Puedes probar con otro archivo.",
+      "failed": "No se pudo transcribir el audio.",
+      "checkFile": "Revisa el archivo e inténtalo de nuevo.",
+      "transcribeButton": "📝 Transcribir audio",
+      "languageUnknown": "Idioma no detectado",
+      "readyResult": "Transcripción lista. Revisa el texto antes de descargarlo.",
+      "downloadFailed": "No se pudo descargar la transcripción.",
+      "downloading": "Descargando {format}…",
+      "copied": "Texto copiado",
+      "cancelFailed": "No se pudo cancelar el trabajo.",
+      "cancelling": "Cancelando…",
+      "lang": {
+        "es": "Español",
+        "en": "Inglés",
+        "pt": "Portugués",
+        "fr": "Francés",
+        "de": "Alemán",
+        "it": "Italiano",
+        "ca": "Catalán",
+        "gl": "Gallego",
+        "eu": "Euskera",
+        "ru": "Ruso",
+        "zh": "Chino",
+        "ja": "Japonés",
+        "ar": "Árabe",
+        "hi": "Hindi"
+      },
+      "downloadName": "transcripcion"
+    }
+  },
+  "html": {}
+}

@@ -4,7 +4,8 @@
 (function () {
   "use strict";
 
-  const { $, showToast, showError, clearError, formatBytes, triggerDownload } = window.VD;
+  const { $, t, showToast, showError, clearError, formatBytes, triggerDownload } =
+    window.VD;
   const ImageTools = window.VDImage;
 
   const MODE = document.body.dataset.imageTool;
@@ -34,15 +35,21 @@
   } = ImageTools;
 
   const reverseBase = {
-    compress: "-comprimida",
-    convert: "-convertida",
-    resize: "-redimensionada",
+    compress: t("image.suffixCompress", "-comprimida"),
+    convert: t("image.suffixConvert", "-convertida"),
+    resize: t("image.suffixResize", "-redimensionada"),
   }[MODE];
 
   const workingText = {
-    compress: "Comprimiendo la imagen en tu navegador…",
-    convert: "Convirtiendo la imagen en tu navegador…",
-    resize: "Redimensionando la imagen en tu navegador…",
+    compress: t(
+      "image.workingCompress",
+      "Comprimiendo la imagen en tu navegador…"
+    ),
+    convert: t("image.workingConvert", "Convirtiendo la imagen en tu navegador…"),
+    resize: t(
+      "image.workingResize",
+      "Redimensionando la imagen en tu navegador…"
+    ),
   }[MODE];
 
   const state = {
@@ -119,7 +126,10 @@
   // Utilidades de formato y estado
   // -------------------------------------------------------------------------
 
-  const numberFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 });
+  const numberFormat = new Intl.NumberFormat(
+    document.documentElement.lang === "en" ? "en-US" : "es-ES",
+    { maximumFractionDigits: 1 }
+  );
 
   function percentText(value) {
     const rounded = Math.abs(value) < 0.05 ? 0 : value;
@@ -165,7 +175,10 @@
         option.disabled = !supported;
         if (!supported && !option.dataset.unsupported) {
           option.dataset.unsupported = "1";
-          option.textContent = `${option.textContent.replace(/ · .*$/, "")} · no compatible con este navegador`;
+          option.textContent = `${option.textContent.replace(/ · .*$/, "")}${t(
+            "image.browserUnsupported",
+            " · no compatible con este navegador"
+          )}`;
         }
       });
 
@@ -180,11 +193,17 @@
     );
     if (formatSupport) {
       if (!missing.length) {
-        formatSupport.textContent = "JPG, PNG y WebP disponibles en este navegador.";
+        formatSupport.textContent = t(
+          "image.formatsAvailable",
+          "JPG, PNG y WebP disponibles en este navegador."
+        );
       } else {
-        formatSupport.textContent = `Sin soporte de ${missing
-          .map((mime) => formatLabel(mime))
-          .join(", ")} en este navegador.`;
+        const formats = missing.map((mime) => formatLabel(mime)).join(", ");
+        formatSupport.textContent = t(
+          "image.formatsMissing",
+          `Sin soporte de ${formats} en este navegador.`,
+          { formats }
+        );
       }
     }
   }
@@ -198,14 +217,20 @@
       if (qualityValue) qualityValue.textContent = `${qualityInput.value} %`;
       if (qualityHint) {
         if (!lossy) {
-          qualityHint.textContent =
-            "El PNG se guarda sin pérdida: el deslizador de calidad no cambia el resultado.";
+          qualityHint.textContent = t(
+            "image.pngLossless",
+            "El PNG se guarda sin pérdida: el deslizador de calidad no cambia el resultado."
+          );
         } else if (MODE === "compress") {
-          qualityHint.textContent =
-            "A mayor calidad, más peso. Para fotos, 75–85 % suele ser un buen equilibrio.";
+          qualityHint.textContent = t(
+            "image.qualityCompress",
+            "A mayor calidad, más peso. Para fotos, 75–85 % suele ser un buen equilibrio."
+          );
         } else {
-          qualityHint.textContent =
-            "Solo se aplica a JPG y WebP. A mayor calidad, más peso y más detalle.";
+          qualityHint.textContent = t(
+            "image.qualityConvert",
+            "Solo se aplica a JPG y WebP. A mayor calidad, más peso y más detalle."
+          );
         }
       }
     }
@@ -225,10 +250,16 @@
     processBtn.disabled = !ready;
     if (actionHint) {
       actionHint.textContent = state.working
-        ? "Espera mientras se procesa la imagen."
+        ? t("image.waitProcessing", "Espera mientras se procesa la imagen.")
         : state.image
-          ? "La vista previa no modifica tu archivo original."
-          : "Elige una imagen para activar la herramienta.";
+          ? t(
+              "image.previewSafe",
+              "La vista previa no modifica tu archivo original."
+            )
+          : t(
+              "image.chooseImage",
+              "Elige una imagen para activar la herramienta."
+            );
     }
   }
 
@@ -254,7 +285,9 @@
       outputPreview.classList.add("hidden");
     }
     if (outputPlaceholder) outputPlaceholder.classList.remove("hidden");
-    if (outputPreviewMeta) outputPreviewMeta.textContent = "Sin procesar";
+    if (outputPreviewMeta) {
+      outputPreviewMeta.textContent = t("image.notProcessed", "Sin procesar");
+    }
     if (resultSection) resultSection.classList.add("hidden");
     if (downloadBtn) downloadBtn.disabled = true;
     if (outSaved) {
@@ -273,7 +306,10 @@
     state.sourceUrl = null;
     if (inputPreview) {
       inputPreview.removeAttribute("src");
-      inputPreview.alt = "Vista previa de la imagen original";
+      inputPreview.alt = t(
+        "image.previewOriginal",
+        "Vista previa de la imagen original"
+      );
     }
     state.file = null;
     state.image = null;
@@ -289,7 +325,10 @@
     clearResult();
     updateActionState();
     if (resizeSummary) {
-      resizeSummary.textContent = "El tamaño final aparecerá aquí.";
+      resizeSummary.textContent = t(
+        "image.finalSizeHint",
+        "El tamaño final aparecerá aquí."
+      );
       resizeSummary.classList.remove("is-error");
     }
   }
@@ -316,12 +355,25 @@
   function showDecodeError(mime) {
     if (mime === MIME.webp) {
       showError(
-        "El archivo es un WebP, pero este navegador no puede decodificarlo. Prueba con JPG o PNG."
+        t(
+          "image.webpDecodeError",
+          "El archivo es un WebP, pero este navegador no puede decodificarlo. Prueba con JPG o PNG."
+        )
       );
     } else if (mime === MIME.jpeg) {
-      showError("El JPG está dañado o incompleto y el navegador no puede leerlo.");
+      showError(
+        t(
+          "image.jpgDecodeError",
+          "El JPG está dañado o incompleto y el navegador no puede leerlo."
+        )
+      );
     } else {
-      showError("El PNG está dañado o incompleto y el navegador no puede leerlo.");
+      showError(
+        t(
+          "image.pngDecodeError",
+          "El PNG está dañado o incompleto y el navegador no puede leerlo."
+        )
+      );
     }
   }
 
@@ -335,7 +387,12 @@
       validation = await validateFile(file);
     } catch (_) {
       if (runId === state.runId) {
-        showError("No se pudo comprobar el archivo. Inténtalo de nuevo.");
+        showError(
+          t(
+            "image.checkFailed",
+            "No se pudo comprobar el archivo. Inténtalo de nuevo."
+          )
+        );
       }
       return;
     }
@@ -364,11 +421,15 @@
     const validSize = limitFor(dims.width, dims.height);
     if (!validSize) {
       safeRevoke(url);
+      const size = dimensionText(dims.width, dims.height);
+      const side = numberFormat.format(MAX_SIDE);
+      const megapixels = numberFormat.format(MAX_PIXELS / 1000000);
       showError(
-        `La imagen mide ${dimensionText(dims.width, dims.height)}. El límite es de ` +
-          `${numberFormat.format(MAX_SIDE)} px por lado y ${numberFormat.format(
-            MAX_PIXELS / 1000000
-          )} megapíxeles.`
+        t(
+          "image.tooLargeDimensions",
+          `La imagen mide ${size}. El límite es de ${side} px por lado y ${megapixels} megapíxeles.`,
+          { size, side, mp: megapixels }
+        )
       );
       return;
     }
@@ -390,14 +451,23 @@
 
     if (inputPreview) {
       inputPreview.src = url;
-      inputPreview.alt = `Vista previa de ${file.name || "la imagen original"}`;
+      inputPreview.alt = t(
+        "image.previewOf",
+        `Vista previa de ${file.name || "la imagen original"}`,
+        {
+          name: file.name || t("image.originalImage", "la imagen original"),
+        }
+      );
     }
     if (inputPreviewMeta) {
       inputPreviewMeta.textContent = `${dimensionText(dims.width, dims.height)} · ${formatBytes(
         file.size
       )} · ${formatLabel(validation.mime)}`;
     }
-    if (fileName) fileName.textContent = file.name || "Imagen sin nombre";
+    if (fileName) {
+      fileName.textContent =
+        file.name || t("image.unnamed", "Imagen sin nombre");
+    }
     if (fileMeta) {
       fileMeta.textContent = `${formatLabel(validation.mime)} · ${dimensionText(
         dims.width,
@@ -467,8 +537,23 @@
     clearResult();
   }
 
+  function resultTooLargeError() {
+    const side = numberFormat.format(MAX_SIDE);
+    const megapixels = numberFormat.format(MAX_PIXELS / 1000000);
+    return t(
+      "image.resultTooLarge",
+      `El resultado supera el límite de ${side} px por lado o ${megapixels} megapíxeles.`,
+      { side, mp: megapixels }
+    );
+  }
+
   function readResizeTarget() {
-    if (!state.image) return { ok: false, error: "Elige primero una imagen." };
+    if (!state.image) {
+      return {
+        ok: false,
+        error: t("image.chooseFirst", "Elige primero una imagen."),
+      };
+    }
 
     if (sizeMode && sizeMode.value === "percent") {
       const pw = Number(resizePercentWidth ? resizePercentWidth.value : 100);
@@ -476,17 +561,15 @@
       if (!Number.isFinite(pw) || !Number.isFinite(ph) || pw < 1 || ph < 1 || pw > 400 || ph > 400) {
         return {
           ok: false,
-          error: "El porcentaje debe estar entre 1 % y 400 % en ambos lados.",
+          error: t(
+            "image.percentRange",
+            "El porcentaje debe estar entre 1 % y 400 % en ambos lados."
+          ),
         };
       }
       const target = percentDimensions(state.width, state.height, pw, ph);
       if (!target) {
-        return {
-          ok: false,
-          error: `El resultado supera el límite de ${numberFormat.format(
-            MAX_SIDE
-          )} px por lado o ${numberFormat.format(MAX_PIXELS / 1000000)} megapíxeles.`,
-        };
+        return { ok: false, error: resultTooLargeError() };
       }
       return { ok: true, ...target };
     }
@@ -501,16 +584,17 @@
       width < 1 ||
       height < 1
     ) {
-      return { ok: false, error: "El ancho y el alto deben ser números enteros mayores que 0." };
+      return {
+        ok: false,
+        error: t(
+          "image.integerDimensions",
+          "El ancho y el alto deben ser números enteros mayores que 0."
+        ),
+      };
     }
     const target = limitFor(width, height);
     if (!target) {
-      return {
-        ok: false,
-        error: `El resultado supera el límite de ${numberFormat.format(
-          MAX_SIDE
-        )} px por lado o ${numberFormat.format(MAX_PIXELS / 1000000)} megapíxeles.`,
-      };
+      return { ok: false, error: resultTooLargeError() };
     }
     return { ok: true, ...target };
   }
@@ -518,7 +602,10 @@
   function updateResizeSummary() {
     if (!resizeSummary || MODE !== "resize") return;
     if (!state.image) {
-      resizeSummary.textContent = "El tamaño final aparecerá aquí.";
+      resizeSummary.textContent = t(
+        "image.finalSizeHint",
+        "El tamaño final aparecerá aquí."
+      );
       resizeSummary.classList.remove("is-error");
       return;
     }
@@ -530,12 +617,11 @@
     }
     const same = target.width === state.width && target.height === state.height;
     resizeSummary.classList.remove("is-error");
+    const from = dimensionText(state.width, state.height);
+    const to = dimensionText(target.width, target.height);
     resizeSummary.textContent = same
-      ? `Se mantiene en ${dimensionText(state.width, state.height)}.`
-      : `De ${dimensionText(state.width, state.height)} a ${dimensionText(
-          target.width,
-          target.height
-        )}.`;
+      ? t("image.staysAt", `Se mantiene en ${from}.`, { size: from })
+      : t("image.fromTo", `De ${from} a ${to}.`, { from, to });
   }
 
   // -------------------------------------------------------------------------
@@ -545,14 +631,20 @@
   function resolveTarget() {
     const mime = selectedFormat();
     if (!formatInfo(mime)) {
-      return { ok: false, error: "Elige un formato de salida válido." };
-    }
-    if (!supportsType(mime)) {
       return {
         ok: false,
-        error: `Tu navegador no puede guardar imágenes en ${formatLabel(
-          mime
-        )}. Elige otro formato.`,
+        error: t("image.invalidFormat", "Elige un formato de salida válido."),
+      };
+    }
+    if (!supportsType(mime)) {
+      const format = formatLabel(mime);
+      return {
+        ok: false,
+        error: t(
+          "image.browserCannotSave",
+          `Tu navegador no puede guardar imágenes en ${format}. Elige otro formato.`,
+          { format }
+        ),
       };
     }
 
@@ -587,14 +679,17 @@
       mime: target.mime,
     };
     state.downloadName = outputName(
-      state.file ? state.file.name : "imagen",
+      state.file ? state.file.name : t("image.imageFallback", "imagen"),
       reverseBase,
       target.mime
     );
 
     if (outputPreview) {
       outputPreview.src = state.resultUrl;
-      outputPreview.alt = `Vista previa de la imagen ${MODE === "resize" ? "redimensionada" : "resultante"}`;
+      outputPreview.alt =
+        MODE === "resize"
+          ? t("image.previewResized", "Vista previa de la imagen redimensionada")
+          : t("image.previewResult", "Vista previa de la imagen resultante");
       outputPreview.classList.remove("hidden");
     }
     if (outputPlaceholder) outputPlaceholder.classList.add("hidden");
@@ -623,72 +718,134 @@
       const abs = Math.abs(reduction);
       const basicallySame = abs < 0.05;
       outSaved.classList.toggle("is-increase", reduction < 0 && !basicallySame);
+      const percent = percentText(abs);
       outSaved.textContent = basicallySame
-        ? "Prácticamente igual"
+        ? t("image.practicallySame", "Prácticamente igual")
         : reduction > 0
-          ? `${percentText(abs)} menos`
-          : `${percentText(abs)} más`;
+          ? t("image.less", `${percent} menos`, { percent })
+          : t("image.more", `${percent} más`, { percent });
     }
 
     if (resultNote) {
       const notes = [];
       const quality =
-        qualityInput && isLossy(target.mime) ? ` Calidad aplicada: ${qualityInput.value} %` : "";
+        qualityInput && isLossy(target.mime)
+          ? t(
+              "image.qualityApplied",
+              ` Calidad aplicada: ${qualityInput.value} %`,
+              { quality: qualityInput.value }
+            )
+          : "";
 
       if (MODE === "compress") {
         if (reduction !== null && reduction < -0.05) {
           notes.push(
-            `El archivo final pesa ${percentText(Math.abs(reduction))} más. La compresión no ` +
-              "garantiza un archivo más pequeño: prueba una calidad menor o el formato WebP."
+            t(
+              "image.compressGrew",
+              `El archivo final pesa ${percentText(
+                Math.abs(reduction)
+              )} más. La compresión no garantiza un archivo más pequeño: prueba una calidad menor o el formato WebP.`,
+              { percent: percentText(Math.abs(reduction)) }
+            )
           );
         } else if (reduction !== null && reduction > 0.05) {
-          notes.push(`El archivo final pesa ${percentText(reduction)} menos.${quality}`);
+          notes.push(
+            t(
+              "image.compressSmaller",
+              `El archivo final pesa ${percentText(reduction)} menos.${quality}`,
+              { percent: percentText(reduction), quality }
+            )
+          );
         } else {
           notes.push(
-            "El tamaño es prácticamente el mismo. La compresión no garantiza que el archivo " +
-              "resulte más pequeño, sobre todo si ya estaba optimizado."
+            t(
+              "image.compressSame",
+              "El tamaño es prácticamente el mismo. La compresión no garantiza que el archivo resulte más pequeño, sobre todo si ya estaba optimizado."
+            )
           );
         }
       } else if (MODE === "convert") {
-        notes.push(`Conversión de ${beforeLabel} a ${afterLabel}.${quality}`);
+        notes.push(
+          t(
+            "image.convertedFrom",
+            `Conversión de ${beforeLabel} a ${afterLabel}.${quality}`,
+            { from: beforeLabel, to: afterLabel, quality }
+          )
+        );
         if (reduction !== null && reduction < -0.05) {
           notes.push(
-            `El nuevo formato pesa ${percentText(Math.abs(reduction))} más. Convertir no es ` +
-              "lo mismo que comprimir; el porcentaje es el resultado real."
+            t(
+              "image.convertGrew",
+              `El nuevo formato pesa ${percentText(
+                Math.abs(reduction)
+              )} más. Convertir no es lo mismo que comprimir; el porcentaje es el resultado real.`,
+              { percent: percentText(Math.abs(reduction)) }
+            )
           );
         } else if (reduction !== null && reduction > 0.05) {
-          notes.push(`El nuevo archivo pesa ${percentText(reduction)} menos.`);
+          notes.push(
+            t(
+              "image.convertSmaller",
+              `El nuevo archivo pesa ${percentText(reduction)} menos.`,
+              { percent: percentText(reduction) }
+            )
+          );
         }
       } else {
         const grew = target.width > state.width || target.height > state.height;
+        const from = dimensionText(state.width, state.height);
+        const to = dimensionText(target.width, target.height);
         notes.push(
-          `Redimensionada de ${dimensionText(state.width, state.height)} a ${dimensionText(
-            target.width,
-            target.height
-          )}.`
+          t("image.resizedFrom", `Redimensionada de ${from} a ${to}.`, {
+            from,
+            to,
+          })
         );
         if (grew) {
-          notes.push("Se ha ampliado: la interpolación no crea detalle nuevo.");
+          notes.push(
+            t(
+              "image.enlarged",
+              "Se ha ampliado: la interpolación no crea detalle nuevo."
+            )
+          );
         }
         if (reduction !== null) {
           notes.push(
             reduction > 0.05
-              ? `El archivo final pesa ${percentText(reduction)} menos.`
+              ? t(
+                  "image.finalSmaller",
+                  `El archivo final pesa ${percentText(reduction)} menos.`,
+                  { percent: percentText(reduction) }
+                )
               : reduction < -0.05
-                ? `El archivo final pesa ${percentText(Math.abs(reduction))} más.`
-                : "El peso final es prácticamente el mismo."
+                ? t(
+                    "image.finalLarger",
+                    `El archivo final pesa ${percentText(
+                      Math.abs(reduction)
+                    )} más.`,
+                    { percent: percentText(Math.abs(reduction)) }
+                  )
+                : t(
+                    "image.finalSame",
+                    "El peso final es prácticamente el mismo."
+                  )
           );
         }
       }
 
       if (target.mime === MIME.jpeg && state.transparent) {
+        const color = jpegBackground ? jpegBackground.value : "#ffffff";
         notes.push(
-          `Las zonas transparentes se rellenaron con el color ${
-            jpegBackground ? jpegBackground.value : "#ffffff"
-          }.`
+          t(
+            "image.transparencyFilled",
+            `Las zonas transparentes se rellenaron con el color ${color}.`,
+            { color }
+          )
         );
       }
-      notes.push("Tu archivo original no se ha modificado.");
+      notes.push(
+        t("image.originalUnchanged", "Tu archivo original no se ha modificado.")
+      );
       resultNote.textContent = notes.join(" ");
     }
 
@@ -731,10 +888,19 @@
       });
       if (runId !== state.runId) return;
       showResult(output.blob, output);
-      showToast("Imagen procesada. Revisa el resultado antes de descargar.");
+      showToast(
+        t(
+          "image.processed",
+          "Imagen procesada. Revisa el resultado antes de descargar."
+        )
+      );
     } catch (err) {
       if (runId === state.runId) {
-        showError(err && err.message ? err.message : "No se pudo procesar la imagen.");
+        showError(
+          err && err.message
+            ? err.message
+            : t("image.processFailed", "No se pudo procesar la imagen.")
+        );
       }
     } finally {
       if (runId === state.runId) setWorking(false);
@@ -766,11 +932,13 @@
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
       if (!state.resultUrl) {
-        showToast("Primero procesa la imagen", { error: true });
+        showToast(t("image.processFirst", "Primero procesa la imagen"), {
+          error: true,
+        });
         return;
       }
       triggerDownload(state.resultUrl, state.downloadName);
-      showToast("Descargando la imagen…");
+      showToast(t("image.downloading", "Descargando la imagen…"));
     });
   }
 
@@ -920,9 +1088,13 @@
 
   function init() {
     if (limitHint) {
-      limitHint.textContent = `Hasta ${maxMb} MB · ${numberFormat.format(
-        MAX_SIDE
-      )} px por lado · ${numberFormat.format(MAX_PIXELS / 1000000)} MP`;
+      const side = numberFormat.format(MAX_SIDE);
+      const megapixels = numberFormat.format(MAX_PIXELS / 1000000);
+      limitHint.textContent = t(
+        "image.limitHint",
+        `Hasta ${maxMb} MB · ${side} px por lado · ${megapixels} MP`,
+        { mb: maxMb, side, mp: megapixels }
+      );
     }
     if (limitHint2) limitHint2.textContent = `${maxMb} MB`;
 

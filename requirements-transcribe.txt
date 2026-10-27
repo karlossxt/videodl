@@ -1,0 +1,9 @@
+# Dependencia opcional: transcripción de audio con faster-whisper.
+# No se instala por defecto porque añade cientos de MB y consume CPU/RAM.
+#   pip install -r requirements.txt -r requirements-transcribe.txt
+faster-whisper==1.2.1
+# faster-whisper 1.2.1 todavía llama a av.open(metadata_errors=...), eliminado
+# en PyAV 19. Aunque la app lee el WAV con la librería estándar, se acota para
+# que una actualización de av no rompa otras rutas internas de la librería.
+av>=11,<19
+numpy>=1.24

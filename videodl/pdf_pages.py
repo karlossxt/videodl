@@ -8,7 +8,7 @@ salen de ``views.py``.
 
 from __future__ import annotations
 
-from . import views
+from . import i18n, views
 from .paths import STATIC_DIR
 
 # Deben coincidir con static/pdf-core.js.
@@ -536,17 +536,20 @@ sitio. Al cerrar o recargar la página se liberan los datos en memoria.</p>
 }
 
 
-def render_pdf_page(key: str) -> str:
+def render_pdf_page(key: str, lang: str = i18n.DEFAULT_LANG) -> str:
     """Renderiza una de las cinco páginas compartidas de la suite PDF."""
-    meta = views.PAGE_META[key]
+    normalized = i18n.normalize_lang(lang)
+    meta = views.meta_for(key, normalized)
     content = PDF_TOOL_CONTENT[key]
     html_text = (STATIC_DIR / "pdf-tool.html").read_text(encoding="utf-8")
 
     replacements = {
-        "<!-- HEAD -->": views.head_html(meta),
-        "<!-- NAV -->": views.nav_html(meta.nav),
-        "<!-- FOOTER -->": views.footer_html(),
-        "<!-- RELATED -->": views.related_html(meta.tool_slug) if meta.tool_slug else "",
+        "<!-- HEAD -->": views.head_html(meta, normalized),
+        "<!-- NAV -->": views.nav_html(meta.nav, normalized, meta.path),
+        "<!-- FOOTER -->": views.footer_html(normalized),
+        "<!-- RELATED -->": (
+            views.related_html(meta.tool_slug, normalized) if meta.tool_slug else ""
+        ),
         "<!-- MODE -->": content["mode"],
         "<!-- HERO_TITLE -->": content["hero_title"],
         "<!-- HERO_SUB -->": content["hero_sub"],
@@ -566,4 +569,5 @@ def render_pdf_page(key: str) -> str:
     }
     for marker, value in replacements.items():
         html_text = html_text.replace(marker, value)
-    return html_text
+    html_text = html_text.replace('<html lang="es"', f'<html lang="{normalized}"', 1)
+    return i18n.translate_html(html_text, normalized)

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Transcribir audio a texto</h1>
+      <p class="hero-sub">
+        Sube un audio o un vídeo y conviértelo en texto editable con marcas de tiempo.
+        Descarga la transcripción en TXT, SRT o VTT. Gratis y sin registro.
+      </p>
+      <span class="hero-badge">📝 Voz a texto · TXT, SRT y VTT</span>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <noscript>
+      <p class="noscript-note">La transcripción necesita JavaScript para subir el archivo y mostrar el progreso. Actívalo para continuar.</p>
+    </noscript>
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" type="button" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <div id="service-note" class="warning-box hidden" role="status"></div>
+
+    <section aria-labelledby="file-title">
+      <div class="section-head">
+        <h3 id="file-title">Paso 1 · Elige el audio o vídeo</h3>
+        <span id="limit-hint" class="muted-small">MP3, WAV, M4A, MP4, MOV…</span>
+      </div>
+
+      <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un audio o vídeo">
+        <input type="file" id="file-input" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.wma,.amr,.aiff,.aif,.mp4,.mov,.mkv,.webm,.avi,.m4v" hidden />
+        <div class="dropzone-icon" aria-hidden="true">🎧</div>
+        <p class="dropzone-title">Arrastra el archivo aquí o <span class="accent">búscalo en tu equipo</span></p>
+        <p class="dropzone-sub">Audio o vídeo · hasta <span id="limit-hint-2">100 MB</span></p>
+      </div>
+
+      <div id="file-card" class="file-card hidden">
+        <div class="file-icon" aria-hidden="true">🎧</div>
+        <div class="file-info">
+          <div class="file-name" id="file-name"></div>
+          <div class="file-meta" id="file-meta"></div>
+        </div>
+        <button type="button" id="file-clear" class="ghost-btn small">✕ Quitar</button>
+      </div>
+
+      <div class="image-options" style="margin-top:18px">
+        <label class="option-field" for="language">
+          <span>Idioma del audio</span>
+          <select id="language">
+            <option value="auto" selected>Detección automática</option>
+            <option value="es">Español</option>
+            <option value="en">Inglés</option>
+            <option value="pt">Portugués</option>
+            <option value="fr">Francés</option>
+            <option value="de">Alemán</option>
+            <option value="it">Italiano</option>
+            <option value="ca">Catalán</option>
+            <option value="gl">Gallego</option>
+            <option value="eu">Euskera</option>
+            <option value="ru">Ruso</option>
+            <option value="zh">Chino</option>
+            <option value="ja">Japonés</option>
+            <option value="ar">Árabe</option>
+            <option value="hi">Hindi</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="image-action">
+        <button type="button" id="process-btn" class="primary-btn big" disabled>📝 Transcribir audio</button>
+        <span id="action-hint" class="muted-small">Elige un archivo para activar la transcripción.</span>
+      </div>
+    </section>
+
+    <section id="progress" class="progress-notice hidden" aria-live="polite" aria-labelledby="progress-title">
+      <div class="progress-head">
+        <span id="progress-title">Transcribiendo…</span>
+        <span id="progress-percent" class="mono">0 %</span>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="progress-message">Preparando…</span>
+        <button type="button" id="cancel-btn" class="ghost-btn small">Cancelar</button>
+      </div>
+    </section>
+
+    <section id="result" class="result hidden" aria-labelledby="result-title">
+      <div class="section-head">
+        <h3 id="result-title">Transcripción</h3>
+        <span id="result-status" class="status-live"><i aria-hidden="true"></i> Lista para descargar</span>
+      </div>
+
+      <div class="result-card">
+        <div class="result-left">
+          <div class="transcript-stats" id="transcript-stats">
+            <span><strong id="stat-words">0</strong> palabras</span>
+            <span><strong id="stat-chars">0</strong> caracteres</span>
+            <span><strong id="stat-duration">—</strong> de audio</span>
+            <span><strong id="stat-language">—</strong></span>
+          </div>
+          <textarea id="transcript-text" class="wa-textarea transcript-text" rows="14" readonly aria-label="Texto de la transcripción"></textarea>
+          <p class="image-note">Revisa nombres propios, cifras y siglas: el modelo puede confundirlos. El texto se genera automáticamente y puede contener errores.</p>
+          <div class="wa-actions">
+            <button type="button" id="copy-btn" class="soft-btn">📋 Copiar texto</button>
+            <button type="button" id="download-txt" class="download-btn">⬇ TXT</button>
+            <button type="button" id="download-srt" class="soft-btn">⬇ SRT</button>
+            <button type="button" id="download-vtt" class="soft-btn">⬇ VTT</button>
+            <button type="button" id="again-btn" class="ghost-btn">Transcribir otro</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>Cómo transcribir un audio a texto</h2>
+      <ol class="steps">
+        <li><strong>Sube el archivo</strong> de audio o vídeo. Se aceptan MP3, WAV, M4A, MP4, MOV y otros formatos habituales.</li>
+        <li><strong>Elige el idioma</strong> o deja la detección automática si no lo sabes.</li>
+        <li><strong>Espera la transcripción</strong>: verás el progreso y puedes cancelar en cualquier momento.</li>
+        <li><strong>Revisa y descarga</strong> el texto en TXT, o los subtítulos en SRT/VTT con marcas de tiempo.</li>
+      </ol>
+
+      <h2>TXT, SRT y VTT: para qué sirve cada formato</h2>
+      <table class="limits-table">
+        <thead>
+          <tr><th>Formato</th><th>Contenido</th><th>Uso habitual</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>TXT</strong></td><td>Texto plano sin tiempos.</td><td>Actas, notas, artículos, resúmenes.</td></tr>
+          <tr><td><strong>SRT</strong></td><td>Texto con inicio y fin de cada fragmento.</td><td>Subtítulos para editores de vídeo y YouTube.</td></tr>
+          <tr><td><strong>VTT</strong></td><td>Texto con tiempos en formato WebVTT.</td><td>Subtítulos para web y reproductores HTML5.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Qué precisión puedo esperar</h2>
+      <p>La calidad depende de la grabación: un audio limpio, sin música de fondo y con una
+      sola voz se transcribe mucho mejor que una conversación con ruido, varias personas
+      hablando a la vez o acentos muy marcados. Los nombres propios, las cifras, las siglas y
+      los términos técnicos son los fallos más frecuentes. Revisa siempre el resultado antes
+      de publicarlo o usarlo en un documento oficial.</p>
+
+      <h2>Privacidad: tu audio sí se sube al servidor</h2>
+      <p>A diferencia de las herramientas de imagen y PDF, la transcripción necesita el archivo
+      en el servidor para ejecutar el modelo de voz. El audio se guarda en una carpeta temporal,
+      se procesa y se borra al terminar o en la limpieza periódica. No se envía a plataformas
+      externas ni se usa para entrenar modelos. Si el contenido es confidencial, revisa las
+      condiciones antes de subirlo.</p>
+
+      <h2>Límites y formatos</h2>
+      <p>El límite depende de la configuración del servidor: por defecto, 100 MB y 30 minutos
+      por archivo. La transcripción se hace en CPU, así que un audio largo puede tardar varios
+      minutos. Los formatos más fiables son MP3, WAV, M4A, MP4 y MOV; si tu archivo no se
+      reconoce, conviértelo primero a MP3 o WAV.</p>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Puedo transcribir un vídeo?</summary>
+        <p>Sí. Del vídeo se extrae la pista de audio y se transcribe igual. No se procesa la
+        imagen ni se genera un vídeo nuevo.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Se detectan varios idiomas a la vez?</summary>
+        <p>El modelo elige un idioma principal. Si hay dos idiomas mezclados, la detección
+        automática puede fallar; en ese caso elige el idioma predominante o divide el audio.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Las marcas de tiempo son exactas?</summary>
+        <p>Son aproximadas y sirven para orientar los subtítulos. En frases rápidas o con
+        silencios largos pueden desviarse unas décimas. Ajusta el SRT en tu editor si necesitas
+        sincronización perfecta.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo cancelar la transcripción?</summary>
+        <p>Sí. Mientras se procesa verás un botón «Cancelar». Al cancelar se borra el archivo
+        temporal y no se descarga ningún resultado.</p>
+      </details>
+      <details class="faq">
+        <summary>¿El texto se guarda en el servidor?</summary>
+        <p>El resultado vive en memoria el tiempo necesario para que lo descargues y se elimina
+        con la limpieza periódica. No hay cuentas, historial ni almacenamiento permanente.</p>
+      </details>
+
+      <p>¿Solo necesitas el audio de un vídeo? Prueba también
+      <a href="/comprimir-video-whatsapp">comprimir vídeo</a> o
+      <a href="/recortar-clip-vertical">recortar un clip</a>.</p>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="transcribe.js"></script>
+</body>
+</html>
