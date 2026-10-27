@@ -1,6 +1,6 @@
 # Herramientas PDF
 
-Cuatro utilidades que procesan documentos **íntegramente en el navegador**:
+Cinco utilidades que procesan documentos **íntegramente en el navegador**:
 
 | Página | Modo interno | Qué hace |
 |---|---|---|
@@ -8,6 +8,7 @@ Cuatro utilidades que procesan documentos **íntegramente en el navegador**:
 | `/dividir-pdf` | `split` | Extrae páginas o rangos de un PDF, conservando el orden escrito. |
 | `/imagenes-a-pdf` | `images` | Crea un PDF con imágenes JPG o PNG, una página por imagen. |
 | `/pdf-a-jpg` | `jpg` | Renderiza las páginas de un PDF como JPG y las descarga en un ZIP. |
+| `/comprimir-pdf` | `compress` | Rasteriza cada página a JPG y reconstruye el PDF para reducir su peso. |
 
 Comparten plantilla, estilos y motor. No existe ningún endpoint de subida: el servidor
 solo entrega el HTML, el CSS, el JavaScript y las bibliotecas locales. Los documentos
@@ -18,8 +19,8 @@ nunca viajan al servidor ni a un servicio externo.
 ```
 videodl/
   pdf_pages.py            # textos, controles y SEO propios de cada modo
-  catalog.py              # las cuatro herramientas como "available"
-  pages.py                # rutas /unir-pdf, /dividir-pdf, /imagenes-a-pdf y /pdf-a-jpg
+  catalog.py              # las cinco herramientas como "available"
+  pages.py                # rutas /unir-pdf, /dividir-pdf, /imagenes-a-pdf, /pdf-a-jpg y /comprimir-pdf
   views.py                # PAGE_META, navegación con "PDF" y sitemap
 static/
   pdf-tool.html           # plantilla única con marcadores <!-- ... -->
@@ -30,13 +31,14 @@ static/
 tests/
   test_pdf_tools.py       # contrato HTML, catálogo, integridad, ZIP y ejecución Node
   pdf-tools.test.js       # pruebas unitarias del núcleo con `node --test`
+  e2e/pdf.spec.js         # flujo real en Chromium con Playwright
 docs/
   herramientas-pdf.md     # este documento
 ```
 
 `pdf_pages.py` solo rellena la plantilla. La cabecera, el pie, la navegación, las
 herramientas relacionadas y el SEO técnico se generan con las mismas funciones que el
-resto del sitio. Las cuatro rutas están registradas en `views.PAGE_META` y en el sitemap.
+resto del sitio. Las cinco rutas están registradas en `views.PAGE_META` y en el sitemap.
 
 ### Flujo de unir PDF
 
@@ -72,12 +74,21 @@ resto del sitio. Las cuatro rutas están registradas en `views.PAGE_META` y en e
 5. El ZIP se construye en el navegador con método *store* (sin compresión adicional),
    porque los JPG ya están comprimidos. No se añade JSZip.
 
+### Flujo de comprimir PDF
+
+1. Seleccionar un PDF de hasta 80 páginas y 25 MB.
+2. Elegir la calidad JPG (40–95 %) y la escala de renderizado (1×, 1,5× o 2×).
+3. Renderizar cada página con PDF.js y codificarla como JPG.
+4. Reconstruir el PDF con pdf-lib: una página del tamaño original por cada imagen.
+5. Mostrar el tamaño de entrada y de salida. Si el resultado pesa más, se avisa y se
+   recomienda bajar la calidad o conservar el original.
+
 ## Bibliotecas locales
 
 | Biblioteca | Versión | Licencia | Uso |
 |---|---|---|---|
 | pdf-lib | 1.17.1 | MIT | Leer, copiar, unir y reconstruir PDF; incrustar JPG/PNG. |
-| PDF.js | 6.4.299 | Apache-2.0 | Renderizar páginas para miniaturas y JPG. |
+| PDF.js | 6.4.299 | Apache-2.0 | Renderizar páginas para miniaturas, JPG y compresión. |
 
 Los archivos están en `static/vendor/pdf/` y se cargan desde el mismo origen. No hay
 CDN, `unpkg`, `jsdelivr` ni peticiones a terceros. `manifest.json` guarda la versión,
@@ -97,15 +108,15 @@ fuentes estándar, CMaps, perfiles ICC y decodificadores WASM locales. La CSP in
 | Documentos para unir | 10 | `MAX_FILES` / `PDF_MAX_FILES` |
 | Imágenes para crear un PDF | 20 | `MAX_IMAGES` / `PDF_MAX_IMAGES` |
 | Páginas combinadas al unir o dividir | 300 | `MAX_PDF_PAGES` / `PDF_MAX_PAGES` |
-| Páginas por conversión a JPG | 80 | `MAX_RENDER_PAGES` / `PDF_MAX_RENDER_PAGES` |
+| Páginas por conversión a JPG o compresión | 80 | `MAX_RENDER_PAGES` / `PDF_MAX_RENDER_PAGES` |
 | Píxeles por imagen de entrada | 64 000 000 | `MAX_IMAGE_PIXELS` / `PDF_MAX_IMAGE_PIXELS` |
 | Píxeles por página renderizada | 40 000 000 | `MAX_OUTPUT_PIXELS` |
 | Lado máximo del render | 8192 px | `MAX_OUTPUT_SIDE` |
 
 Los límites de tamaño y página se comprueban antes de procesar. Si una página es muy
-grande para JPG, `clampRenderScale` reduce la escala automáticamente y la interfaz lo
-indica. En el modo «Tamaño de cada imagen», una imagen muy alargada se escala para que
-la página no supere los 14 400 puntos que admiten los visores PDF. Los límites son
+grande para JPG o para comprimir, `clampRenderScale` reduce la escala automáticamente y la
+interfaz lo indica. En el modo «Tamaño de cada imagen», una imagen muy alargada se escala
+para que la página no supere los 14 400 puntos que admiten los visores PDF. Los límites son
 deliberadamente conservadores para evitar que una pestaña se quede sin memoria en
 móviles.
 
@@ -116,6 +127,8 @@ móviles.
 - **PDF protegido con contraseña**: pdf-lib y PDF.js no descifran. Se detecta el error y
   se explica que hay que quitar la protección con la aplicación original.
 - **PDF sin páginas**: se rechaza con un mensaje claro.
+- **Más de 80 páginas al comprimir o convertir a JPG**: se bloquea y se sugiere dividir el
+  documento; el resto de modos admiten hasta 300 páginas.
 - **Imagen no admitida**: WebP, GIF, AVIF, SVG, HEIC y archivos corruptos se rechazan;
   solo se aceptan JPG y PNG.
 - **Memoria**: si el navegador falla al renderizar, se muestra un error y se liberan los
@@ -136,13 +149,13 @@ móviles.
 
 ## Compatibilidad de navegadores
 
-| Navegador | Unir/dividir | Imágenes a PDF | PDF a JPG | Notas |
-|---|---|---|---|---|
-| Chrome / Edge actuales | Sí | Sí | Sí | Probado con Chrome headless 155 en la matriz E2E. |
-| Firefox actual | Sí | Sí | Sí | Módulos, worker module, canvas y WASM estándar. |
-| Safari actual (macOS/iOS) | Sí | Sí | Sí | Safari moderno; la memoria disponible es el límite práctico. |
-| Navegadores sin módulos ES | No | No | No | La suite usa `type="module"` y `import()`. |
-| Navegadores sin canvas 2D | Sí para unir/dividir | No | No | Sin canvas no se pueden generar miniaturas ni JPG. |
+| Navegador | Unir/dividir | Imágenes a PDF | PDF a JPG | Comprimir PDF | Notas |
+|---|---|---|---|---|---|
+| Chrome / Edge actuales | Sí | Sí | Sí | Sí | Probado con Chromium en Playwright. |
+| Firefox actual | Sí | Sí | Sí | Sí | Módulos, worker module, canvas y WASM estándar. |
+| Safari actual (macOS/iOS) | Sí | Sí | Sí | Sí | Safari moderno; la memoria disponible es el límite práctico. |
+| Navegadores sin módulos ES | No | No | No | No | La suite usa `type="module"` y `import()`. |
+| Navegadores sin canvas 2D | Sí para unir/dividir | No | No | No | Sin canvas no se pueden generar miniaturas, JPG ni compresión. |
 
 La suite usa `File`, `Blob`, `URL.createObjectURL`, `TextEncoder`, canvas 2D, módulos
 JavaScript y —en el caso de PDF.js— worker module y WebAssembly. No se usa `eval`
@@ -155,6 +168,9 @@ JavaScript y —en el caso de PDF.js— worker module y WebAssembly. No se usa `
   seleccionable.
 - **Unir no comprime**: el resultado puede pesar igual o más que la suma de las partes.
 - **Extraer no recomprime**: el peso baja por tener menos páginas, no por compresión.
+- **Comprimir rasteriza**: el PDF resultante contiene una imagen JPG por página; se pierden
+  texto seleccionable, enlaces, formularios, marcadores y metadatos. Un PDF que ya estaba
+  optimizado puede pesar igual o más después de comprimirlo.
 - **PDF complejos**: pdf-lib copia páginas, pero marcadores, formularios interactivos,
   capas, adjuntos, firmas digitales y algunas acciones pueden perderse o dejar de
   funcionar. PDF.js puede renderizar de forma algo distinta a un visor de escritorio.
@@ -197,7 +213,7 @@ pytest tests/test_pdf_tools.py
 
 Comprueban:
 
-- las cuatro rutas, su modo, navegación, scripts, controles y SEO;
+- las cinco rutas, su modo, navegación, scripts, controles y SEO;
 - el catálogo, las herramientas destacadas y el sitemap;
 - la ausencia de formularios, `/api/`, `fetch`, `XMLHttpRequest` y `FormData`;
 - la sincronización de límites Python/JavaScript;
@@ -205,24 +221,22 @@ Comprueban:
 - que el ZIP generado por el núcleo JavaScript se abre con `zipfile` de Python;
 - la presencia de estilos responsive.
 
-### Matriz E2E con Chrome headless
+### Pruebas E2E con Playwright
 
-Se ejecutó una matriz de **64 comprobaciones** con Chrome 155 headless, servidor local en
-`:8765` y CDP. Incluye:
+La suite `tests/e2e/pdf.spec.js` arranca la aplicación con uvicorn y abre Chromium con
+Playwright. Comprueba, con descargas reales:
 
-- unir dos PDF, reordenarlos, comprobar el orden de páginas del PDF final y la descarga;
-- arrastrar y soltar un PDF;
-- dividir con `3, 1`, comprobar el orden y bloquear un rango inválido;
-- PDF protegido y PDF corrupto con mensajes claros;
-- imágenes a PDF con reordenación, modo "tamaño de imagen" y verificación de páginas;
-- imagen corrupta y límite de 80 páginas;
-- PDF a JPG con calidad/escala, ZIP con tres JPG válidos y JPG directo de una página;
-- progreso real visible, sin peticiones POST, externas ni a `/api/`;
-- ausencia de excepciones y errores de consola;
-- tema claro y viewport móvil sin desbordamiento horizontal.
+- que las cinco páginas cargan sin errores de consola y con las bibliotecas locales listas;
+- unir dos PDF y verificar el número y el orden de las páginas del archivo descargado;
+- dividir con `3, 1` y comprobar que el resultado conserva ese orden;
+- crear un PDF desde PNG y JPG y verificar que tiene una página por imagen;
+- convertir a JPG y validar la firma y el contenido del ZIP descargado;
+- comprimir un PDF y comprobar que el resultado se abre y mantiene sus páginas;
+- que durante el procesamiento no hay peticiones POST, externas ni a `/api/`.
 
-El arnés E2E es local y no forma parte de CI; las pruebas que sí se ejecutan en CI son
-las Node y las de Python.
+Se ejecuta en CI con `npm ci`, `npx playwright install --with-deps chromium` y
+`npm run test:e2e`. La configuración de `playwright.config.js` levanta uvicorn en el puerto
+8010 y reutiliza un servidor local si ya está en marcha.
 
 ## Verificación en CI
 
@@ -233,7 +247,11 @@ ruff check .
 node --test tests/image-tools.test.js
 node --test tests/pdf-tools.test.js
 pytest
+npm ci
+npx playwright install --with-deps chromium
+npm run test:e2e
 ```
 
 Además construye la imagen Docker y comprueba `/api/health`. La suite PDF no añade
-dependencias Python ni servicios externos en tiempo de ejecución.
+dependencias Python ni servicios externos en tiempo de ejecución; Playwright solo se usa
+en desarrollo y CI.

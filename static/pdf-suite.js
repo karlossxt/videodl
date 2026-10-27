@@ -37,6 +37,13 @@ const MODES = {
     accept: "application/pdf,.pdf",
     action: "Extraer páginas",
   },
+  compress: {
+    multiple: false,
+    kind: "pdf",
+    maxFiles: 1,
+    accept: "application/pdf,.pdf",
+    action: "Comprimir PDF",
+  },
   images: {
     multiple: true,
     kind: "image",
@@ -116,7 +123,7 @@ const renderScale = $("render-scale");
 const errorClose = $("error-close");
 
 const isPdfMode = CONFIG.kind === "pdf";
-const previewLimit = MODE === "jpg" ? 8 : 24;
+const previewLimit = MODE === "jpg" || MODE === "compress" ? 8 : 24;
 
 // ---------------------------------------------------------------------------
 // Utilidades generales
@@ -163,10 +170,10 @@ function updateLimitHint() {
       `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por imagen · ` +
       `${core.MAX_IMAGES} imágenes · ${core.MAX_IMAGE_PIXELS / 1_000_000} MP · ` +
       `${core.MAX_TOTAL_BYTES / (1024 * 1024)} MB en total`;
-  } else if (MODE === "jpg") {
+  } else if (MODE === "jpg" || MODE === "compress") {
     limitHint.textContent =
       `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB · ` +
-      `${core.MAX_RENDER_PAGES} páginas por conversión`;
+      `${core.MAX_RENDER_PAGES} páginas por ${MODE === "jpg" ? "conversión" : "compresión"}`;
   } else {
     limitHint.textContent =
       `Hasta ${core.MAX_FILE_BYTES / (1024 * 1024)} MB por PDF · ` +
@@ -184,9 +191,9 @@ function updateSizeWarning() {
     text =
       "La selección es grande. El procesamiento puede tardar y consumir bastante memoria, " +
       "sobre todo en móviles. Si falla, prueba con menos archivos.";
-  } else if (MODE === "jpg" && state.items[0] && state.items[0].pageCount > 40) {
+  } else if ((MODE === "jpg" || MODE === "compress") && state.items[0] && state.items[0].pageCount > 40) {
     text =
-      `Este PDF tiene ${state.items[0].pageCount} páginas. Convertirlas todas puede consumir ` +
+      `Este PDF tiene ${state.items[0].pageCount} páginas. Procesarlas todas puede consumir ` +
       "mucha memoria; si el navegador falla, divide el documento y prueba por partes.";
   } else if (state.items.some((item) => item.size > 10 * 1024 * 1024)) {
     text =
@@ -302,7 +309,17 @@ async function inspectPdf(file) {
       ok: false,
       code: "too-many-pages",
       error:
-        `“${file.name}” tiene ${pageCount} páginas y el límite para convertir a JPG es ` +
+        `"${file.name}" tiene ${pageCount} páginas y el límite para convertir a JPG es ` +
+        `${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
+    };
+  }
+
+  if (MODE === "compress" && pageCount > core.MAX_RENDER_PAGES) {
+    return {
+      ok: false,
+      code: "too-many-pages",
+      error:
+        `"${file.name}" tiene ${pageCount} páginas y el límite para comprimir es ` +
         `${core.MAX_RENDER_PAGES}. Divide el PDF primero.`,
     };
   }
@@ -794,7 +811,9 @@ async function renderPreview() {
         ? `Vista previa de ${shown} de ${pagesLabel(item.pageCount)}. ` +
           (MODE === "split"
             ? "Los rangos funcionan con todas las páginas."
-            : "La conversión procesará todas las páginas permitidas.")
+            : MODE === "compress"
+              ? "La compresión procesará todas las páginas permitidas."
+              : "La conversión procesará todas las páginas permitidas.")
         : `${pagesLabel(item.pageCount)} en el documento.`;
   } catch (error) {
     if (token === state.previewToken) {
@@ -889,6 +908,11 @@ function updateActionHint() {
     actionHint.textContent = item
       ? `${pagesLabel(item.pageCount)} · el resultado se descargará como JPG o ZIP.`
       : "Selecciona un PDF para activar la conversión.";
+  } else if (MODE === "compress") {
+    const item = state.items[0];
+    actionHint.textContent = item
+      ? `${pagesLabel(item.pageCount)} · se rasterizarán a JPG y se reconstruirá el PDF.`
+      : "Selecciona un PDF para activar la compresión.";
   }
 
   if (processBtn) processBtn.disabled = state.busy || !canProcess();
@@ -1037,8 +1061,8 @@ function operationError(error, filename) {
 
 async function mergePdfs(items) {
   const out = await PDFDocument.create();
-  out.setProducer("VideoDL Tools");
-  out.setCreator("VideoDL Tools");
+  out.setProducer("FasTools.app");
+  out.setCreator("FasTools.app");
   const total = items.length;
 
   for (let index = 0; index < items.length; index += 1) {
@@ -1095,8 +1119,8 @@ async function splitPdf(item) {
   }
 
   const out = await PDFDocument.create();
-  out.setProducer("VideoDL Tools");
-  out.setCreator("VideoDL Tools");
+  out.setProducer("FasTools.app");
+  out.setCreator("FasTools.app");
   const total = parsed.pages.length;
 
   for (let index = 0; index < total; index += 1) {
@@ -1130,8 +1154,8 @@ async function splitPdf(item) {
 
 async function imagesToPdf(items) {
   const out = await PDFDocument.create();
-  out.setProducer("VideoDL Tools");
-  out.setCreator("VideoDL Tools");
+  out.setProducer("FasTools.app");
+  out.setCreator("FasTools.app");
   const total = items.length;
   const sizeMode = pageSize ? pageSize.value : "a4";
 
@@ -1322,6 +1346,116 @@ async function pdfToJpg(item) {
   };
 }
 
+async function compressPdf(item) {
+  const requestedScale = Number(renderScale ? renderScale.value : 1.5) || 1.5;
+  const quality = Math.max(0.4, Math.min(0.95, Number(jpgQuality ? jpgQuality.value : 75) / 100));
+  const qualityPercent = Math.round(quality * 100);
+
+  let pdf;
+  try {
+    pdf = await loadPdfJs(item.bytes);
+  } catch (error) {
+    throw Object.assign(new Error("PDF ilegible"), {
+      userMessage: operationError(error, item.name),
+    });
+  }
+
+  const pageCount = pdf.numPages;
+  if (pageCount > core.MAX_RENDER_PAGES) {
+    await pdf.destroy();
+    throw Object.assign(new Error("Demasiadas páginas"), {
+      userMessage:
+        `"${item.name}" tiene ${pageCount} páginas y el límite para comprimir es ` +
+        `${core.MAX_RENDER_PAGES}. Divide el documento antes de comprimirlo.`,
+    });
+  }
+
+  const out = await PDFDocument.create();
+  out.setProducer("FasTools.app");
+  out.setCreator("FasTools.app");
+  let clamped = false;
+
+  try {
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      setProgress(
+        5 + ((pageNumber - 1) / pageCount) * 85,
+        `Comprimiendo página ${pageNumber} de ${pageCount}.`
+      );
+      await yieldToUi();
+
+      const page = await pdf.getPage(pageNumber);
+      let canvas = null;
+      try {
+        const base = page.getViewport({ scale: 1 });
+        const plan = core.clampRenderScale(base.width, base.height, requestedScale);
+        if (plan.clamped) clamped = true;
+        const viewport = page.getViewport({ scale: plan.scale });
+        canvas = document.createElement("canvas");
+        canvas.width = plan.width;
+        canvas.height = plan.height;
+        const context = canvas.getContext("2d", { alpha: false });
+        if (!context) throw new Error("Canvas no disponible");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({
+          canvas,
+          viewport,
+          background: "#ffffff",
+          intent: "display",
+        }).promise;
+
+        const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+        if (!blob) throw new Error("El navegador no pudo codificar el JPG");
+        const data = new Uint8Array(await blob.arrayBuffer());
+        const embedded = await out.embedJpg(data);
+        const outPage = out.addPage([base.width, base.height]);
+        outPage.drawImage(embedded, {
+          x: 0,
+          y: 0,
+          width: base.width,
+          height: base.height,
+        });
+      } finally {
+        if (page) page.cleanup();
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+      }
+
+      setProgress(
+        5 + (pageNumber / pageCount) * 85,
+        `Página ${pageNumber} de ${pageCount} comprimida`
+      );
+    }
+  } finally {
+    try {
+      await pdf.destroy();
+    } catch (_) {
+      /* Nada que liberar. */
+    }
+  }
+
+  setProgress(94, "Guardando el PDF comprimido.");
+  await yieldToUi();
+  const bytes = await out.save({ useObjectStreams: true });
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  setProgress(100, "PDF comprimido");
+  return {
+    blob,
+    name: core.compressedPdfName(item.name),
+    beforeBytes: item.size,
+    beforeDetail: `${pagesLabel(pageCount)} de origen`,
+    afterDetail: `${pagesLabel(pageCount)} · JPG al ${qualityPercent} %`,
+    note:
+      "Para reducir el peso, cada página se rasteriza a JPG y se reconstruye el PDF. " +
+      "Se pierden el texto seleccionable, los enlaces, los formularios y los metadatos. " +
+      "Si el resultado pesa más, baja la calidad o la resolución: los PDF que ya venían " +
+      "muy comprimidos apenas mejoran y pueden aumentar de tamaño." +
+      (clamped ? " Algunas páginas se redujeron para no superar el límite de píxeles." : ""),
+  };
+}
+
 async function processFiles() {
   if (!canProcess()) return;
   clearError();
@@ -1353,6 +1487,10 @@ async function processFiles() {
       result = await pdfToJpg(first);
       if (runId !== state.runId) return;
       showJpgResult(result);
+    } else if (MODE === "compress") {
+      result = await compressPdf(first);
+      if (runId !== state.runId) return;
+      showPdfResult(result);
     }
     if (runId === state.runId) {
       showToast("Resultado listo. La descarga no envía nada a internet.");

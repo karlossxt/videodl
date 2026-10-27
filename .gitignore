@@ -23,6 +23,12 @@ htmlcov/
 dist/
 build/
 
+# Playwright
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+
 # Ejemplo de referencia (no forma parte del proyecto)
 _ejemplo_gemini/
 *.zip

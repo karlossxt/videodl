@@ -3,6 +3,32 @@
 Todas las novedades relevantes de este proyecto. Formato basado en
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Unreleased]
+
+### Añadido
+- **Comprimir PDF** (`/comprimir-pdf`): rasteriza cada página con PDF.js, la codifica
+  como JPG con calidad (40–95 %) y escala (1×, 1,5× o 2×) ajustables y reconstruye el
+  PDF con pdf-lib. Procesa hasta 80 páginas y avisa de que se pierden el texto
+  seleccionable, los enlaces, los formularios y los metadatos, y de que un PDF ya
+  optimizado puede pesar igual o más.
+- **Pruebas E2E con Playwright** (`tests/e2e/pdf.spec.js`, `playwright.config.js`):
+  arrancan uvicorn en el puerto 8010 y validan con Chromium los flujos reales de las
+  cinco herramientas, los archivos descargados (PDF, JPG y ZIP), el orden de páginas,
+  los metadatos y que no haya peticiones POST, externas ni a `/api/`.
+- `package.json` y `package-lock.json` con `@playwright/test` como única dependencia de
+  desarrollo; `npm run test:e2e` ejecuta la suite. Los artefactos de Playwright se
+  excluyen del repositorio.
+
+### Cambiado
+- **Marca visible renombrada a FasTools.app**: títulos, cabecera, pie, textos, avisos
+  legales, metadatos PDF, README y documentación. El paquete `videodl`, las rutas, el
+  repositorio y el servicio de Render conservan su nombre para no romper el despliegue.
+- `comprimir-pdf` pasa a estar `available` en el catálogo y se añade al sitemap, a la
+  navegación PDF y a las herramientas relacionadas.
+- `.gitattributes` excluye `static/vendor/**` de la conversión de finales de línea para
+  no romper los SHA-256 del manifiesto en Windows.
+- El CI instala Chromium y ejecuta Playwright después de pytest.
+
 ## [3.2.0] - 2026-10-25
 
 ### Añadido

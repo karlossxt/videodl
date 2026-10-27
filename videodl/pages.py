@@ -92,6 +92,12 @@ async def page_pdf_a_jpg():
     return HTMLResponse(pdf_pages.render_pdf_page("pdf-a-jpg"))
 
 
+@router.get("/comprimir-pdf", response_class=HTMLResponse)
+async def page_comprimir_pdf():
+    """Compresión de un PDF en el navegador."""
+    return HTMLResponse(pdf_pages.render_pdf_page("comprimir-pdf"))
+
+
 @router.get("/legal", response_class=HTMLResponse)
 async def page_legal():
     """Aviso legal, privacidad, términos y contacto."""

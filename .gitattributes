@@ -1,6 +1,9 @@
 # Normaliza los finales de línea a LF en el repositorio
 * text=auto
 
+# Vendor: se verifican por SHA-256, así que no se convierten sus finales de línea
+static/vendor/** -text
+
 # Archivos donde CRLF rompería la ejecución (Docker, shell, configs)
 Dockerfile text eol=lf
 .dockerignore text eol=lf

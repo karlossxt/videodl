@@ -57,13 +57,13 @@ async def lifespan(_app: FastAPI):
     # Al arrancar no hay trabajos activos: se pueden borrar los restos de más de 5 min.
     await asyncio.to_thread(sweep_temp_dirs, [], 300)
     threading.Thread(target=_janitor_loop, daemon=True).start()
-    logger.info("VideoDL %s iniciado (ffmpeg=%s)", __version__, FFMPEG_AVAILABLE)
+    logger.info("FasTools %s iniciado (ffmpeg=%s)", __version__, FFMPEG_AVAILABLE)
     yield
-    logger.info("VideoDL detenido")
+    logger.info("FasTools detenido")
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="VideoDL Tools", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="FasTools.app", version=__version__, lifespan=lifespan)
 
     if CORS_ORIGINS:
         app.add_middleware(

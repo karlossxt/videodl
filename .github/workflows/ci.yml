@@ -39,6 +39,15 @@ jobs:
       - name: Tests (pytest)
         run: pytest
 
+      - name: Instalar dependencias E2E
+        run: npm ci
+
+      - name: Instalar Chromium de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests E2E (Playwright)
+        run: npm run test:e2e
+
   docker:
     # Comprueba que la imagen de producción se construye y arranca de verdad.
     needs: test

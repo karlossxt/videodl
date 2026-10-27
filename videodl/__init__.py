@@ -1,4 +1,4 @@
-"""VideoDL: suite de herramientas de vídeo sobre archivos propios.
+"""FasTools.app: suite de herramientas sobre archivos propios.
 
 El paquete está dividido en módulos pequeños y con una única responsabilidad:
 

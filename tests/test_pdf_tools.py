@@ -1,6 +1,6 @@
 """Pruebas de la suite PDF.
 
-Comprueban el contrato de las cuatro páginas, el catálogo, la ausencia de
+Comprueban el contrato de las cinco páginas, el catálogo, la ausencia de
 subidas al servidor, la integridad de las bibliotecas locales y la
 interoperabilidad del ZIP generado en el navegador con el lector de Python.
 """
@@ -39,6 +39,7 @@ PDF_PAGES = {
     "/dividir-pdf": "split",
     "/imagenes-a-pdf": "images",
     "/pdf-a-jpg": "jpg",
+    "/comprimir-pdf": "compress",
 }
 
 
@@ -84,12 +85,13 @@ def test_paginas_pdf_tienen_estructura_comun_y_modo_correcto(client, path, mode)
     assert "multipart/form-data" not in text
 
 
-def test_catalogo_incluye_las_cuatro_herramientas_pdf():
+def test_catalogo_incluye_las_cinco_herramientas_pdf():
     expected = {
         "unir-pdf": "/unir-pdf",
         "dividir-pdf": "/dividir-pdf",
         "imagenes-a-pdf": "/imagenes-a-pdf",
         "pdf-a-jpg": "/pdf-a-jpg",
+        "comprimir-pdf": "/comprimir-pdf",
     }
     for slug, route in expected.items():
         tool = tool_by_slug(slug)
@@ -102,7 +104,7 @@ def test_catalogo_incluye_las_cuatro_herramientas_pdf():
         assert len(tool.description.strip()) > 20
 
     # La tarjeta del catálogo ya no debe ofrecer un falso "Próximamente" para
-    # estas cuatro rutas.
+    # estas cinco rutas.
     available_slugs = {tool.slug for tool in TOOLS if tool.available}
     assert expected.keys() <= available_slugs
 
@@ -133,12 +135,19 @@ def test_textos_clave_y_limites_de_cada_modo(client):
     assert "no aplica OCR" in jpg or "no ofrece" in jpg
     assert "fondo se pinta en blanco" in jpg or "fondo se pintó en blanco" in jpg
 
+    compress = client.get("/comprimir-pdf").text
+    assert 'id="jpg-quality"' in compress
+    assert 'id="render-scale"' in compress
+    assert "rasteriza" in compress
+    assert "texto seleccionable" in compress
+    assert "puede pesar igual o más" in compress
+
     for path in PDF_PAGES:
         text = client.get(path).text
         assert f"{PDF_MAX_MB} MB" in text
         if path in {"/unir-pdf", "/dividir-pdf"}:
             assert str(PDF_MAX_PAGES) in text
-        if path == "/pdf-a-jpg":
+        if path in {"/pdf-a-jpg", "/comprimir-pdf"}:
             assert str(PDF_MAX_RENDER_PAGES) in text
 
 
@@ -227,19 +236,20 @@ def test_la_plantilla_compartida_no_deja_marcadores_sin_sustituir(client):
             assert marker not in text, (path, marker)
 
 
-def test_los_cuatro_modos_tienen_contenido_seo_propio():
+def test_los_cinco_modos_tienen_contenido_seo_propio():
     assert set(PDF_TOOL_CONTENT) == {
         "unir-pdf",
         "dividir-pdf",
         "imagenes-a-pdf",
         "pdf-a-jpg",
+        "comprimir-pdf",
     }
-    assert len({content["hero_title"] for content in PDF_TOOL_CONTENT.values()}) == 4
-    assert len({content["seo"] for content in PDF_TOOL_CONTENT.values()}) == 4
-    assert len({content["action_label"] for content in PDF_TOOL_CONTENT.values()}) == 4
+    assert len({content["hero_title"] for content in PDF_TOOL_CONTENT.values()}) == 5
+    assert len({content["seo"] for content in PDF_TOOL_CONTENT.values()}) == 5
+    assert len({content["action_label"] for content in PDF_TOOL_CONTENT.values()}) == 5
 
 
-def test_sitemap_incluye_las_cuatro_paginas(client):
+def test_sitemap_incluye_las_cinco_paginas(client):
     sitemap = client.get("/sitemap.xml").text
     for path in PDF_PAGES:
         assert path in sitemap or path.lstrip("/") in sitemap

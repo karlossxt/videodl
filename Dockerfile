@@ -1,4 +1,4 @@
-# VideoDL — imagen de producción (FastAPI + ffmpeg)
+# FasTools.app - imagen de producción (FastAPI + ffmpeg)
 # La imagen base va fijada a una versión/distro concretas para builds reproducibles.
 FROM python:3.12-slim-bookworm
 

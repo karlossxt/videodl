@@ -197,6 +197,7 @@ test("genera nombres de salida seguros y con extensión correcta", () => {
   assert.equal(pdf.sanitizeBaseName(""), "documento");
   assert.equal(pdf.mergedPdfName(), "documento-unido.pdf");
   assert.equal(pdf.splitPdfName("informe.pdf"), "informe-paginas.pdf");
+  assert.equal(pdf.compressedPdfName("informe.pdf"), "informe-comprimido.pdf");
   assert.equal(pdf.imagesPdfName([{ name: "foto.png" }]), "foto-imagenes.pdf");
   assert.equal(pdf.imagesPdfName([{ name: "a.png" }, { name: "b.png" }]), "imagenes-a-pdf.pdf");
   assert.equal(pdf.jpgPageName("informe.pdf", 3, 12), "informe-pagina-03.jpg");

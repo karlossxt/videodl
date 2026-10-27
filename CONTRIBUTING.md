@@ -1,4 +1,4 @@
-# Contribuir a VideoDL Tools
+# Contribuir a FasTools.app
 
 ¡Gracias por tu interés! Este documento resume cómo montar el proyecto y qué se
 espera de un cambio.

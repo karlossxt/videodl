@@ -1,6 +1,6 @@
 """Páginas de la suite PDF.
 
-Las cuatro utilidades comparten una sola plantilla y un único motor en el
+Las cinco utilidades comparten una sola plantilla y un único motor en el
 navegador. Este módulo aporta el texto, los límites y los controles propios de
 cada modo; la cabecera, el pie, las herramientas relacionadas y el SEO técnico
 salen de ``views.py``.
@@ -62,6 +62,27 @@ _IMAGES_CONTROLS = f"""<div class="pdf-options">
   por imagen.</p>
   <p class="pdf-note">Puedes reordenar las imágenes con las flechas antes de crear el documento.
   Máximo {PDF_MAX_IMAGES} imágenes y {PDF_MAX_TOTAL_MB} MB en total por operación.</p>
+</div>"""
+
+_COMPRESS_CONTROLS = f"""<div class="pdf-options">
+  <label class="option-field" for="jpg-quality">
+    <span>Calidad JPG <output id="jpg-quality-value" for="jpg-quality">75 %</output></span>
+    <input type="range" id="jpg-quality" min="40" max="95" step="5" value="75" />
+  </label>
+  <label class="option-field" for="render-scale">
+    <span>Resolución de renderizado</span>
+    <select id="render-scale">
+      <option value="1">1&times; (72 ppp)</option>
+      <option value="1.5" selected>1,5&times; (108 ppp)</option>
+      <option value="2">2&times; (144 ppp)</option>
+    </select>
+  </label>
+  <p class="field-hint">Para reducir el peso, cada página se convierte en una imagen JPG y se
+  reconstruye el PDF. Una calidad y una resolución más bajas dan un archivo más pequeño, pero
+  también menos nitidez. Se procesan como máximo {PDF_MAX_RENDER_PAGES} páginas por operación.</p>
+  <p class="pdf-note">Esta compresión <strong>rasteriza</strong> el documento: se pierden el texto
+  seleccionable, los enlaces, los formularios y los metadatos. Si el PDF ya venía muy comprimido,
+  el resultado puede pesar igual o más; en ese caso prueba con una calidad menor.</p>
 </div>"""
 
 _JPG_CONTROLS = f"""<div class="pdf-options">
@@ -152,7 +173,7 @@ soporte de módulos no podrá ejecutar la herramienta.</p>
 
 <h2>Preguntas frecuentes</h2>
 <details class="faq">
-  <summary>¿Se suben los PDF a VideoDL o a un tercero?</summary>
+  <summary>¿Se suben los PDF a FasTools o a un tercero?</summary>
   <p>No. La unión se hace en tu navegador. El sitio solo entrega el HTML, el CSS y las
   bibliotecas; el contenido de tus documentos no viaja al servidor.</p>
 </details>
@@ -344,7 +365,7 @@ muy antiguo puede no soportar la decodificación de PNG o las APIs necesarias.</
 </details>
 <details class="faq">
   <summary>¿Se suben las fotos a internet?</summary>
-  <p>No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a VideoDL ni a
+  <p>No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a FasTools ni a
   terceros.</p>
 </details>""",
     },
@@ -444,11 +465,79 @@ navegador y del tamaño de las páginas.</p>
   bibliotecas necesarias.</p>
 </details>""",
     },
+    "comprimir-pdf": {
+        "mode": "compress",
+        "step_one_title": "Elige el PDF",
+        "hero_title": "Comprimir PDF sin subirlo a internet",
+        "hero_sub": (
+            "Reduce el peso de un documento con la calidad y la resolución que elijas. "
+            "El PDF se procesa en tu navegador y no se envía a ningún servidor."
+        ),
+        "hero_badge": "Procesamiento local · calidad ajustable · sin registro",
+        "drop_aria": "Elegir o arrastrar un archivo PDF para comprimirlo",
+        "drop_icon": "&#128200;",
+        "drop_title": "Arrastra tu PDF aquí o <span class=\"accent\">búscalo en tu equipo</span>",
+        "drop_sub": (
+            f"PDF hasta {PDF_MAX_MB} MB · máximo {PDF_MAX_RENDER_PAGES} páginas por compresión"
+        ),
+        "accept": "application/pdf,.pdf",
+        "multiple": "",
+        "files_title": "Documento que se va a comprimir",
+        "controls": _COMPRESS_CONTROLS,
+        "action_label": "Comprimir PDF",
+        "action_hint": "Selecciona un PDF para activar la compresión.",
+        "seo": f"""<h2>Cómo se reduce el peso de un PDF</h2>
+<p>Esta herramienta no reescribe el texto ni elimina objetos internos: <strong>renderiza cada
+página como una imagen JPG</strong> con la calidad y la resolución elegidas y construye un PDF
+nuevo con esas imágenes. Es el método más efectivo en el navegador para documentos escaneados,
+presentaciones con muchas fotos o PDF exportados desde móvil.</p>
+<ol class="steps">
+  <li><strong>Añade el PDF</strong> con el selector o arrastrándolo a la zona de subida.</li>
+  <li><strong>Ajusta la calidad</strong> (40–95 %) y la resolución (1×, 1,5× o 2×).</li>
+  <li><strong>Pulsa «Comprimir PDF»</strong> y espera a que termine el procesamiento local.</li>
+  <li><strong>Compara el tamaño</strong> y descarga el resultado si te sirve.</li>
+</ol>
+
+<h2>Cuándo funciona bien y cuándo no</h2>
+<p>Funciona especialmente bien con escaneos, capturas y documentos con imágenes grandes. En
+cambio, un PDF que ya estaba comprimido o que solo contiene texto vectorial puede pesar lo mismo
+o incluso más, porque cada página se sustituye por una imagen. Si eso ocurre, baja la calidad al
+40–60 % o la resolución a 1×; si sigue sin mejorar, el documento no se beneficia de este método.</p>
+<p>El límite es de {PDF_MAX_RENDER_PAGES} páginas por operación y {PDF_MAX_MB} MB de entrada. Para
+documentos más largos, divide primero el PDF y comprime cada parte.</p>
+
+<h2>Qué se conserva y qué se pierde</h2>
+<p>Se conserva el aspecto visual de cada página y el tamaño original de la página. Se pierden el
+texto seleccionable, los enlaces, los formularios interactivos, los marcadores, las capas y los
+metadatos. Tampoco se aplica OCR: un escaneo sigue siendo una imagen. Revisa el resultado antes de
+enviarlo si el documento es importante.</p>
+
+<h2>Privacidad</h2>
+<p>El archivo no se sube a FasTools ni a terceros. La lectura, el renderizado, la codificación JPG
+y la reconstrucción del PDF ocurren dentro de tu navegador con bibliotecas servidas desde este
+sitio. Al cerrar o recargar la página se liberan los datos en memoria.</p>
+
+<h2>Preguntas frecuentes</h2>
+<details class="faq">
+  <summary>¿Se puede volver a editar el PDF comprimido?</summary>
+  <p>Sí, pero su contenido será una imagen por página. No podrás seleccionar ni buscar el texto
+  original, y un editor lo tratará como una imagen escaneada.</p>
+</details>
+<details class="faq">
+  <summary>¿Por qué el archivo comprimido pesa más?</summary>
+  <p>Porque el PDF original ya estaba optimizado o tenía muy poco contenido visual. Rasterizar
+  añade una imagen por página. En esos casos no hay ganancia real: conserva el original.</p>
+</details>
+<details class="faq">
+  <summary>¿Se sube mi documento a un servidor?</summary>
+  <p>No. Todo el proceso es local en tu navegador. La página no envía el archivo por la red.</p>
+</details>""",
+    },
 }
 
 
 def render_pdf_page(key: str) -> str:
-    """Renderiza una de las cuatro páginas compartidas de la suite PDF."""
+    """Renderiza una de las cinco páginas compartidas de la suite PDF."""
     meta = views.PAGE_META[key]
     content = PDF_TOOL_CONTENT[key]
     html_text = (STATIC_DIR / "pdf-tool.html").read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 """Pruebas de las dependencias declaradas y de la imagen de producción.
 
-VideoDL ya no descarga vídeos de plataformas externas, así que las dependencias
+FasTools ya no descarga vídeos de plataformas externas, así que las dependencias
 de descarga (yt-dlp, el proveedor de PO tokens y el runtime Deno) no deben volver
 a colarse: encarecen la imagen y reintroducen una superficie legal y de red que
 el proyecto ha retirado a propósito.

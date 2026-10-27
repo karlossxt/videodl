@@ -145,7 +145,7 @@ def test_portada_tiene_hero_buscador_y_categorias(client):
     assert 'data-tool-search' in text
     assert 'name="q"' in text
     assert 'action="/"' in text
-    for category in ("Video", "Audio", "Imágenes", "PDF", "Productividad"):
+    for category in ("Vídeo", "Audio", "Imágenes", "PDF", "Productividad"):
         assert category in text
 
     home_cards = tool_cards(text)
@@ -309,7 +309,7 @@ def test_canonical_y_open_graph_en_todas_las_paginas(client):
         assert 'property="og:title"' in text
         assert 'property="og:description"' in text
         assert 'property="og:url"' in text
-        assert 'property="og:site_name" content="VideoDL Tools"' in text
+        assert 'property="og:site_name" content="FasTools.app"' in text
         assert '<meta name="description"' in text
         assert "<title>" in text
 
@@ -355,6 +355,7 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
         f"{site}/dividir-pdf",
         f"{site}/imagenes-a-pdf",
         f"{site}/pdf-a-jpg",
+        f"{site}/comprimir-pdf",
         f"{site}/link-whatsapp",
     }
     assert all("/legal" not in loc for loc in locs)

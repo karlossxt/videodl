@@ -17,7 +17,7 @@ Se intentará responder en un plazo razonable.
 
 ## Superficie de riesgo
 
-VideoDL Tools acepta únicamente archivos subidos por el usuario y ejecuta
+FasTools.app acepta únicamente archivos subidos por el usuario y ejecuta
 `ffmpeg`/`ffprobe` en el servidor. No hay descargas de plataformas externas, URLs
 de entrada, proxies ni cookies de sesión. Las defensas incluyen:
 

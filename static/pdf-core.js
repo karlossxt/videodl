@@ -388,6 +388,10 @@
     return outputName(name, "-paginas", "pdf");
   }
 
+  function compressedPdfName(name) {
+    return outputName(name, "-comprimido", "pdf");
+  }
+
   function imagesPdfName(items) {
     if (Array.isArray(items) && items.length === 1) {
       return outputName(items[0].name || items[0], "-imagenes", "pdf");
@@ -565,6 +569,7 @@
     outputName,
     mergedPdfName,
     splitPdfName,
+    compressedPdfName,
     imagesPdfName,
     jpgPageName,
     zipName,

@@ -44,7 +44,7 @@ CATEGORIES: tuple[Category, ...] = (
     Category("video", "Vídeo", "🎬", "Comprime, recorta y convierte vídeo."),
     Category("audio", "Audio", "🎧", "Extrae, une y convierte pistas de audio."),
     Category("imagenes", "Imágenes", "🖼️", "Comprime, convierte y redimensiona imágenes."),
-    Category("pdf", "PDF", "📄", "Une, divide y convierte documentos PDF."),
+    Category("pdf", "PDF", "📄", "Une, divide, comprime y convierte documentos PDF."),
     Category("productividad", "Productividad", "⚡", "Enlaces, códigos QR y utilidades del día a día."),
 )
 
@@ -177,10 +177,12 @@ TOOLS: tuple[Tool, ...] = (
     Tool(
         slug="comprimir-pdf",
         name="Comprimir PDF",
-        description="Reduce el peso de un PDF para enviarlo por correo o WhatsApp.",
+        description="Reduce el peso de un PDF rasterizando sus páginas con calidad ajustable.",
         category="pdf",
-        icon="📉",
-        keywords=("pdf", "comprimir", "reducir", "peso"),
+        icon="🗜️",
+        keywords=("pdf", "comprimir", "reducir", "peso", "optimizar"),
+        route="/comprimir-pdf",
+        status="available",
     ),
     # --- Productividad -----------------------------------------------------
     Tool(

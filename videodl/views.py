@@ -26,7 +26,7 @@ from .catalog import (
 )
 from .paths import STATIC_DIR
 
-SITE_NAME = "VideoDL Tools"
+SITE_NAME = "FasTools.app"
 SITE_TAGLINE = "Herramientas gratuitas para tus archivos"
 
 
@@ -45,7 +45,7 @@ PAGE_META: dict[str, PageMeta] = {
     "home": PageMeta(
         key="home",
         path="/",
-        title="VideoDL Tools — Todas tus herramientas en un solo lugar",
+        title="FasTools.app — Todas tus herramientas en un solo lugar",
         description=(
             "Convierte, comprime y edita archivos gratis, sin instalaciones. "
             "Herramientas de vídeo, audio, imágenes, PDF y productividad."
@@ -55,9 +55,9 @@ PAGE_META: dict[str, PageMeta] = {
     "directory": PageMeta(
         key="directory",
         path="/herramientas",
-        title="Directorio de herramientas gratis — VideoDL Tools",
+        title="Directorio de herramientas gratis — FasTools.app",
         description=(
-            "Explora todas las herramientas de VideoDL Tools: comprimir vídeo, recortar "
+            "Explora todas las herramientas de FasTools.app: comprimir vídeo, recortar "
             "clips, comprimir y convertir imágenes, unir o dividir PDF, enlaces de WhatsApp "
             "y próximas utilidades de audio y productividad."
         ),
@@ -66,7 +66,7 @@ PAGE_META: dict[str, PageMeta] = {
     "comprimir": PageMeta(
         key="comprimir",
         path="/comprimir-video-whatsapp",
-        title="Comprimir vídeo para WhatsApp y Discord — VideoDL Tools",
+        title="Comprimir vídeo para WhatsApp y Discord — FasTools.app",
         description=(
             "Reduce el tamaño de un vídeo para WhatsApp, Discord, Telegram o correo "
             "sin perder más calidad de la necesaria. Gratis y sin registro."
@@ -77,7 +77,7 @@ PAGE_META: dict[str, PageMeta] = {
     "clips": PageMeta(
         key="clips",
         path="/recortar-clip-vertical",
-        title="Recortar clip vertical para TikTok, Reels y Shorts — VideoDL Tools",
+        title="Recortar clip vertical para TikTok, Reels y Shorts — FasTools.app",
         description=(
             "Sube tu vídeo, elige los segundos y descárgalo en vertical 9:16, "
             "cuadrado o formato original. Gratis, sin marca de agua y sin registro."
@@ -88,7 +88,7 @@ PAGE_META: dict[str, PageMeta] = {
     "whatsapp": PageMeta(
         key="whatsapp",
         path="/link-whatsapp",
-        title="Generador de enlaces y QR de WhatsApp — VideoDL Tools",
+        title="Generador de enlaces y QR de WhatsApp — FasTools.app",
         description=(
             "Crea un enlace wa.me con el mensaje ya escrito y descárgalo como código "
             "QR. Ideal para negocios, webs y redes sociales."
@@ -99,7 +99,7 @@ PAGE_META: dict[str, PageMeta] = {
     "comprimir-imagen": PageMeta(
         key="comprimir-imagen",
         path="/comprimir-imagen",
-        title="Comprimir imágenes JPG, PNG y WebP — VideoDL Tools",
+        title="Comprimir imágenes JPG, PNG y WebP — FasTools.app",
         description=(
             "Comprime imágenes JPG, PNG y WebP con calidad ajustable directamente en tu "
             "navegador. Sin subirlas a internet, con vista previa y descarga gratis."
@@ -110,7 +110,7 @@ PAGE_META: dict[str, PageMeta] = {
     "convertir-imagen": PageMeta(
         key="convertir-imagen",
         path="/convertir-imagen",
-        title="Convertir imágenes entre JPG, PNG y WebP — VideoDL Tools",
+        title="Convertir imágenes entre JPG, PNG y WebP — FasTools.app",
         description=(
             "Convierte imágenes JPG, PNG y WebP en tu navegador con control de calidad y "
             "transparencia. Sin registro, sin servidores y con descarga directa."
@@ -121,7 +121,7 @@ PAGE_META: dict[str, PageMeta] = {
     "redimensionar-imagen": PageMeta(
         key="redimensionar-imagen",
         path="/redimensionar-imagen",
-        title="Redimensionar imágenes por píxeles o porcentaje — VideoDL Tools",
+        title="Redimensionar imágenes por píxeles o porcentaje — FasTools.app",
         description=(
             "Cambia el ancho y el alto de tus imágenes por píxeles o porcentaje, "
             "manteniendo la proporción. Todo en tu navegador y sin perder el original."
@@ -132,7 +132,7 @@ PAGE_META: dict[str, PageMeta] = {
     "unir-pdf": PageMeta(
         key="unir-pdf",
         path="/unir-pdf",
-        title="Unir PDF online y ordenar documentos — VideoDL Tools",
+        title="Unir PDF online y ordenar documentos — FasTools.app",
         description=(
             "Combina varios PDF en uno solo, elige el orden de cada documento y descarga "
             "el resultado. Procesamiento local, sin subir archivos ni registro."
@@ -143,7 +143,7 @@ PAGE_META: dict[str, PageMeta] = {
     "dividir-pdf": PageMeta(
         key="dividir-pdf",
         path="/dividir-pdf",
-        title="Dividir PDF y extraer páginas o rangos — VideoDL Tools",
+        title="Dividir PDF y extraer páginas o rangos — FasTools.app",
         description=(
             "Extrae páginas o rangos de un PDF con orden personalizado y vista previa. "
             "El documento se procesa en tu navegador y no se sube a ningún servidor."
@@ -154,7 +154,7 @@ PAGE_META: dict[str, PageMeta] = {
     "imagenes-a-pdf": PageMeta(
         key="imagenes-a-pdf",
         path="/imagenes-a-pdf",
-        title="Convertir imágenes JPG y PNG a PDF — VideoDL Tools",
+        title="Convertir imágenes JPG y PNG a PDF — FasTools.app",
         description=(
             "Crea un PDF con tus imágenes JPG o PNG, ordénalas y elige páginas A4 o el "
             "tamaño original. Todo en tu navegador, sin subir las fotos."
@@ -165,7 +165,7 @@ PAGE_META: dict[str, PageMeta] = {
     "pdf-a-jpg": PageMeta(
         key="pdf-a-jpg",
         path="/pdf-a-jpg",
-        title="Convertir PDF a JPG y descargar en ZIP — VideoDL Tools",
+        title="Convertir PDF a JPG y descargar en ZIP — FasTools.app",
         description=(
             "Convierte las páginas de un PDF en imágenes JPG con calidad y resolución "
             "ajustables. Descarga una imagen o un ZIP, sin subir el PDF."
@@ -173,11 +173,22 @@ PAGE_META: dict[str, PageMeta] = {
         nav="pdf",
         tool_slug="pdf-a-jpg",
     ),
+    "comprimir-pdf": PageMeta(
+        key="comprimir-pdf",
+        path="/comprimir-pdf",
+        title="Comprimir PDF online y reducir su peso — FasTools.app",
+        description=(
+            "Reduce el peso de un PDF con calidad y resolución ajustables. Cada página se "
+            "rasteriza en tu navegador, sin subir el documento ni registrarte."
+        ),
+        nav="pdf",
+        tool_slug="comprimir-pdf",
+    ),
     "legal": PageMeta(
         key="legal",
         path="/legal",
-        title="Legal y privacidad — VideoDL Tools",
-        description="Aviso legal, política de privacidad, términos de uso y contacto de VideoDL Tools.",
+        title="Legal y privacidad — FasTools.app",
+        description="Aviso legal, política de privacidad, términos de uso y contacto de FasTools.app.",
         nav=None,
         robots="noindex, follow",
     ),
@@ -213,6 +224,7 @@ SITEMAP_KEYS = (
     "dividir-pdf",
     "imagenes-a-pdf",
     "pdf-a-jpg",
+    "comprimir-pdf",
     "whatsapp",
 )
 
@@ -300,9 +312,9 @@ def nav_html(active: str | None) -> str:
     return f"""<a class="skip-link" href="#main">Saltar al contenido</a>
 <header class="site-header">
   <div class="page-shell nav-shell">
-    <a class="site-brand" href="/" aria-label="VideoDL Tools, inicio">
-      <span class="brand-mark" aria-hidden="true">V</span>
-      <span class="brand-text">Video<span class="accent">DL</span> <span class="brand-tools">Tools</span></span>
+    <a class="site-brand" href="/" aria-label="FasTools.app, inicio">
+      <span class="brand-mark" aria-hidden="true">F</span>
+      <span class="brand-text">Fas<span class="accent">Tools</span> <span class="brand-tools">.app</span></span>
     </a>
     <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-menu" aria-label="Abrir menú de navegación">
       <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -325,9 +337,9 @@ def footer_html() -> str:
     return f"""<footer class="site-footer">
   <div class="page-shell footer-shell">
     <div class="footer-brand">
-      <a class="site-brand" href="/" aria-label="VideoDL Tools, inicio">
-        <span class="brand-mark" aria-hidden="true">V</span>
-        <span class="brand-text">Video<span class="accent">DL</span> <span class="brand-tools">Tools</span></span>
+      <a class="site-brand" href="/" aria-label="FasTools.app, inicio">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span class="brand-text">Fas<span class="accent">Tools</span> <span class="brand-tools">.app</span></span>
       </a>
       <p>{e(SITE_TAGLINE)}. Sin registro y sin instalar nada.</p>
     </div>
@@ -565,7 +577,7 @@ def directory_page(query: str = "", category: str = "all") -> str:
 <main id="main">
   {_hero(
       "Directorio de herramientas",
-      "Todas las utilidades de VideoDL Tools, ordenadas por categoría y listas para usar",
+      "Todas las utilidades de FasTools.app, ordenadas por categoría y listas para usar",
       query,
       category,
       "/herramientas",
