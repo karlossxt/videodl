@@ -41,10 +41,16 @@ function expectLocalOnly(requests, baseURL) {
   for (const request of requests) {
     expect(request.method, `${request.method} ${request.url}`).not.toBe("POST");
     expect(request.url, `Petición externa: ${request.url}`).not.toContain("/api/");
+    // El cargador oficial de GTM es la única petición de terceros permitida.
+    // Se limita al script del contenedor esperado; cualquier otro host sigue bloqueado.
+    const allowedGtm =
+      request.method === "GET" &&
+      request.url === "https://www.googletagmanager.com/gtm.js?id=GTM-THCKMRK3";
     const local =
       request.url.startsWith(baseURL) ||
       request.url.startsWith("blob:") ||
-      request.url.startsWith("data:");
+      request.url.startsWith("data:") ||
+      allowedGtm;
     expect(local, `Petición externa: ${request.url}`).toBe(true);
   }
 }
