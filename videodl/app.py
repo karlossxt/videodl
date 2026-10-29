@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import logging
 import threading
 import time
@@ -10,7 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, analytics, i18n
@@ -145,6 +146,13 @@ def create_app() -> FastAPI:
             "max_target_mb": COMPRESS_MAX_TARGET_MB,
         }
 
+    # Ruta de validación para Google AdSense
+    @app.get("/ads.txt", include_in_schema=False)
+    async def get_ads_txt():
+        if os.path.exists("ads.txt"):
+            return FileResponse("ads.txt", media_type="text/plain")
+        return JSONResponse(status_code=404, content={"error": "ads.txt no encontrado"})
+
     app.include_router(compressor_router)
     app.include_router(clips_router)
     app.include_router(whatsapp_router)
@@ -160,12 +168,3 @@ def create_app() -> FastAPI:
 
 # Instancia a nivel de módulo para ``uvicorn videodl.app:app``.
 app = create_app()
-import os
-from fastapi.responses import FileResponse
-
-@app.get("/ads.txt", include_in_schema=False)
-async def get_ads_txt():
-    if os.path.exists("ads.txt"):
-        return FileResponse("ads.txt", media_type="text/plain")
-    return {"error": "ads.txt no encontrado"}
-
