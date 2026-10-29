@@ -267,7 +267,7 @@ def test_la_cabecera_generada_no_se_retraduce(client):
     text = client.get("/en/comprimir-imagen").text
     assert ">Clips</a>" in text
     assert '<span class="brand-mark" aria-hidden="true">F</span>' in text
-    assert 'Fas<span class="accent">Tools</span>' in text
+    assert 'Fas<span class="accent">tools</span>' in text
 
 
 def test_los_textos_estaticos_se_traducen_sin_tocar_code_y_pre(client):

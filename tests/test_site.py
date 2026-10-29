@@ -113,6 +113,15 @@ def test_herramientas_disponibles_tienen_pagina_real(client):
         assert f'<link rel="canonical" href="{views.canonical(tool.route)}"' in res.text
 
 
+def test_footer_incluye_credito_oncenueve(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'href="https://oncenueve.com.mx"' in response.text
+    assert 'rel="noopener noreferrer"' in response.text
+    assert "Desarrollado por" in response.text
+    assert ">OnceNueve</a>" in response.text
+
+
 @pytest.mark.parametrize(
     ("alias", "canonical"),
     [
@@ -311,7 +320,7 @@ def test_canonical_y_open_graph_en_todas_las_paginas(client):
         assert 'property="og:title"' in text
         assert 'property="og:description"' in text
         assert 'property="og:url"' in text
-        assert 'property="og:site_name" content="FasTools.app"' in text
+        assert 'property="og:site_name" content="Fastools"' in text
         assert '<meta name="description"' in text
         assert "<title>" in text
 
@@ -401,10 +410,20 @@ def test_no_hay_scripts_de_terceros_ni_anuncios_activos(client):
     for path in PAGES:
         text = client.get(path).text
         assert not re.search(r'<script[^>]+src="https?://', text), path
-        for marker in ("adsbygoogle", "googletagmanager", "google-analytics", "fonts.googleapis"):
+        assert "GTM-THCKMRK3" in text, path  # Google Tag Manager en todas las páginas
+        assert "googletagmanager.com/ns.html?id=GTM-THCKMRK3" in text, path  # <noscript>
+        for marker in ("adsbygoogle", "google-analytics", "fonts.googleapis"):
             assert marker not in text, (path, marker)
 
     for path in ("/", "/herramientas"):
         text = client.get(path).text
         assert 'data-ad-slot="catalog-inline"' in text
         assert 'data-ad-slot="catalog-inline" aria-hidden="true" hidden' in text
+
+
+def test_csp_permite_google_tag_manager(client):
+    csp = client.get("/").headers["content-security-policy"]
+    script_src = next(p for p in csp.split(";") if p.strip().startswith("script-src"))
+    assert "https://www.googletagmanager.com" in script_src
+    assert "'sha256-" in script_src
+    assert "frame-src 'self' https://www.googletagmanager.com" in csp
