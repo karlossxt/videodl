@@ -1,4 +1,4 @@
-"""FasTools.app: suite de herramientas sobre archivos propios.
+"""Fastools: suite de herramientas sobre archivos propios.
 
 El paquete está dividido en módulos pequeños y con una única responsabilidad:
 

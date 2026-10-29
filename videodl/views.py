@@ -14,7 +14,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 from xml.sax.saxutils import escape as xml_escape
 
-from . import config, i18n
+from . import analytics, config, i18n, seo
 from .catalog import (
     Tool,
     category_by_slug,
@@ -23,6 +23,7 @@ from .catalog import (
     localized_categories,
     localized_tools,
     related_tools,
+    tool_by_slug,
 )
 from .paths import STATIC_DIR
 
@@ -45,7 +46,7 @@ PAGE_META: dict[str, PageMeta] = {
     "home": PageMeta(
         key="home",
         path="/",
-        title="FasTools.app — Todas tus herramientas en un solo lugar",
+        title="Fastools — Todas tus herramientas en un solo lugar",
         description=(
             "Convierte, comprime y edita archivos gratis, sin instalaciones. "
             "Herramientas de vídeo, audio, imágenes, PDF y productividad."
@@ -55,18 +56,17 @@ PAGE_META: dict[str, PageMeta] = {
     "directory": PageMeta(
         key="directory",
         path="/herramientas",
-        title="Directorio de herramientas gratis — FasTools.app",
+        title="Directorio de herramientas gratis — Fastools",
         description=(
-            "Explora todas las herramientas de FasTools.app: comprimir vídeo, recortar "
-            "clips, transcribir audio, comprimir y convertir imágenes, unir o dividir PDF, "
-            "generar códigos QR y crear enlaces de WhatsApp."
+            "Explora todas las herramientas de Fastools: vídeo, audio, imágenes, PDF, "
+            "códigos QR y enlaces de WhatsApp. Gratis y sin registro."
         ),
         nav="tools",
     ),
     "comprimir": PageMeta(
         key="comprimir",
         path="/comprimir-video-whatsapp",
-        title="Comprimir vídeo para WhatsApp y Discord — FasTools.app",
+        title="Comprimir vídeo para WhatsApp y Discord — Fastools",
         description=(
             "Reduce el tamaño de un vídeo para WhatsApp, Discord, Telegram o correo "
             "sin perder más calidad de la necesaria. Gratis y sin registro."
@@ -77,7 +77,7 @@ PAGE_META: dict[str, PageMeta] = {
     "clips": PageMeta(
         key="clips",
         path="/recortar-clip-vertical",
-        title="Recortar clip vertical para TikTok, Reels y Shorts — FasTools.app",
+        title="Recortar clip vertical para TikTok y Reels — Fastools",
         description=(
             "Sube tu vídeo, elige los segundos y descárgalo en vertical 9:16, "
             "cuadrado o formato original. Gratis, sin marca de agua y sin registro."
@@ -88,7 +88,7 @@ PAGE_META: dict[str, PageMeta] = {
     "whatsapp": PageMeta(
         key="whatsapp",
         path="/link-whatsapp",
-        title="Generador de enlaces y QR de WhatsApp — FasTools.app",
+        title="Generador de enlaces y QR de WhatsApp — Fastools",
         description=(
             "Crea un enlace wa.me con el mensaje ya escrito y descárgalo como código "
             "QR. Ideal para negocios, webs y redes sociales."
@@ -99,7 +99,7 @@ PAGE_META: dict[str, PageMeta] = {
     "generador-qr": PageMeta(
         key="generador-qr",
         path="/generador-qr",
-        title="Generador de códigos QR gratis (enlace, WiFi, email) — FasTools.app",
+        title="Generador de códigos QR gratis — Fastools",
         description=(
             "Crea códigos QR para enlaces, texto, WiFi, email, teléfono o SMS. Elige "
             "colores y tamaño y descárgalo en PNG o SVG, gratis y sin registro."
@@ -110,7 +110,7 @@ PAGE_META: dict[str, PageMeta] = {
     "transcribir-audio": PageMeta(
         key="transcribir-audio",
         path="/transcribir-audio",
-        title="Transcribir audio a texto gratis (TXT, SRT y VTT) — FasTools.app",
+        title="Transcribir audio a texto (TXT, SRT, VTT) — Fastools",
         description=(
             "Convierte la voz de un audio o vídeo en texto editable con marcas de "
             "tiempo. Descarga la transcripción en TXT, SRT o VTT, gratis y sin registro."
@@ -121,7 +121,7 @@ PAGE_META: dict[str, PageMeta] = {
     "comprimir-imagen": PageMeta(
         key="comprimir-imagen",
         path="/comprimir-imagen",
-        title="Comprimir imágenes JPG, PNG y WebP — FasTools.app",
+        title="Comprimir imágenes JPG, PNG y WebP — Fastools",
         description=(
             "Comprime imágenes JPG, PNG y WebP con calidad ajustable directamente en tu "
             "navegador. Sin subirlas a internet, con vista previa y descarga gratis."
@@ -132,7 +132,7 @@ PAGE_META: dict[str, PageMeta] = {
     "convertir-imagen": PageMeta(
         key="convertir-imagen",
         path="/convertir-imagen",
-        title="Convertir imágenes entre JPG, PNG y WebP — FasTools.app",
+        title="Convertir imágenes entre JPG, PNG y WebP — Fastools",
         description=(
             "Convierte imágenes JPG, PNG y WebP en tu navegador con control de calidad y "
             "transparencia. Sin registro, sin servidores y con descarga directa."
@@ -143,7 +143,7 @@ PAGE_META: dict[str, PageMeta] = {
     "redimensionar-imagen": PageMeta(
         key="redimensionar-imagen",
         path="/redimensionar-imagen",
-        title="Redimensionar imágenes por píxeles o porcentaje — FasTools.app",
+        title="Redimensionar imágenes por píxeles o porcentaje — Fastools",
         description=(
             "Cambia el ancho y el alto de tus imágenes por píxeles o porcentaje, "
             "manteniendo la proporción. Todo en tu navegador y sin perder el original."
@@ -154,7 +154,7 @@ PAGE_META: dict[str, PageMeta] = {
     "unir-pdf": PageMeta(
         key="unir-pdf",
         path="/unir-pdf",
-        title="Unir PDF online y ordenar documentos — FasTools.app",
+        title="Unir PDF online y ordenar documentos — Fastools",
         description=(
             "Combina varios PDF en uno solo, elige el orden de cada documento y descarga "
             "el resultado. Procesamiento local, sin subir archivos ni registro."
@@ -165,7 +165,7 @@ PAGE_META: dict[str, PageMeta] = {
     "dividir-pdf": PageMeta(
         key="dividir-pdf",
         path="/dividir-pdf",
-        title="Dividir PDF y extraer páginas o rangos — FasTools.app",
+        title="Dividir PDF y extraer páginas o rangos — Fastools",
         description=(
             "Extrae páginas o rangos de un PDF con orden personalizado y vista previa. "
             "El documento se procesa en tu navegador y no se sube a ningún servidor."
@@ -176,7 +176,7 @@ PAGE_META: dict[str, PageMeta] = {
     "imagenes-a-pdf": PageMeta(
         key="imagenes-a-pdf",
         path="/imagenes-a-pdf",
-        title="Convertir imágenes JPG y PNG a PDF — FasTools.app",
+        title="Convertir imágenes JPG y PNG a PDF — Fastools",
         description=(
             "Crea un PDF con tus imágenes JPG o PNG, ordénalas y elige páginas A4 o el "
             "tamaño original. Todo en tu navegador, sin subir las fotos."
@@ -187,7 +187,7 @@ PAGE_META: dict[str, PageMeta] = {
     "pdf-a-jpg": PageMeta(
         key="pdf-a-jpg",
         path="/pdf-a-jpg",
-        title="Convertir PDF a JPG y descargar en ZIP — FasTools.app",
+        title="Convertir PDF a JPG y descargar en ZIP — Fastools",
         description=(
             "Convierte las páginas de un PDF en imágenes JPG con calidad y resolución "
             "ajustables. Descarga una imagen o un ZIP, sin subir el PDF."
@@ -198,7 +198,7 @@ PAGE_META: dict[str, PageMeta] = {
     "comprimir-pdf": PageMeta(
         key="comprimir-pdf",
         path="/comprimir-pdf",
-        title="Comprimir PDF online y reducir su peso — FasTools.app",
+        title="Comprimir PDF online y reducir su peso — Fastools",
         description=(
             "Reduce el peso de un PDF con calidad y resolución ajustables. Cada página se "
             "rasteriza en tu navegador, sin subir el documento ni registrarte."
@@ -209,35 +209,49 @@ PAGE_META: dict[str, PageMeta] = {
     "privacy": PageMeta(
         key="privacy",
         path="/privacidad",
-        title="Privacidad — FasTools.app",
-        description="Qué ocurre con los archivos y los datos que usas en FasTools.app.",
+        title="Privacidad — Fastools",
+        description="Qué ocurre con los archivos y los datos que usas en Fastools.",
         nav=None,
         robots="noindex, follow",
     ),
 }
 
-# Si se configuró otra marca (por ejemplo, FasTools.es), se aplica a los títulos
+# Si se configuró otra marca (por ejemplo, Fastools.es), se aplica a los títulos
 # y descripciones sin repetir el nombre en cada PageMeta.
-if SITE_NAME != "FasTools.app":
+if SITE_NAME != "Fastools":
     PAGE_META = {
         key: replace(
             meta,
-            title=meta.title.replace("FasTools.app", SITE_NAME),
-            description=meta.description.replace("FasTools.app", SITE_NAME),
+            title=meta.title.replace("Fastools", SITE_NAME),
+            description=meta.description.replace("Fastools", SITE_NAME),
         )
         for key, meta in PAGE_META.items()
     }
 
 def meta_for(key: str, lang: str = i18n.DEFAULT_LANG) -> PageMeta:
-    """Metadatos SEO en el idioma pedido, con la marca configurada aplicada."""
+    """Metadatos SEO en el idioma pedido, con la marca configurada aplicada.
+
+    Una página cuya herramienta aún no está disponible (``status="soon"`` o sin
+    ruta) sale siempre con ``noindex``, aunque alguien le añada una ruta antes
+    de tiempo.
+    """
+    meta = _localized_meta(key, lang)
+    if meta.tool_slug:
+        tool = tool_by_slug(meta.tool_slug)
+        if tool is None or not tool.available:
+            meta = replace(meta, robots="noindex, follow")
+    return meta
+
+
+def _localized_meta(key: str, lang: str = i18n.DEFAULT_LANG) -> PageMeta:
     meta = PAGE_META[key]
     if i18n.normalize_lang(lang) == i18n.DEFAULT_LANG:
         return meta
     title = i18n.tr(lang, f"meta.{key}.title", meta.title)
     description = i18n.tr(lang, f"meta.{key}.description", meta.description)
-    if SITE_NAME != "FasTools.app":
-        title = title.replace("FasTools.app", SITE_NAME)
-        description = description.replace("FasTools.app", SITE_NAME)
+    if SITE_NAME != "Fastools":
+        title = title.replace("Fastools", SITE_NAME)
+        description = description.replace("Fastools", SITE_NAME)
     return replace(meta, title=title, description=description)
 
 
@@ -261,23 +275,24 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("whatsapp", "WhatsApp", "/link-whatsapp"),
 )
 
-SITEMAP_KEYS = (
-    "home",
-    "directory",
-    "comprimir",
-    "clips",
-    "transcribir-audio",
-    "comprimir-imagen",
-    "convertir-imagen",
-    "redimensionar-imagen",
-    "unir-pdf",
-    "dividir-pdf",
-    "imagenes-a-pdf",
-    "pdf-a-jpg",
-    "comprimir-pdf",
-    "generador-qr",
-    "whatsapp",
-)
+
+
+def sitemap_keys() -> tuple[str, ...]:
+    """Páginas indexables: portada, directorio y herramientas disponibles.
+
+    Se deriva del catálogo, así una herramienta «próximamente» o una página
+    ``noindex`` nunca entra en el sitemap por olvido.
+    """
+    keys = ["home", "directory"]
+    for key, meta in PAGE_META.items():
+        if not meta.tool_slug:
+            continue
+        if meta_for(key).robots.lower().startswith("index"):
+            keys.append(key)
+    return tuple(keys)
+
+
+SITEMAP_KEYS = sitemap_keys()
 
 
 # ---------------------------------------------------------------------------
@@ -356,13 +371,24 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
     og_locale = "es_ES" if normalized == "es" else "en_US"
     alternate_locale = "en_US" if normalized == "es" else "es_ES"
     inline = i18n.inline_script(normalized)
+    image_url = canonical("/og-image.png")
+    if meta.key == "404":
+        # Una página de error no tiene URL canónica ni versiones de idioma.
+        url_tags = ""
+    else:
+        url_tags = (
+            f'  <link rel="canonical" href="{e(url)}" />\n{alternates}\n'
+        )
+    og_url = "" if meta.key == "404" else f'  <meta property="og:url" content="{e(url)}" />\n'
+    ld_tag = seo.json_ld_html(seo.structured_data(meta, normalized, SITE_NAME))
+    ld = f"\n{ld_tag}" if ld_tag else ""
+    gtm_tag = analytics.gtm_head_html()
+    gtm = f"\n{gtm_tag}" if gtm_tag else ""
     return f"""  <base href="/" />
   <title>{e(meta.title)}</title>
   <meta name="description" content="{e(meta.description)}" />
   <meta name="robots" content="{e(meta.robots)}" />
-  <link rel="canonical" href="{e(url)}" />
-{alternates}
-  <meta name="color-scheme" content="dark light" />
+{url_tags}  <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#080c14" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="{e(SITE_NAME)}" />
@@ -370,24 +396,32 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
   <meta property="og:locale:alternate" content="{alternate_locale}" />
   <meta property="og:title" content="{e(meta.title)}" />
   <meta property="og:description" content="{e(meta.description)}" />
-  <meta property="og:url" content="{e(url)}" />
-  <meta name="twitter:card" content="summary" />
+{og_url}  <meta property="og:image" content="{e(image_url)}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="{e(SITE_NAME)}" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{e(meta.title)}" />
   <meta name="twitter:description" content="{e(meta.description)}" />
+  <meta name="twitter:image" content="{e(image_url)}" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
   <script>{inline}</script>
-  <script src="/site.js"></script>"""
+  <script src="/site.js"></script>{ld}{gtm}"""
 
 
 def _brand_html() -> str:
-    """Marca visible, con el sufijo del dominio separado si lo hay."""
+    """Marca visible; si existe un sufijo de dominio, lo separa visualmente."""
     base, dot, suffix = SITE_NAME.rpartition(".")
+    name = base if dot else SITE_NAME
+    if name.casefold() == "fastools":
+        name_html = 'Fas<span class="accent">tools</span>'
+    else:
+        name_html = e(name)
     if not dot:
-        return e(SITE_NAME)
-    base_html = 'Fas<span class="accent">Tools</span>' if base == "FasTools" else e(base)
-    return f'{base_html} <span class="brand-tools">.{e(suffix)}</span>'
+        return name_html
+    return f'{name_html} <span class="brand-tools">.{e(suffix)}</span>'
 
 
 def language_switch_html(
@@ -425,7 +459,7 @@ def nav_html(
         href = i18n.localize_path(normalized, str(item.get("path", "/")))
         current = ' aria-current="page"' if key == active else ""
         links.append(f'<a href="{e(href)}"{current}>{e(label)}</a>')
-    return f"""<a class="skip-link" href="#main">{e(i18n.t(normalized, "nav.skip"))}</a>
+    return f"""{analytics.gtm_noscript_html()}<a class="skip-link" href="#main">{e(i18n.t(normalized, "nav.skip"))}</a>
 <header class="site-header" translate="no" data-i18n-skip>
   <div class="page-shell nav-shell">
     <a class="site-brand" href="{e(i18n.localize_path(normalized, "/"))}" aria-label="{e(i18n.t(normalized, "nav.brand_aria", site=SITE_NAME))}" translate="no" data-i18n-skip>
@@ -468,7 +502,12 @@ def footer_html(lang: str = i18n.DEFAULT_LANG) -> str:
       <a href="{e(tools)}">{e(i18n.t(normalized, "footer.tools"))}</a>
       <a href="{e(privacy)}">{e(i18n.t(normalized, "footer.privacy"))}</a>
     </nav>
-    <p class="footer-note">{e(i18n.t(normalized, "footer.copyright", year=year, site=SITE_NAME))}</p>
+    <p class="footer-note">
+      <span>{e(i18n.t(normalized, "footer.copyright", year=year, site=SITE_NAME))}</span>
+      <span class="footer-credit">{"Desarrollado por" if normalized == "es" else "Developed by"}
+        <a href="https://oncenueve.com.mx" target="_blank" rel="noopener noreferrer">OnceNueve</a>
+      </span>
+    </p>
   </div>
 </footer>"""
 
@@ -709,6 +748,8 @@ def home_page(
         tool.slug for tool in localized_tools(normalized) if tool.slug not in filtered_slugs
     }
     filtering = bool(query.strip()) or category_by_slug(category) is not None
+    if filtering:
+        meta = replace(meta, robots="noindex, follow")
     extra = "" if filtering else featured_section(normalized) + workflows_section(normalized)
 
     body = f"""{nav_html("home", normalized, meta.path)}
@@ -742,6 +783,8 @@ def directory_page(
     hidden = {
         tool.slug for tool in localized_tools(normalized) if tool.slug not in filtered_slugs
     }
+    if bool(query.strip()) or category_by_slug(category) is not None:
+        meta = replace(meta, robots="noindex, follow")
     body = f"""{nav_html("tools", normalized, meta.path)}
 <main id="main">
   {_hero(
@@ -806,9 +849,39 @@ def render_static(key: str, lang: str = i18n.DEFAULT_LANG) -> str:
 # ---------------------------------------------------------------------------
 
 
+def not_found_page(lang: str = i18n.DEFAULT_LANG) -> str:
+    """Página 404 con ``noindex``, sin canonical y con el diseño del sitio."""
+    normalized = i18n.normalize_lang(lang)
+    title = i18n.t(normalized, "common.not_found_title")
+    text = i18n.t(normalized, "common.not_found_text")
+    meta = PageMeta(
+        key="404",
+        path="/",
+        title=f"{title} — {SITE_NAME}",
+        description=text,
+        nav=None,
+        robots="noindex, nofollow",
+    )
+    home = i18n.localize_path(normalized, "/")
+    tools = i18n.localize_path(normalized, "/herramientas")
+    body = f"""{nav_html(None, normalized, home)}
+<main id="main" class="legal-page">
+  <header class="legal-hero">
+    <h1>{e(title)}</h1>
+    <p>{e(text)}</p>
+  </header>
+  <section class="legal-card">
+    <p><a href="{e(home)}">{e(i18n.t(normalized, "common.not_found_home"))}</a> ·
+    <a href="{e(tools)}">{e(i18n.t(normalized, "common.not_found_tools"))}</a></p>
+  </section>
+</main>
+{footer_html(normalized)}"""
+    return page_document(meta, body, lang=normalized)
+
+
 def sitemap_xml() -> str:
     urls = []
-    for key in SITEMAP_KEYS:
+    for key in sitemap_keys():
         meta = PAGE_META[key]
         priority = "1.0" if key == "home" else "0.8" if key != "directory" else "0.9"
         urls_variants = i18n.language_urls(meta.path)
@@ -840,5 +913,6 @@ def robots_txt() -> str:
         "User-agent: *\n"
         "Allow: /\n"
         "Disallow: /api/\n"
+        "Disallow: /health\n"
         f"Sitemap: {site_url()}/sitemap.xml\n"
     )

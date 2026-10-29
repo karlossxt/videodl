@@ -180,22 +180,29 @@ MAX_CONCURRENT_JOBS = env_int("MAX_CONCURRENT_JOBS", 4, minimum=1)
 CORS_ORIGINS = [o.strip() for o in env_str("CORS_ORIGINS").split(",") if o.strip()]
 
 # URL pública del sitio, sin barra final. Se usa para canonical, Open Graph,
-# sitemap.xml y robots.txt. En Render se toma su URL automática si no se define.
-SITE_URL = (
-    (
-        env_str("SITE_URL")
-        or env_str("RENDER_EXTERNAL_URL")
-        or "http://localhost:8000"
-    ).rstrip("/")
-    or "http://localhost:8000"
-)
+# sitemap.xml, robots.txt y datos estructurados. Por defecto es el dominio de
+# producción; en local o en staging se sobrescribe con SITE_URL (así las URL
+# absolutas nunca apuntan a un subdominio *.onrender.com por accidente).
+DEFAULT_SITE_URL = "https://fastools.org"
+SITE_URL = (env_str("SITE_URL") or DEFAULT_SITE_URL).rstrip("/") or DEFAULT_SITE_URL
+if not re.match(r"https?://[^/\s]+$", SITE_URL):
+    logger.warning("SITE_URL=%r no es válida; se usa %s", SITE_URL, DEFAULT_SITE_URL)
+    SITE_URL = DEFAULT_SITE_URL
 
-# Nombre visible de la marca. Cámbialo si compras otro dominio (p. ej.
-# "FasTools.es"). Se usa en títulos, cabecera, pie y Open Graph.
-SITE_NAME = env_str("SITE_NAME", "FasTools.app") or "FasTools.app"
+# Nombre visible de la marca. El dominio canónico se configura por separado en SITE_URL.
+SITE_NAME = env_str("SITE_NAME", "Fastools") or "Fastools"
+# Normaliza los nombres anteriores que pudieran seguir configurados en Render.
+if SITE_NAME.strip().casefold() in {"fastools.app", "fastools.org"}:
+    SITE_NAME = "Fastools"
 if len(SITE_NAME) > 60 or "<" in SITE_NAME or ">" in SITE_NAME:
-    logger.warning("SITE_NAME=%r no es válido; se usa 'FasTools.app'", SITE_NAME)
-    SITE_NAME = "FasTools.app"
+    logger.warning("SITE_NAME=%r no es válido; se usa 'Fastools'", SITE_NAME)
+    SITE_NAME = "Fastools"
+
+# Google Tag Manager. Vacío desactiva la etiqueta en todas las páginas.
+GTM_ID = env_str("GTM_ID", "GTM-THCKMRK3")
+if GTM_ID and not re.fullmatch(r"GTM-[A-Z0-9]{4,12}", GTM_ID):
+    logger.warning("GTM_ID=%r no es válido; Google Tag Manager desactivado", GTM_ID)
+    GTM_ID = ""
 
 # CSP por defecto. Se puede sustituir con CONTENT_SECURITY_POLICY; dejarla
 # vacía desactiva la cabecera.

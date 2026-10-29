@@ -14,7 +14,7 @@ router = APIRouter(include_in_schema=False)
 
 _GONE = (
     "La descarga desde plataformas externas se ha retirado. "
-    "FasTools solo procesa archivos propios: sube tu vídeo en /comprimir-video-whatsapp "
+    "Fastools solo procesa archivos propios: sube tu vídeo en /comprimir-video-whatsapp "
     "o en /recortar-clip-vertical."
 )
 

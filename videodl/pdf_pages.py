@@ -173,7 +173,7 @@ soporte de módulos no podrá ejecutar la herramienta.</p>
 
 <h2>Preguntas frecuentes</h2>
 <details class="faq">
-  <summary>¿Se suben los PDF a FasTools o a un tercero?</summary>
+  <summary>¿Se suben los PDF a Fastools o a un tercero?</summary>
   <p>No. La unión se hace en tu navegador. El sitio solo entrega el HTML, el CSS y las
   bibliotecas; el contenido de tus documentos no viaja al servidor.</p>
 </details>
@@ -365,7 +365,7 @@ muy antiguo puede no soportar la decodificación de PNG o las APIs necesarias.</
 </details>
 <details class="faq">
   <summary>¿Se suben las fotos a internet?</summary>
-  <p>No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a FasTools ni a
+  <p>No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a Fastools ni a
   terceros.</p>
 </details>""",
     },
@@ -513,7 +513,7 @@ metadatos. Tampoco se aplica OCR: un escaneo sigue siendo una imagen. Revisa el 
 enviarlo si el documento es importante.</p>
 
 <h2>Privacidad</h2>
-<p>El archivo no se sube a FasTools ni a terceros. La lectura, el renderizado, la codificación JPG
+<p>El archivo no se sube a Fastools ni a terceros. La lectura, el renderizado, la codificación JPG
 y la reconstrucción del PDF ocurren dentro de tu navegador con bibliotecas servidas desde este
 sitio. Al cerrar o recargar la página se liberan los datos en memoria.</p>
 

@@ -102,7 +102,7 @@ que las zonas transparentes salgan negras.</p>
 <details class="faq">
   <summary>¿La imagen se sube a algún servidor?</summary>
   <p>No. La validación, el redimensionado y la codificación se hacen en tu navegador. No se
-  envía la imagen a FasTools ni a terceros.</p>
+  envía la imagen a Fastools ni a terceros.</p>
 </details>
 <details class="faq">
   <summary>¿Siempre se reduce el tamaño del archivo?</summary>
