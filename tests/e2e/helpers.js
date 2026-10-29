@@ -100,7 +100,7 @@ async function buildImage(page, options = {}) {
     context.fillRect(0, 0, width, height);
     context.fillStyle = "#0f172a";
     context.font = "bold 36px sans-serif";
-    context.fillText("FasTools", 24, height / 2);
+    context.fillText("Fastools", 24, height / 2);
     return canvas.toDataURL(type, 0.9);
   }, config);
   return Buffer.from(dataUrl.split(",")[1], "base64");

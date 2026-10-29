@@ -92,7 +92,7 @@ test("unir PDF conserva el orden elegido y valida las páginas", async ({ page, 
     [410, 610],
     [410, 610],
   ]);
-  expect(info.producer).toContain("FasTools");
+  expect(info.producer).toContain("Fastools");
   expect(errors).toEqual([]);
 });
 
@@ -210,7 +210,7 @@ test("comprimir PDF reduce el peso y conserva las páginas", async ({
     [595, 842],
     [595, 842],
   ]);
-  expect(info.producer).toContain("FasTools");
+  expect(info.producer).toContain("Fastools");
   expect(buffer.length).toBeLessThan(source.length);
   await expect(page.locator("#out-saved")).toContainText("menos");
 
