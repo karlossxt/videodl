@@ -72,17 +72,17 @@ def _add_script_nonces(page_html: str, nonce: str) -> str:
 
     def add_nonce(match: re.Match[str]) -> str:
         tag = match.group(0)
-        if re.search(r"\\bnonce\\s*=", tag, re.IGNORECASE):
+        if re.search(r"\bnonce\s*=", tag, re.IGNORECASE):
             return tag
         return re.sub(
-            r"^<script\\b",
+            r"^<script\b",
             f'<script nonce="{escaped_nonce}"',
             tag,
             count=1,
             flags=re.IGNORECASE,
         )
 
-    return re.sub(r"<script\\b[^>]*>", add_nonce, page_html, flags=re.IGNORECASE)
+    return re.sub(r"<script\b[^>]*>", add_nonce, page_html, flags=re.IGNORECASE)
 
 
 def _page_endpoint(key: str, lang: str):
