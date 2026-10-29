@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import logging
+import os
 import threading
 import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, analytics, i18n
