@@ -402,17 +402,25 @@ def test_privacidad_es_noindex(client):
 
 
 # ---------------------------------------------------------------------------
-# Sin anuncios ni scripts de terceros
+# AdSense y scripts de terceros
 # ---------------------------------------------------------------------------
 
 
-def test_no_hay_scripts_de_terceros_ni_anuncios_activos(client):
+def test_adsense_y_gtm_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
+    adsense_src = (
+        "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js"
+        "?client=ca-pub-6317177060588245"
+    )
     for path in PAGES:
         text = client.get(path).text
-        assert not re.search(r'<script[^>]+src="https?://', text), path
+        assert adsense_src in text, path
+        assert 'crossorigin="anonymous"' in text, path
         assert "GTM-THCKMRK3" in text, path  # Google Tag Manager en todas las páginas
         assert "googletagmanager.com/ns.html?id=GTM-THCKMRK3" in text, path  # <noscript>
-        for marker in ("adsbygoogle", "google-analytics", "fonts.googleapis"):
+        script_tags = re.findall(r"<script\\b[^>]*>", text, flags=re.IGNORECASE)
+        assert script_tags, path
+        assert all(re.search(r'\\bnonce="[^"]+"', tag) for tag in script_tags), path
+        for marker in ("google-analytics", "fonts.googleapis"):
             assert marker not in text, (path, marker)
 
     for path in ("/", "/herramientas"):
@@ -421,9 +429,27 @@ def test_no_hay_scripts_de_terceros_ni_anuncios_activos(client):
         assert 'data-ad-slot="catalog-inline" aria-hidden="true" hidden' in text
 
 
-def test_csp_permite_google_tag_manager(client):
-    csp = client.get("/").headers["content-security-policy"]
+def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
+    response = client.get("/")
+    csp = response.headers["content-security-policy"]
     script_src = next(p for p in csp.split(";") if p.strip().startswith("script-src"))
     assert "https://www.googletagmanager.com" in script_src
     assert "'sha256-" in script_src
+    assert "'strict-dynamic'" in script_src
+    assert "'unsafe-inline'" in script_src
+    assert "'unsafe-eval'" in script_src
+    assert "https:" in script_src
     assert "frame-src 'self' https://www.googletagmanager.com" in csp
+    assert "frame-src 'self' https://www.googletagmanager.com https:" in csp
+    connect_src = next(p for p in csp.split(";") if p.strip().startswith("connect-src"))
+    assert "https:" in connect_src
+
+    ad_script = re.search(
+        r'<script\\b(?P<attrs>[^>]*)src="https://pagead\\.googlesyndication\\.com/pagead/js/adsbygoogle\\.js\\?client=ca-pub-6317177060588245"',
+        response.text,
+        flags=re.IGNORECASE,
+    )
+    assert ad_script
+    nonce = re.search(r'\\bnonce="([^"]+)"', ad_script.group("attrs"))
+    assert nonce
+    assert f"'nonce-{nonce.group(1)}'" in script_src
