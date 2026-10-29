@@ -12,6 +12,8 @@ import hashlib
 from .config import GTM_ID
 
 _GTM_HOST = "https://www.googletagmanager.com"
+_ADSENSE_HOST = "https://pagead2.googlesyndication.com"
+_ADSENSE_CLIENT_ID = "ca-pub-6317177060588245"
 
 
 def gtm_inline_script(gtm_id: str = GTM_ID) -> str:
@@ -30,6 +32,16 @@ def gtm_inline_script(gtm_id: str = GTM_ID) -> str:
 def gtm_head_html(gtm_id: str = GTM_ID) -> str:
     script = gtm_inline_script(gtm_id)
     return f"  <script>{script}</script>" if script else ""
+
+
+def adsense_head_html(client_id: str = _ADSENSE_CLIENT_ID) -> str:
+    """Código de Auto Ads del editor, compartido por todas las páginas."""
+    if not client_id:
+        return ""
+    return (
+        f'<script async src="{_ADSENSE_HOST}/pagead/js/adsbygoogle.js?client={client_id}" '
+        'crossorigin="anonymous"></script>'
+    )
 
 
 def gtm_noscript_html(gtm_id: str = GTM_ID) -> str:
@@ -74,3 +86,30 @@ def csp_with_gtm(csp: str, gtm_id: str = GTM_ID) -> str:
         return _add_sources(csp, "frame-src", [_GTM_HOST])
     # Sin frame-src, default-src 'self' bloquearía el iframe del <noscript>.
     return f"{csp.rstrip().rstrip(';')}; frame-src 'self' {_GTM_HOST}"
+
+def csp_with_nonce(csp: str, nonce: str) -> str:
+    """Adapta la CSP por respuesta para AdSense y etiqueta todos los scripts con nonce.
+
+    Google AdSense requiere una CSP basada en nonce porque los dominios publicitarios
+    pueden cambiar. El nonce autoriza los scripts presentes en el HTML; strict-dynamic
+    permite que esos scripts carguen de forma segura sus dependencias.
+    """
+    if not csp or not nonce:
+        return csp
+    csp = _add_sources(
+        csp,
+        "script-src",
+        [
+            f"'nonce-{nonce}'",
+            "'strict-dynamic'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            "https:",
+            "http:",
+        ],
+    )
+    csp = _add_sources(csp, "connect-src", ["https:"])
+    if "frame-src" in csp:
+        return _add_sources(csp, "frame-src", ["https:"])
+    return f"{csp.rstrip().rstrip(';')}; frame-src 'self' https:"
+
