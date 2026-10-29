@@ -45,6 +45,13 @@ def test_health_alias(client):
     assert client.get("/health").status_code == 200
 
 
+def test_ads_txt_is_served_from_project_root(client):
+    res = client.get("/ads.txt")
+    assert res.status_code == 200
+    assert "text/plain" in res.headers["content-type"]
+    assert res.text.strip() == "google.com, pub-6317177060588245, DIRECT, f08c47fec0942fa0"
+
+
 def test_home_no_ofrece_descargas(client):
     res = client.get("/")
     assert res.status_code == 200
