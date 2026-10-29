@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
+import secrets
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -90,6 +92,10 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def security_and_limits(request: Request, call_next):
+        # Nonce aleatorio por respuesta: necesario para la CSP estricta de AdSense.
+        nonce = base64.b64encode(secrets.token_bytes(18)).decode("ascii")
+        request.state.csp_nonce = nonce
+
         # Rate limiting solo para la API (los estáticos y las páginas no cuentan).
         if RATE_LIMIT_PER_MINUTE > 0 and request.url.path.startswith("/api/"):
             client = request.client.host if request.client else "desconocido"
@@ -108,7 +114,7 @@ def create_app() -> FastAPI:
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         if csp:
-            response.headers["Content-Security-Policy"] = csp
+            response.headers["Content-Security-Policy"] = analytics.csp_with_nonce(csp, nonce)
         # Sin huellas en los nombres de los assets, obligamos a revalidar para
         # que un despliegue no deje JavaScript o traducciones antiguas en caché.
         if request.url.path.startswith("/api/"):
