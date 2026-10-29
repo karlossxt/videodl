@@ -1,68 +1,68 @@
 {
   "meta": {
     "home": {
-      "title": "FasTools.app — Todas tus herramientas en un solo lugar",
+      "title": "Fastools — Todas tus herramientas en un solo lugar",
       "description": "Convierte, comprime y edita archivos gratis, sin instalaciones. Herramientas de vídeo, audio, imágenes, PDF y productividad."
     },
     "directory": {
-      "title": "Directorio de herramientas gratis — FasTools.app",
-      "description": "Explora todas las herramientas de FasTools.app: comprimir vídeo, recortar clips, transcribir audio, comprimir y convertir imágenes, unir o dividir PDF, generar códigos QR y crear enlaces de WhatsApp."
+      "title": "Directorio de herramientas gratis — Fastools",
+      "description": "Explora todas las herramientas de Fastools: vídeo, audio, imágenes, PDF, códigos QR y enlaces de WhatsApp. Gratis y sin registro."
     },
     "comprimir": {
-      "title": "Comprimir vídeo para WhatsApp y Discord — FasTools.app",
+      "title": "Comprimir vídeo para WhatsApp y Discord — Fastools",
       "description": "Reduce el tamaño de un vídeo para WhatsApp, Discord, Telegram o correo sin perder más calidad de la necesaria. Gratis y sin registro."
     },
     "clips": {
-      "title": "Recortar clip vertical para TikTok, Reels y Shorts — FasTools.app",
+      "title": "Recortar clip vertical para TikTok y Reels — Fastools",
       "description": "Sube tu vídeo, elige los segundos y descárgalo en vertical 9:16, cuadrado o formato original. Gratis, sin marca de agua y sin registro."
     },
     "whatsapp": {
-      "title": "Generador de enlaces y QR de WhatsApp — FasTools.app",
+      "title": "Generador de enlaces y QR de WhatsApp — Fastools",
       "description": "Crea un enlace wa.me con el mensaje ya escrito y descárgalo como código QR. Ideal para negocios, webs y redes sociales."
     },
     "generador-qr": {
-      "title": "Generador de códigos QR gratis (enlace, WiFi, email) — FasTools.app",
+      "title": "Generador de códigos QR gratis — Fastools",
       "description": "Crea códigos QR para enlaces, texto, WiFi, email, teléfono o SMS. Elige colores y tamaño y descárgalo en PNG o SVG, gratis y sin registro."
     },
     "transcribir-audio": {
-      "title": "Transcribir audio a texto gratis (TXT, SRT y VTT) — FasTools.app",
+      "title": "Transcribir audio a texto (TXT, SRT, VTT) — Fastools",
       "description": "Convierte la voz de un audio o vídeo en texto editable con marcas de tiempo. Descarga la transcripción en TXT, SRT o VTT, gratis y sin registro."
     },
     "comprimir-imagen": {
-      "title": "Comprimir imágenes JPG, PNG y WebP — FasTools.app",
+      "title": "Comprimir imágenes JPG, PNG y WebP — Fastools",
       "description": "Comprime imágenes JPG, PNG y WebP con calidad ajustable directamente en tu navegador. Sin subirlas a internet, con vista previa y descarga gratis."
     },
     "convertir-imagen": {
-      "title": "Convertir imágenes entre JPG, PNG y WebP — FasTools.app",
+      "title": "Convertir imágenes entre JPG, PNG y WebP — Fastools",
       "description": "Convierte imágenes JPG, PNG y WebP en tu navegador con control de calidad y transparencia. Sin registro, sin servidores y con descarga directa."
     },
     "redimensionar-imagen": {
-      "title": "Redimensionar imágenes por píxeles o porcentaje — FasTools.app",
+      "title": "Redimensionar imágenes por píxeles o porcentaje — Fastools",
       "description": "Cambia el ancho y el alto de tus imágenes por píxeles o porcentaje, manteniendo la proporción. Todo en tu navegador y sin perder el original."
     },
     "unir-pdf": {
-      "title": "Unir PDF online y ordenar documentos — FasTools.app",
+      "title": "Unir PDF online y ordenar documentos — Fastools",
       "description": "Combina varios PDF en uno solo, elige el orden de cada documento y descarga el resultado. Procesamiento local, sin subir archivos ni registro."
     },
     "dividir-pdf": {
-      "title": "Dividir PDF y extraer páginas o rangos — FasTools.app",
+      "title": "Dividir PDF y extraer páginas o rangos — Fastools",
       "description": "Extrae páginas o rangos de un PDF con orden personalizado y vista previa. El documento se procesa en tu navegador y no se sube a ningún servidor."
     },
     "imagenes-a-pdf": {
-      "title": "Convertir imágenes JPG y PNG a PDF — FasTools.app",
+      "title": "Convertir imágenes JPG y PNG a PDF — Fastools",
       "description": "Crea un PDF con tus imágenes JPG o PNG, ordénalas y elige páginas A4 o el tamaño original. Todo en tu navegador, sin subir las fotos."
     },
     "pdf-a-jpg": {
-      "title": "Convertir PDF a JPG y descargar en ZIP — FasTools.app",
+      "title": "Convertir PDF a JPG y descargar en ZIP — Fastools",
       "description": "Convierte las páginas de un PDF en imágenes JPG con calidad y resolución ajustables. Descarga una imagen o un ZIP, sin subir el PDF."
     },
     "comprimir-pdf": {
-      "title": "Comprimir PDF online y reducir su peso — FasTools.app",
+      "title": "Comprimir PDF online y reducir su peso — Fastools",
       "description": "Reduce el peso de un PDF con calidad y resolución ajustables. Cada página se rasteriza en tu navegador, sin subir el documento ni registrarte."
     },
     "privacy": {
-      "title": "Privacidad — FasTools.app",
-      "description": "Qué ocurre con los archivos y los datos que usas en FasTools.app."
+      "title": "Privacidad — Fastools",
+      "description": "Qué ocurre con los archivos y los datos que usas en Fastools."
     }
   },
   "nav": {
@@ -158,7 +158,11 @@
     "home_title": "Todas tus herramientas en un solo lugar",
     "home_subtitle": "Convierte, comprime y edita archivos gratis, sin instalaciones",
     "directory_title": "Directorio de herramientas",
-    "directory_subtitle": "Todas las utilidades de {site}, ordenadas por categoría y listas para usar"
+    "directory_subtitle": "Todas las utilidades de {site}, ordenadas por categoría y listas para usar",
+    "not_found_title": "Página no encontrada",
+    "not_found_text": "La dirección que buscas no existe o ya no está disponible. Vuelve al inicio o explora las herramientas gratuitas.",
+    "not_found_home": "Ir al inicio",
+    "not_found_tools": "Ver herramientas"
   },
   "catalog": {
     "categories": {
@@ -757,7 +761,7 @@
     },
     "transcribe": {
       "limitHint": "Audio o vídeo · hasta {mb} MB y {minutes} min",
-      "unavailableNote": "La transcripción no está activada en este servidor ahora mismo. Puedes seguir usando el resto de herramientas de FasTools.",
+      "unavailableNote": "La transcripción no está activada en este servidor ahora mismo. Puedes seguir usando el resto de herramientas de Fastools.",
       "unavailable": "Transcripción no disponible.",
       "tooLarge": "El archivo supera el límite de {max} MB.",
       "audioFallback": "audio",

@@ -1,68 +1,68 @@
 {
   "meta": {
     "home": {
-      "title": "FasTools.app — All your tools in one place",
+      "title": "Fastools — All your tools in one place",
       "description": "Convert, compress and edit files for free, with no installation. Video, audio, image, PDF and productivity tools."
     },
     "directory": {
-      "title": "Free tools directory — FasTools.app",
-      "description": "Explore every FasTools.app tool: compress video, trim clips, transcribe audio, compress and convert images, merge or split PDFs, create QR codes and build WhatsApp links."
+      "title": "Free tools directory — Fastools",
+      "description": "Explore every Fastools tool: video, audio, images, PDF, QR codes and WhatsApp links. Free and no sign-up."
     },
     "comprimir": {
-      "title": "Compress video for WhatsApp and Discord — FasTools.app",
+      "title": "Compress video for WhatsApp and Discord — Fastools",
       "description": "Reduce video size for WhatsApp, Discord, Telegram or email without losing more quality than necessary. Free and no sign-up."
     },
     "clips": {
-      "title": "Trim a vertical clip for TikTok, Reels and Shorts — FasTools.app",
+      "title": "Trim a vertical clip for TikTok and Reels — Fastools",
       "description": "Upload your video, choose the seconds and download it in vertical 9:16, square or original format. Free, no watermark and no sign-up."
     },
     "whatsapp": {
-      "title": "WhatsApp link and QR generator — FasTools.app",
+      "title": "WhatsApp link and QR generator — Fastools",
       "description": "Create a wa.me link with your message already written and download it as a QR code. Ideal for businesses, websites and social media."
     },
     "generador-qr": {
-      "title": "Free QR code generator (link, WiFi, email) — FasTools.app",
+      "title": "Free QR code generator — Fastools",
       "description": "Create QR codes for links, text, WiFi, email, phone or SMS. Choose colors and size and download it as PNG or SVG, free and no sign-up."
     },
     "transcribir-audio": {
-      "title": "Transcribe audio to text for free (TXT, SRT and VTT) — FasTools.app",
+      "title": "Transcribe audio to text (TXT, SRT, VTT) — Fastools",
       "description": "Turn the voice in an audio or video file into editable text with timestamps. Download the transcript as TXT, SRT or VTT, free and no sign-up."
     },
     "comprimir-imagen": {
-      "title": "Compress JPG, PNG and WebP images — FasTools.app",
+      "title": "Compress JPG, PNG and WebP images — Fastools",
       "description": "Compress JPG, PNG and WebP images with adjustable quality directly in your browser. Nothing is uploaded, with preview and free download."
     },
     "convertir-imagen": {
-      "title": "Convert images between JPG, PNG and WebP — FasTools.app",
+      "title": "Convert images between JPG, PNG and WebP — Fastools",
       "description": "Convert JPG, PNG and WebP images in your browser with quality and transparency controls. No sign-up, no servers and direct download."
     },
     "redimensionar-imagen": {
-      "title": "Resize images by pixels or percentage — FasTools.app",
+      "title": "Resize images by pixels or percentage — Fastools",
       "description": "Change the width and height of your images by pixels or percentage while keeping the aspect ratio. All in your browser, without losing the original."
     },
     "unir-pdf": {
-      "title": "Merge PDF online and reorder documents — FasTools.app",
+      "title": "Merge PDF online and reorder documents — Fastools",
       "description": "Combine several PDFs into one, choose the order of each document and download the result. Local processing, no file uploads and no sign-up."
     },
     "dividir-pdf": {
-      "title": "Split PDF and extract pages or ranges — FasTools.app",
+      "title": "Split PDF and extract pages or ranges — Fastools",
       "description": "Extract pages or ranges from a PDF with custom order and preview. The document is processed in your browser and never uploaded to a server."
     },
     "imagenes-a-pdf": {
-      "title": "Convert JPG and PNG images to PDF — FasTools.app",
+      "title": "Convert JPG and PNG images to PDF — Fastools",
       "description": "Create a PDF from your JPG or PNG images, reorder them and choose A4 pages or the original size. All in your browser, without uploading the photos."
     },
     "pdf-a-jpg": {
-      "title": "Convert PDF to JPG and download a ZIP — FasTools.app",
+      "title": "Convert PDF to JPG and download a ZIP — Fastools",
       "description": "Convert PDF pages into JPG images with adjustable quality and resolution. Download one image or a ZIP, without uploading the PDF."
     },
     "comprimir-pdf": {
-      "title": "Compress PDF online and reduce its size — FasTools.app",
+      "title": "Compress PDF online and reduce its size — Fastools",
       "description": "Reduce PDF size with adjustable quality and resolution. Each page is rasterised in your browser, without uploading the document or signing up."
     },
     "privacy": {
-      "title": "Privacy — FasTools.app",
-      "description": "What happens to the files and data you use on FasTools.app."
+      "title": "Privacy — Fastools",
+      "description": "What happens to the files and data you use on Fastools."
     }
   },
   "nav": {
@@ -158,7 +158,11 @@
     "home_title": "All your tools in one place",
     "home_subtitle": "Convert, compress and edit files for free, with no installation",
     "directory_title": "Tools directory",
-    "directory_subtitle": "All {site} utilities, sorted by category and ready to use"
+    "directory_subtitle": "All {site} utilities, sorted by category and ready to use",
+    "not_found_title": "Page not found",
+    "not_found_text": "The address you are looking for does not exist or is no longer available. Go back home or explore the free tools.",
+    "not_found_home": "Go to home",
+    "not_found_tools": "Browse tools"
   },
   "catalog": {
     "categories": {
@@ -756,7 +760,7 @@
     },
     "transcribe": {
       "limitHint": "Audio or video · up to {mb} MB and {minutes} min",
-      "unavailableNote": "Transcription is not enabled on this server right now. You can still use the rest of the FasTools tools.",
+      "unavailableNote": "Transcription is not enabled on this server right now. You can still use the rest of the Fastools tools.",
       "unavailable": "Transcription unavailable.",
       "tooLarge": "The file exceeds the {max} MB limit.",
       "audioFallback": "audio",
@@ -1086,14 +1090,14 @@
     "Ejemplo": "Example",
     "Ejemplo:": "Example:",
     "Ejemplos de enlace": "Link Examples",
-    "El archivo no se sube a FasTools ni a terceros. La lectura, el renderizado, la codificación JPG\ny la reconstrucción del PDF ocurren dentro de tu navegador con bibliotecas servidas desde este\nsitio. Al cerrar o recargar la página se liberan los datos en memoria.": "The file is not uploaded to FasTools or third parties. Reading, rendering, JPG encoding\nand PDF reconstruction occur within your browser with libraries served from it\nsite. Closing or reloading the page releases the data in memory.",
+    "El archivo no se sube a Fastools ni a terceros. La lectura, el renderizado, la codificación JPG\ny la reconstrucción del PDF ocurren dentro de tu navegador con bibliotecas servidas desde este\nsitio. Al cerrar o recargar la página se liberan los datos en memoria.": "The file is not uploaded to Fastools or third parties. Reading, rendering, JPG encoding\nand PDF reconstruction occur within your browser with libraries served from it\nsite. Closing or reloading the page releases the data in memory.",
     "El contenido de los códigos QR": "The content of QR codes",
     "El contenido no se guarda": "Content is not saved",
     "El contenido se escribe en tu navegador y solo se envía al servidor para dibujar el QR.\n      No se guarda, no se registra y no se comparte con terceros. El límite es de 1200 bytes\n      (unos 1200 caracteres ASCII) para que el código siga siendo legible; una contraseña de\n      WiFi o un enlace normal caben de sobra. El servidor no consulta el enlace ni accede a él.": "The content is written in your browser and is only sent to the server to draw the QR.\n      It is not saved, it is not recorded and it is not shared with third parties. The limit is 1200 bytes\n      (about 1200 ASCII characters) so that the code remains readable; a password\n      WiFi or a normal link are more than enough. The server does not query the link or access it.",
     "El control de calidad solo afecta a JPG y WebP. En PNG el navegador vuelve a codificar\nsin pérdida y el deslizador no cambia el resultado, aunque sí puede eliminar metadatos.": "QA only affects JPG and WebP. In PNG the browser re-encodes\nlossless and the slider does not change the result, although it can remove metadata.",
     "El código QR aparecerá aquí": "The QR code will appear here",
     "El código QR no se lee bien, ¿qué hago?": "The QR code does not read well, what do I do?",
-    "El código, el diseño, los textos y los elementos gráficos propios de\n        FasTools pertenecen a su titular. Las marcas, logotipos y contenidos de\n        terceros pertenecen a sus respectivos propietarios y se utilizan\n        únicamente como referencia informativa.": "The code, design, texts and graphic elements of\n        FasTools belong to its owner. The brands, logos and contents of\n        third parties belong to their respective owners and are used\n        for informational reference only.",
+    "El código, el diseño, los textos y los elementos gráficos propios de\n        Fastools pertenecen a su titular. Las marcas, logotipos y contenidos de\n        terceros pertenecen a sus respectivos propietarios y se utilizan\n        únicamente como referencia informativa.": "The code, design, texts and graphic elements of\n        Fastools belong to its owner. The brands, logos and contents of\n        third parties belong to their respective owners and are used\n        for informational reference only.",
     "el documento: se pierden el texto\n  seleccionable, los enlaces, los formularios y los metadatos. Si el PDF ya venía muy comprimido,\n  el resultado puede pesar igual o más; en ese caso prueba con una calidad menor.": "the document: the text is lost\n  clickable, links, forms and metadata. If the PDF was already very compressed,\n  the result may weigh the same or more; In that case try a lower quality.",
     "El enlace se construye en tu propio navegador: tu número y tu mensaje no se\n        envían a ningún sitio mientras escribes. Solo si pides el código QR se manda el\n        enlace ya montado al servidor, se convierte en imagen y se descarta sin guardarlo.": "The link is built in your own browser: your number and your message are not\n        They send you nowhere while you type. Only if you ask for the QR code will the\n        already mounted link to the server, it becomes an image and is discarded without saving it.",
     "El formato del archivo se conserva. JPG se vuelve a codificar con calidad alta y un fondo\nblanco si detecta transparencia (el JPG no la admite); PNG y WebP mantienen el canal alfa.\nEl redimensionado no recupera detalle perdido: al ampliar, el navegador interpola los píxeles.": "The file format is preserved. JPG is re-encoded with high quality and a background\nwhite if transparency is detected (JPG does not support it); PNG and WebP maintain the alpha channel.\nResizing does not recover lost detail: when zooming, the browser interpolates the pixels.",
@@ -1180,20 +1184,20 @@
     "Esta herramienta procesa los PDF en tu navegador y necesita JavaScript. Actívalo para continuar; no se sube ningún documento a internet.": "This tool processes PDFs in your browser and requires JavaScript. Activate it to continue; No documents are uploaded to the internet.",
     "Esta herramienta solo coloca imágenes en páginas. No añade texto, numeración, marcas de\n  agua ni campos de formulario. Para eso necesitas un editor de PDF.": "This tool only places images on pages. Does not add text, numbering, markings\n  water or form fields. For that you need a PDF editor.",
     "Esta imagen tiene zonas transparentes.": "This image has transparent areas.",
-    "Esta política explica qué datos trata FasTools, para qué y durante cuánto\n        tiempo, conforme al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica\n        3/2018 (LOPDGDD).": "This policy explains what data FasTools processes, for what purpose and for how long.\n        time, in accordance with Regulation (EU) 2016/679 (RGPD) and the Organic Law\n        3/2018 (LOPDGDD).",
+    "Esta política explica qué datos trata Fastools, para qué y durante cuánto\n        tiempo, conforme al Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica\n        3/2018 (LOPDGDD).": "This policy explains what data Fastools processes, for what purpose and for how long.\n        time, in accordance with Regulation (EU) 2016/679 (RGPD) and the Organic Law\n        3/2018 (LOPDGDD).",
     "Esta versión convierte todas las páginas del PDF, hasta el límite indicado. Si necesitas\n  solo una parte, primero puedes extraer las páginas con": "This version converts all PDF pages, up to the indicated limit. If you need\n  only a part, you can first extract the pages with",
     "Esta versión procesa una imagen por vez para controlar el uso de memoria. Puedes repetir\n  el proceso con otra imagen al terminar.": "This version processes one image at a time to control memory usage. You can repeat\n  the process with another image when finished.",
     "Estas condiciones se rigen por la legislación española. Para los\n        consumidores, será competente el juzgado que corresponda a su domicilio.": "These conditions are governed by Spanish legislation. For the\n        consumers, the court corresponding to their domicile will be competent.",
     "Estos términos pueden actualizarse. La versión vigente es la publicada en\n        esta página, con su fecha de actualización.": "These terms may be updated. The current version is the one published in\n        this page, with its update date.",
-    "Estos términos regulan el uso de FasTools. Al utilizar la web aceptas\n        estas condiciones. Si no estás de acuerdo, no uses el servicio.": "These terms govern your use of FasTools. By using the website you accept\n        these conditions. If you do not agree, do not use the service.",
+    "Estos términos regulan el uso de Fastools. Al utilizar la web aceptas\n        estas condiciones. Si no estás de acuerdo, no uses el servicio.": "These terms govern your use of Fastools. By using the website you accept\n        these conditions. If you do not agree, do not use the service.",
     "Euskera": "Basque",
     "Extrae páginas o rangos de un PDF y descarga solo lo que necesitas.": "Extract pages or ranges from a PDF and download only what you need.",
     "Extraer audio (MP3)": "Extract audio (MP3)",
     "Extraer audio (MP3): Próximamente": "Extract Audio (MP3): Coming soon",
     "Extraer páginas": "Extract pages",
-    "FasTools es una herramienta técnica que permite comprimir y recortar\n        vídeos, transcribir audio a texto, convertir imágenes y PDF, y generar\n        códigos QR o enlaces de WhatsApp a partir de los archivos y datos que el\n        propio usuario aporta. El acceso es gratuito y no requiere registro.": "FasTools is a technical tool that allows you to compress and crop\n        videos, transcribe audio to text, convert images and PDFs, and generate\n        QR codes or WhatsApp links from the files and data that the\n        user himself contributes. Access is free and does not require registration.",
-    "FasTools.app · gratis y sin registro": "FasTools.app · free and without registration",
-    "FasTools.app, inicio": "FasTools.app, start",
+    "Fastools es una herramienta técnica que permite comprimir y recortar\n        vídeos, transcribir audio a texto, convertir imágenes y PDF, y generar\n        códigos QR o enlaces de WhatsApp a partir de los archivos y datos que el\n        propio usuario aporta. El acceso es gratuito y no requiere registro.": "Fastools is a technical tool that allows you to compress and crop\n        videos, transcribe audio to text, convert images and PDFs, and generate\n        QR codes or WhatsApp links from the files and data that the\n        user himself contributes. Access is free and does not require registration.",
+    "Fastools · gratis y sin registro": "Fastools · free and without registration",
+    "Fastools, inicio": "Fastools, start",
     "Feed de Instagram": "Instagram Feed",
     "Filtra por categoría o busca por nombre y palabra clave.": "Filter by category or search by name and keyword.",
     "Filtrar por categoría": "Filter by category",
@@ -1338,11 +1342,11 @@
     "No. La herramienta no descifra documentos. Debes quitar la contraseña primero desde la\n  aplicación con la que lo creaste.": "No. The tool does not decrypt documents. You must remove the password first from the\n  application you created it with.",
     "No. La salida es un MP4 limpio, sin marcas de agua, sin registro y sin límite de clips.": "No. The output is a clean MP4, without watermarks, without registration and without limit of clips.",
     "No. La unión se hace en tu navegador. El sitio solo entrega el HTML, el CSS y las\n  bibliotecas; el contenido de tus documentos no viaja al servidor.": "No. The join is done in your browser. The site only delivers the HTML, CSS and\n  libraries; The content of your documents does not travel to the server.",
-    "No. La validación, el redimensionado y la codificación se hacen en tu navegador. No se\n  envía la imagen a FasTools ni a terceros.": "No. Validation, resizing and encoding are done in your browser. I don&#x27;t know\n  send the image to FasTools or third parties.",
+    "No. La validación, el redimensionado y la codificación se hacen en tu navegador. No se\n  envía la imagen a Fastools ni a terceros.": "No. Validation, resizing and encoding are done in your browser. I don&#x27;t know\n  send the image to Fastools or third parties.",
     "No. Ninguna marca de agua, sin registro y sin límite de compresiones.": "No. No watermark, no registration and no compression limit.",
     "No. Si el archivo ya estaba bien comprimido, recodificarlo puede aumentarlo. La frase\n  «comprimir» describe el intento de reducir el peso, no una garantía matemática. Por eso\n  mostramos el resultado real antes de que descargues.": "No. If the file was already well compressed, re-encoding it may increase it. The phrase\n  &quot;Compress&quot; describes the attempt to reduce weight, not a mathematical guarantee. That&#x27;s why\n  We show the actual result before you download.",
     "No. Todo el proceso es local en tu navegador. La página no envía el archivo por la red.": "No. The entire process is local in your browser. The page does not send the file over the network.",
-    "No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a FasTools ni a\n  terceros.": "No. The entire process happens in your browser and the images are not sent to FasTools or\n  third parties.",
+    "No. Todo el proceso ocurre en tu navegador y las imágenes no se envían a Fastools ni a\n  terceros.": "No. The entire process happens in your browser and the images are not sent to Fastools or\n  third parties.",
     "No. Un JPG es una imagen. Para conservar texto seleccionable necesitas el PDF original o\n  un proceso de OCR externo que esta herramienta no ofrece.": "No. A JPG is an image. To keep selectable text you need the original PDF or\n  an external OCR process that this tool does not offer.",
     "Nombre de la red (SSID)": "Network name (SSID)",
     "Nuevo tamaño": "New size",
@@ -1592,7 +1596,7 @@
     "Titular:": "Headline:",
     "Todas": "All",
     "Todas las herramientas": "All tools",
-    "Todas las utilidades de FasTools.app, ordenadas por categoría y listas para usar": "All FasTools.app utilities, sorted by category and ready to use",
+    "Todas las utilidades de Fastools, ordenadas por categoría y listas para usar": "All Fastools utilities, sorted by category and ready to use",
     "Todas tus herramientas en un solo lugar": "All your tools in one place",
     "Transcribiendo…": "Transcribing…",
     "Transcribir audio a texto": "Transcribe audio to text",
@@ -1670,7 +1674,7 @@
     "y usa las flechas para mover cada documento hacia arriba o hacia abajo.": "and use the arrows to move each document up or down.",
     "y, si quieres cambiar de formato, elige JPG, PNG o WebP.": "and, if you want to change the format, choose JPG, PNG or WebP.",
     "ZIP y descargas": "ZIP and downloads",
-    "© 2026 FasTools.app · Hecho en español": "© 2026 FasTools.app · Made in Spanish",
+    "© 2026 Fastools · Hecho en español": "© 2026 Fastools · Made in Spanish",
     "¿Convierte también imágenes AVIF, GIF o HEIC?": "Does it also convert AVIF, GIF or HEIC images?",
     "¿Cuánto cuesta y caduca el enlace?": "How much does the link cost and does it expire?",
     "¿Cuánto puede durar el clip?": "How long can the clip be?",
@@ -1735,7 +1739,7 @@
     "¿Se sube la imagen al servidor?": "Is the image uploaded to the server?",
     "¿Se sube mi documento a un servidor?": "Is my document uploaded to a server?",
     "¿Se suben las fotos a internet?": "Are the photos uploaded to the internet?",
-    "¿Se suben los PDF a FasTools o a un tercero?": "Are PDFs uploaded to FasTools or a third party?",
+    "¿Se suben los PDF a Fastools o a un tercero?": "Are PDFs uploaded to Fastools or a third party?",
     "¿Siempre se reduce el tamaño del archivo?": "Is the file size always reduced?",
     "¿Solo necesitas el audio de un vídeo? Prueba también": "Do you only need the audio of a video? Also try",
     "¿Solo quieres cambiar de formato o de tamaño? Usa": "Do you just want to change format or size? Use",
@@ -1785,14 +1789,18 @@
     "🗜️ Comprimir otro": "🗜️ Compress another",
     "🗜️ Comprimir vídeo": "🗜️ Compress video",
     "https://tu-web.com o cualquier texto que quieras compartir": "https://your-site.com or any text you want to share",
-    "Qué ocurre con tus archivos y tus datos cuando usas FasTools.": "What happens to your files and data when you use FasTools.",
+    "Qué ocurre con tus archivos y tus datos cuando usas Fastools.": "What happens to your files and data when you use Fastools.",
     "Archivos y datos": "Files and data",
-    "FasTools no requiere cuenta ni registro. Las herramientas de imagen y PDF procesan los archivos en tu navegador, así que no se suben al servidor.": "FasTools does not require an account or sign-up. The image and PDF tools process files in your browser, so they are not uploaded to the server.",
+    "Fastools no requiere cuenta ni registro. Las herramientas de imagen y PDF procesan los archivos en tu navegador, así que no se suben al servidor.": "Fastools does not require an account or sign-up. The image and PDF tools process files in your browser, so they are not uploaded to the server.",
     "Las herramientas de vídeo, audio y QR sí usan el servidor para completar la tarea. Los archivos se procesan de forma temporal, se mantienen en memoria el tiempo necesario para que los descargues y se eliminan al terminar o con la limpieza periódica. No se usan para otros fines ni se comparten con terceros.": "The video, audio and QR tools do use the server to complete the task. Files are processed temporarily, kept in memory only as long as needed for you to download them, and deleted when the task finishes or during periodic cleanup. They are not used for other purposes or shared with third parties.",
     "Datos técnicos": "Technical data",
     "El servidor puede registrar la dirección IP, la fecha, el navegador y la URL solicitada para mantener el servicio disponible y prevenir abusos. No se usan para crear perfiles ni se venden.": "The server may log the IP address, date, browser and requested URL to keep the service available and prevent abuse. This data is not used to build profiles or sold.",
     "No usamos cookies de analítica ni de publicidad. Solo guardamos tu preferencia de tema (claro u oscuro) en el almacenamiento local del navegador; ese dato no se envía al servidor.": "We do not use analytics or advertising cookies. We only store your theme preference (light or dark) in your browser's local storage; that data is not sent to the server.",
     "Servicios externos": "External services",
-    "El alojamiento y la infraestructura técnica pueden tratar datos por cuenta del proyecto. Si eliges donar a través de Ko-fi, sales de FasTools y se aplica la política de privacidad de Ko-fi. Las herramientas no envían tus archivos a APIs externas.": "The hosting and technical infrastructure may process data on behalf of the project. If you choose to donate through Ko-fi, you leave FasTools and Ko-fi's privacy policy applies. The tools do not send your files to external APIs."
+    "El alojamiento y la infraestructura técnica pueden tratar datos por cuenta del proyecto. Si eliges donar a través de Ko-fi, sales de Fastools y se aplica la política de privacidad de Ko-fi. Las herramientas no envían tus archivos a APIs externas.": "The hosting and technical infrastructure may process data on behalf of the project. If you choose to donate through Ko-fi, you leave Fastools and Ko-fi's privacy policy applies. The tools do not send your files to external APIs.",
+    "Usamos Google Tag Manager y, a través de él, herramientas de analítica de Google para medir el uso del sitio. Estas herramientas pueden usar cookies e identificadores del navegador. No usamos cookies de publicidad. Además, guardamos tu preferencia de tema (claro u oscuro) en el almacenamiento local del navegador; ese dato no se envía al servidor.": "We use Google Tag Manager and, through it, Google analytics tools to measure how the site is used. These tools may use cookies and browser identifiers. We do not use advertising cookies. We also save your theme preference (light or dark) in your browser's local storage; that data is not sent to the server.",
+    "El alojamiento y la infraestructura técnica pueden tratar datos por cuenta del proyecto. Si eliges donar a través de Ko-fi, sales de Fastools y se aplica la política de privacidad de Ko-fi. Las herramientas no envían tus archivos a APIs externas. Con Google Tag Manager, Google recibe datos de navegación (por ejemplo, tu dirección IP y las páginas que visitas), pero no tus archivos; su tratamiento se rige por la política de privacidad de Google.": "The hosting and technical infrastructure may process data on behalf of the project. If you choose to donate through Ko-fi, you leave Fastools and Ko-fi's privacy policy applies. The tools do not send your files to external APIs. With Google Tag Manager, Google receives browsing data (for example, your IP address and the pages you visit), but not your files; its processing is governed by Google's privacy policy.",
+    "El proveedor de alojamiento (Render Services, Inc., Estados Unidos)\n        trata los datos por cuenta del titular con las garantías contractuales\n        que aplica a sus clientes. Los archivos que subes no se envían a ninguna\n        plataforma externa: se procesan en el propio servidor. No hay publicidad ni cesión\n        de datos a terceros; la única excepción es la analítica de Google\n        descrita en la sección de cookies.": "The hosting provider (Render Services, Inc., United States) processes the data on behalf of the owner with the contractual guarantees it applies to its clients. The files you upload are not sent to any external platform: they are processed on the server itself. There is no advertising or sharing of data with third parties; the only exception is the Google analytics described in the cookies section.",
+    "Usamos Google Tag Manager y, a través de él, herramientas de analítica\n        de Google para medir el uso del sitio. Estas herramientas pueden usar\n        cookies e identificadores del navegador y enviar a Google datos de\n        navegación (como tu dirección IP y las páginas que visitas), nunca tus\n        archivos. No usamos cookies de publicidad. Además, guardamos tu\n        preferencia de tema (claro u oscuro) en el almacenamiento local del\n        navegador; no contiene datos personales y no se envía al servidor.": "We use Google Tag Manager and, through it, Google analytics tools to measure how the site is used. These tools may use cookies and browser identifiers and send Google browsing data (such as your IP address and the pages you visit), never your files. We do not use advertising cookies. We also save your theme preference (light or dark) in your browser's local storage; it contains no personal data and is not sent to the server."
   }
 }
