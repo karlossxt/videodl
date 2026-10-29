@@ -1326,8 +1326,8 @@ function operationError(error, filename) {
 
 async function mergePdfs(items) {
   const out = await PDFDocument.create();
-  out.setProducer("FasTools");
-  out.setCreator("FasTools");
+  out.setProducer("Fastools");
+  out.setCreator("Fastools");
   const total = items.length;
 
   for (let index = 0; index < items.length; index += 1) {
@@ -1402,8 +1402,8 @@ async function splitPdf(item) {
   }
 
   const out = await PDFDocument.create();
-  out.setProducer("FasTools");
-  out.setCreator("FasTools");
+  out.setProducer("Fastools");
+  out.setCreator("Fastools");
   const total = parsed.pages.length;
 
   for (let index = 0; index < total; index += 1) {
@@ -1452,8 +1452,8 @@ async function splitPdf(item) {
 
 async function imagesToPdf(items) {
   const out = await PDFDocument.create();
-  out.setProducer("FasTools");
-  out.setCreator("FasTools");
+  out.setProducer("Fastools");
+  out.setCreator("Fastools");
   const total = items.length;
   const sizeMode = pageSize ? pageSize.value : "a4";
 
@@ -1711,8 +1711,8 @@ async function compressPdf(item) {
   }
 
   const out = await PDFDocument.create();
-  out.setProducer("FasTools");
-  out.setCreator("FasTools");
+  out.setProducer("Fastools");
+  out.setCreator("Fastools");
   let clamped = false;
 
   try {

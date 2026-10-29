@@ -1,4 +1,4 @@
-/* Utilidades compartidas por todas las páginas de FasTools.
+/* Utilidades compartidas por todas las páginas de Fastools.
    Expone un único objeto global `VD` para evitar duplicar código entre
    app.js, comprimir.js y clips.js. */
 (function () {

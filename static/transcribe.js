@@ -85,7 +85,7 @@
       if (!available) {
         serviceNote.textContent = t(
           "transcribe.unavailableNote",
-          "La transcripción no está activada en este servidor ahora mismo. Puedes seguir usando el resto de herramientas de FasTools."
+          "La transcripción no está activada en este servidor ahora mismo. Puedes seguir usando el resto de herramientas de Fastools."
         );
         serviceNote.classList.remove("hidden");
         processBtn.disabled = true;

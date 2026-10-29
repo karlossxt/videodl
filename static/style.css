@@ -1790,7 +1790,7 @@ textarea:focus-visible {
 }
 
 /* ==========================================================================
-   FasTools.app - rediseño de portada, directorio y navegación compartida
+   Fastools - rediseño de portada, directorio y navegación compartida
    ========================================================================== */
 
 :root {
@@ -2505,10 +2505,30 @@ a.tool-card:hover {
 
 .footer-note {
   grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 18px;
   padding-top: 18px;
   border-top: 1px solid var(--border-soft);
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.footer-credit {
+  white-space: nowrap;
+}
+
+.footer-credit a {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-credit a:hover {
+  color: var(--cyan);
 }
 
 /* ---------- Ajustes del tema claro en las herramientas existentes ---------- */
