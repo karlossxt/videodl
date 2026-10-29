@@ -6,6 +6,8 @@ El español conserva las URLs sin prefijo. El inglés se sirve bajo ``/en/`` y
 
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
@@ -64,9 +66,34 @@ def _render_page(
     raise HTTPException(status_code=404, detail="Página no encontrada")
 
 
+def _add_script_nonces(page_html: str, nonce: str) -> str:
+    """Añade el nonce de esta respuesta a todas las etiquetas script del HTML."""
+    escaped_nonce = nonce.replace("&", "&amp;").replace('"', "&quot;")
+
+    def add_nonce(match: re.Match[str]) -> str:
+        tag = match.group(0)
+        if re.search(r"\\bnonce\\s*=", tag, re.IGNORECASE):
+            return tag
+        return re.sub(
+            r"^<script\\b",
+            f'<script nonce="{escaped_nonce}"',
+            tag,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+
+    return re.sub(r"<script\\b[^>]*>", add_nonce, page_html, flags=re.IGNORECASE)
+
+
 def _page_endpoint(key: str, lang: str):
-    async def endpoint(q: str = "", categoria: str = "all") -> HTMLResponse:
-        return HTMLResponse(_render_page(key, lang, q, categoria))
+    async def endpoint(
+        request: Request, q: str = "", categoria: str = "all"
+    ) -> HTMLResponse:
+        page_html = _render_page(key, lang, q, categoria)
+        nonce = getattr(request.state, "csp_nonce", "")
+        if nonce:
+            page_html = _add_script_nonces(page_html, nonce)
+        return HTMLResponse(page_html)
 
     endpoint.__name__ = f"page_{key}_{lang}"
     return endpoint
