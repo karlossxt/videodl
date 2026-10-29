@@ -160,3 +160,12 @@ def create_app() -> FastAPI:
 
 # Instancia a nivel de módulo para ``uvicorn videodl.app:app``.
 app = create_app()
+import os
+from fastapi.responses import FileResponse
+
+@app.get("/ads.txt", include_in_schema=False)
+async def get_ads_txt():
+    if os.path.exists("ads.txt"):
+        return FileResponse("ads.txt", media_type="text/plain")
+    return {"error": "ads.txt no encontrado"}
+
