@@ -1,4 +1,4 @@
-# FasTools.app
+# Fastools
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/karlossxt/videodl)
 
@@ -7,7 +7,7 @@ aporta el usuario**: comprime un vídeo para enviarlo por WhatsApp o Discord, re
 clip vertical listo para TikTok, Reels y Shorts, transcribe un audio a texto, reduce o
 convierte imágenes, une o divide PDF y crea códigos QR o enlaces de WhatsApp con mensaje.
 
-> **La descarga desde plataformas externas se ha retirado.** FasTools ya no usa
+> **La descarga desde plataformas externas se ha retirado.** Fastools ya no usa
 > yt-dlp, ni cookies, ni proxies, ni tokens anti-bot. Las rutas antiguas de descarga
 > responden `410 Gone` y la portada solo enlaza a las herramientas activas.
 
@@ -230,8 +230,8 @@ el valor por defecto.
 |---|---|---|
 | `PORT` | `8000` | Puerto de escucha. |
 | `LOG_LEVEL` | `INFO` | Nivel de logging. |
-| `SITE_URL` | `http://localhost:8000` | URL pública sin barra final para canonical, Open Graph, sitemap y robots. En Render se usa `RENDER_EXTERNAL_URL` si no se define. |
-| `SITE_NAME` | `FasTools.app` | Marca visible en títulos, cabecera, pie y Open Graph. Cámbiala si usas otro dominio (p. ej. `FasTools.es`). |
+| `SITE_URL` | `https://fastools.org` | URL pública sin barra final para canonical, Open Graph, sitemap, robots y datos estructurados. Cámbiala solo en local o staging. |
+| `SITE_NAME` | `Fastools` | Marca visible en títulos, cabecera, pie y Open Graph. El dominio público se configura por separado en `SITE_URL`. |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies de confianza para `X-Forwarded-For`. |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Peticiones por minuto y por IP (`0` = sin límite). |
 | `MAX_CONCURRENT_JOBS` | `4` | Compresiones/clips simultáneos. |

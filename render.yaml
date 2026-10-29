@@ -8,9 +8,9 @@ services:
     plan: free
     healthCheckPath: /api/health
     autoDeployTrigger: commit
-    # Render inyecta PORT y RENDER_EXTERNAL_URL automáticamente. La URL pública
-    # se usa para canonical, Open Graph, sitemap.xml y robots.txt; si quieres
-    # forzar otro dominio, define SITE_URL (sin barra final).
+    # Render inyecta PORT automáticamente. La URL pública (canonical, Open Graph,
+    # sitemap.xml, robots.txt y datos estructurados) es https://fastools.org por
+    # defecto; para staging u otro dominio define SITE_URL (sin barra final).
     # Estas variables son opcionales (sync: false = se editan en el panel).
     envVars:
       - key: LOG_LEVEL
@@ -28,7 +28,7 @@ services:
         value: "2"
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
-      # Marca visible. Si usas otro dominio, define aquí FasTools.es (o el
-      # nombre elegido). Render inyecta RENDER_EXTERNAL_URL para SITE_URL.
+      # Marca visible. El dominio canónico se configura por separado en SITE_URL.
+      # La marca pública predeterminada es Fastools.
       - key: SITE_NAME
         sync: false
