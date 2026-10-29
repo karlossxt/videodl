@@ -81,8 +81,8 @@ def _ensure_adsense_script(page_html: str, nonce: str) -> str:
         'crossorigin="anonymous"></script>'
     )
     return re.sub(
-        r"<head\\b[^>]*>",
-        lambda match: f"{match.group(0)}\\n  {script}",
+        r"<head\b[^>]*>",
+        lambda match: f"{match.group(0)}\n  {script}",
         page_html,
         count=1,
         flags=re.IGNORECASE,
