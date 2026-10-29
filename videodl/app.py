@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, i18n
+from . import __version__, analytics, i18n
 from .clips import router as clips_router
 from .compressor import router as compressor_router
 from .config import (
@@ -86,6 +86,7 @@ def create_app() -> FastAPI:
         )
 
     csp = i18n.csp_with_script_hashes(CONTENT_SECURITY_POLICY)
+    csp = analytics.csp_with_gtm(csp)
 
     @app.middleware("http")
     async def security_and_limits(request: Request, call_next):
