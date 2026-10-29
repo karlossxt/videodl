@@ -44,6 +44,7 @@ RUN useradd --create-home --uid 10001 appuser
 
 # Código de la aplicación
 COPY --chown=appuser:appuser main.py ./
+COPY --chown=appuser:appuser ads.txt ./ads.txt
 COPY --chown=appuser:appuser videodl ./videodl
 COPY --chown=appuser:appuser static ./static
 
