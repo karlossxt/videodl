@@ -34,7 +34,7 @@ from .config import (
 )
 from .legacy import router as legacy_router
 from .pages import router as pages_router
-from .paths import STATIC_DIR
+from .paths import BASE_DIR, STATIC_DIR
 from .qr import SEGNO_AVAILABLE
 from .qr import router as qr_router
 from .runtime import rate_limiter
@@ -149,8 +149,9 @@ def create_app() -> FastAPI:
     # Ruta de validación para Google AdSense
     @app.get("/ads.txt", include_in_schema=False)
     async def get_ads_txt():
-        if os.path.exists("ads.txt"):
-            return FileResponse("ads.txt", media_type="text/plain")
+        ads_txt_path = BASE_DIR / "ads.txt"
+        if ads_txt_path.is_file():
+            return FileResponse(ads_txt_path, media_type="text/plain")
         return JSONResponse(status_code=404, content={"error": "ads.txt no encontrado"})
 
     app.include_router(compressor_router)
