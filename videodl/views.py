@@ -383,6 +383,8 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
     ld = f"\n{ld_tag}" if ld_tag else ""
     gtm_tag = analytics.gtm_head_html()
     gtm = f"\n{gtm_tag}" if gtm_tag else ""
+    adsense_tag = analytics.adsense_head_html()
+    adsense = f"  {adsense_tag}\n" if adsense_tag else ""
     return f"""  <base href="/" />
   <title>{e(meta.title)}</title>
   <meta name="description" content="{e(meta.description)}" />
@@ -406,7 +408,7 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
-  <script>{inline}</script>
+{adsense}  <script>{inline}</script>
   <script src="/site.js"></script>{ld}{gtm}"""
 
 
