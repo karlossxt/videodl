@@ -417,9 +417,9 @@ def test_adsense_y_gtm_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
         assert 'crossorigin="anonymous"' in text, path
         assert "GTM-THCKMRK3" in text, path  # Google Tag Manager en todas las páginas
         assert "googletagmanager.com/ns.html?id=GTM-THCKMRK3" in text, path  # <noscript>
-        script_tags = re.findall(r"<script\\b[^>]*>", text, flags=re.IGNORECASE)
+        script_tags = re.findall(r"<script\b[^>]*>", text, flags=re.IGNORECASE)
         assert script_tags, path
-        assert all(re.search(r'\\bnonce="[^"]+"', tag) for tag in script_tags), path
+        assert all(re.search(r'\bnonce="[^"]+"', tag) for tag in script_tags), path
         for marker in ("google-analytics", "fonts.googleapis"):
             assert marker not in text, (path, marker)
 
@@ -445,11 +445,11 @@ def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
     assert "https:" in connect_src
 
     ad_script = re.search(
-        r'<script\\b(?P<attrs>[^>]*)src="https://pagead\\.googlesyndication\\.com/pagead/js/adsbygoogle\\.js\\?client=ca-pub-6317177060588245"',
+        r'<script\b(?P<attrs>[^>]*)src="https://pagead\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=ca-pub-6317177060588245"',
         response.text,
         flags=re.IGNORECASE,
     )
     assert ad_script
-    nonce = re.search(r'\\bnonce="([^"]+)"', ad_script.group("attrs"))
+    nonce = re.search(r'\bnonce="([^"]+)"', ad_script.group("attrs"))
     assert nonce
     assert f"'nonce-{nonce.group(1)}'" in script_src
