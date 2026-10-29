@@ -19,6 +19,18 @@ const PDF_PAGES = [
 ];
 
 const test = base.extend({
+  // No descargar anuncios reales en CI: el HTML sí incluye AdSense, pero las
+  // pruebas E2E se centran en el procesamiento local y deben ser deterministas.
+  blockAdSense: [
+    async ({ context }, use) => {
+      await context.route(
+        /^https:\/\/pagead\.googlesyndication\.com\//,
+        (route) => route.abort()
+      );
+      await use();
+    },
+    { auto: true },
+  ],
   errors: async ({ page }, use) => {
     const errors = [];
     page.on("console", (message) => {
@@ -46,11 +58,16 @@ function expectLocalOnly(requests, baseURL) {
     const allowedGtm =
       request.method === "GET" &&
       request.url === "https://www.googletagmanager.com/gtm.js?id=GTM-THCKMRK3";
+    const allowedAdSenseLoader =
+      request.method === "GET" &&
+      request.url ===
+        "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245";
     const local =
       request.url.startsWith(baseURL) ||
       request.url.startsWith("blob:") ||
       request.url.startsWith("data:") ||
-      allowedGtm;
+      allowedGtm ||
+      allowedAdSenseLoader;
     expect(local, `Petición externa: ${request.url}`).toBe(true);
   }
 }
