@@ -383,8 +383,12 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
     ld = f"\n{ld_tag}" if ld_tag else ""
     gtm_tag = analytics.gtm_head_html()
     gtm = f"\n{gtm_tag}" if gtm_tag else ""
-    adsense_tag = analytics.adsense_head_html()
-    adsense = f"  {adsense_tag}\n" if adsense_tag else ""
+    # Fragmento de Auto Ads que entrega AdSense. Se incluye directamente en el
+    # <head> compartido para garantizar que se publica en todas las páginas.
+    adsense = (
+        '  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
+        '?client=ca-pub-6317177060588245" crossorigin="anonymous"></script>\n'
+    )
     return f"""  <base href="/" />
   <title>{e(meta.title)}</title>
   <meta name="description" content="{e(meta.description)}" />
