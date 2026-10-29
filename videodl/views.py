@@ -372,13 +372,12 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
     alternate_locale = "en_US" if normalized == "es" else "es_ES"
     inline = i18n.inline_script(normalized)
     image_url = canonical("/og-image.png")
-    if meta.key == "404":
-        # Una página de error no tiene URL canónica ni versiones de idioma.
-        url_tags = ""
-    else:
-        url_tags = (
-            f'  <link rel="canonical" href="{e(url)}" />\n{alternates}\n'
-        )
+    # Una página de error no tiene URL canónica ni versiones de idioma.
+    url_tags = (
+        ""
+        if meta.key == "404"
+        else f'  <link rel="canonical" href="{e(url)}" />\n{alternates}\n'
+    )
     og_url = "" if meta.key == "404" else f'  <meta property="og:url" content="{e(url)}" />\n'
     ld_tag = seo.json_ld_html(seo.structured_data(meta, normalized, SITE_NAME))
     ld = f"\n{ld_tag}" if ld_tag else ""
@@ -415,10 +414,11 @@ def _brand_html() -> str:
     """Marca visible; si existe un sufijo de dominio, lo separa visualmente."""
     base, dot, suffix = SITE_NAME.rpartition(".")
     name = base if dot else SITE_NAME
-    if name.casefold() == "fastools":
-        name_html = 'Fas<span class="accent">tools</span>'
-    else:
-        name_html = e(name)
+    name_html = (
+        'Fas<span class="accent">tools</span>'
+        if name.casefold() == "fastools"
+        else e(name)
+    )
     if not dot:
         return name_html
     return f'{name_html} <span class="brand-tools">.{e(suffix)}</span>'
