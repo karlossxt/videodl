@@ -25,7 +25,12 @@ const test = base.extend({
     async ({ context }, use) => {
       await context.route(
         /^https:\/\/pagead\.googlesyndication\.com\//,
-        (route) => route.abort()
+        (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "application/javascript",
+            body: "/* AdSense desactivado en las pruebas E2E */",
+          })
       );
       await use();
     },
