@@ -28,6 +28,39 @@
 
   window.t = t;
 
+  // -------------------------------------------------------------------------
+  // Analítica (Google Tag Manager)
+  // -------------------------------------------------------------------------
+
+  /** Identifica la herramienta por la ruta de la página (sin prefijo de idioma). */
+  function toolName() {
+    return (
+      location.pathname.replace(/^\/en(?=\/|$)/, "").replace(/^\/+|\/+$/g, "") ||
+      "home"
+    );
+  }
+
+  /** Solo la extensión del archivo; nunca se envía el nombre ni el contenido. */
+  function fileExt(name) {
+    const m = /\.([a-z0-9]{1,5})$/i.exec(name || "");
+    return m ? m[1].toLowerCase() : "";
+  }
+
+  /** Envía un evento al dataLayer de GTM. Nunca debe romper la herramienta. */
+  function track(event, params) {
+    try {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event,
+        tool_name: toolName(),
+        language: document.documentElement.lang || "es",
+        ...(params || {}),
+      });
+    } catch {
+      /* la analítica es opcional */
+    }
+  }
+
   const ALLOWED_VIDEO = [
     ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v",
     ".mpg", ".mpeg", ".flv", ".ts", ".3gp", ".wmv",
@@ -204,6 +237,7 @@
   // -------------------------------------------------------------------------
 
   function triggerDownload(href, filename) {
+    track("file_download", { file_ext: fileExt(filename) });
     const a = document.createElement("a");
     a.href = href;
     if (filename) a.download = filename;
@@ -255,10 +289,19 @@
     );
     zone.addEventListener("drop", (e) => {
       const file = e.dataTransfer?.files?.[0];
-      if (file) onFile(file);
+      if (file) {
+        track("tool_start", { file_ext: fileExt(file.name), input_method: "drop" });
+        onFile(file);
+      }
     });
     input.addEventListener("change", () => {
-      if (input.files && input.files[0]) onFile(input.files[0]);
+      if (input.files && input.files[0]) {
+        track("tool_start", {
+          file_ext: fileExt(input.files[0].name),
+          input_method: "select",
+        });
+        onFile(input.files[0]);
+      }
     });
   }
 
@@ -270,6 +313,7 @@
   window.VD = {
     $,
     t,
+    track,
     escapeHtml,
     showToast,
     showError,
