@@ -360,6 +360,12 @@ $("pr-cancel").addEventListener("click", async () => {
 async function finishCompress(job) {
   outName =
     job.filename || t("compress.defaultName", "video-comprimido.mp4");
+  window.VD.track("tool_complete", {
+    saved_pct:
+      job.input_size > 0
+        ? Math.round((1 - job.output_size / job.input_size) * 100)
+        : 0,
+  });
 
   // Se descarga el resultado como blob: así el servidor puede borrar el
   // archivo inmediatamente y el botón "Descargar" funciona al instante.

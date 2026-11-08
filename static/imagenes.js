@@ -671,6 +671,7 @@
   }
 
   function showResult(blob, target) {
+    window.VD.track("tool_complete", { output_mime: target.mime });
     state.resultUrl = URL.createObjectURL(blob);
     state.result = {
       blob,

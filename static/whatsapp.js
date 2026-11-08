@@ -277,6 +277,7 @@ $("wa-qr-download").addEventListener("click", () => {
     );
     return;
   }
+  window.VD.track("file_download", { file_ext: "png" });
   const a = document.createElement("a");
   a.href = qrUrl;
   a.download = "whatsapp-qr.png";

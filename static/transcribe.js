@@ -294,6 +294,7 @@
   }
 
   function showResult(job) {
+    window.VD.track("tool_complete");
     hideProgress();
     result.classList.remove("hidden");
 

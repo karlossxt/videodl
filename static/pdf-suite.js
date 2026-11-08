@@ -508,10 +508,18 @@ async function inspectImage(file) {
   }
 }
 
+let startTracked = false;
+
 async function handleFiles(fileListValue) {
   if (state.busy) return;
   const files = Array.from(fileListValue || []);
   if (!files.length) return;
+
+  // Una sola vez por visita: en "Unir PDF" se pueden añadir varios archivos seguidos.
+  if (!startTracked) {
+    startTracked = true;
+    window.VD.track("tool_start", { file_count: files.length });
+  }
 
   clearError();
   clearResult();
@@ -1152,6 +1160,7 @@ function resultUrl(blob) {
 }
 
 function showPdfResult({ blob, name, beforeBytes, beforeDetail, afterDetail, note }) {
+  window.VD.track("tool_complete", { output_ext: "pdf" });
   const url = resultUrl(blob);
   state.result = {
     url,
@@ -1196,6 +1205,7 @@ function showPdfResult({ blob, name, beforeBytes, beforeDetail, afterDetail, not
 }
 
 function showJpgResult({ blob, name, beforeBytes, pageCount, zip, previewItems, clamped }) {
+  window.VD.track("tool_complete", { output_ext: zip ? "zip" : "jpg" });
   const url = resultUrl(blob);
   state.result = {
     url,

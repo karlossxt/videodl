@@ -536,6 +536,7 @@ $("pr-cancel").addEventListener("click", async () => {
 
 async function finishClip(job) {
   outName = job.filename || t("clips.defaultName", "clip-vertical.mp4");
+  window.VD.track("tool_complete");
 
   let blob = null;
   try {
