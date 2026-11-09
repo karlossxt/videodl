@@ -6,6 +6,12 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [Unreleased]
 
 ### Añadido
+- **Acortar enlaces** (`/acortar-enlaces`, redirección en `/l/<código>`): almacén SQLite,
+  validación estricta del destino (solo http/https públicos; sin IPs, redes internas,
+  credenciales, otros acortadores, el propio sitio ni dominios con alfabetos mezclados),
+  cupo de enlaces nuevos por IP y hora, lista de dominios bloqueados, reporte con bloqueo
+  automático, caducidad de enlaces sin uso y comprobador que muestra el destino sin
+  visitarlo. Requiere un disco persistente para que los enlaces sobrevivan a reinicios.
 - **Convertir vídeo a GIF** (`/video-a-gif`): fragmento de hasta 15 s (`GIF_MAX_SECONDS`),
   ancho de 320, 480 o 640 px y 8–15 imágenes por segundo, con paleta propia de ffmpeg.
 - **Extraer audio** (`/extraer-audio`): saca la pista de un vídeo, o convierte un audio,

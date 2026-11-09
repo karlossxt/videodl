@@ -48,7 +48,10 @@ COPY --chown=appuser:appuser ads.txt ./ads.txt
 COPY --chown=appuser:appuser videodl ./videodl
 COPY --chown=appuser:appuser static ./static
 
-RUN mkdir -p "$HF_HOME" && chown -R appuser:appuser /app/.cache
+# Carpeta de datos (enlaces cortos). Para que sobrevivan a los reinicios hay que
+# montar aquí un disco persistente.
+RUN mkdir -p "$HF_HOME" /app/data && chown -R appuser:appuser /app/.cache /app/data
+ENV SHORTLINKS_DB=/app/data/links.db
 
 USER appuser
 

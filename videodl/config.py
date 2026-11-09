@@ -15,6 +15,7 @@ import logging
 import os
 import re
 import shutil
+from pathlib import Path
 
 logger = logging.getLogger("videodl.config")
 
@@ -107,6 +108,25 @@ CLIP_MAX_SECONDS = env_int("CLIP_MAX_SECONDS", 300, minimum=1)
 GIF_MAX_SECONDS = env_int("GIF_MAX_SECONDS", 15, minimum=1, maximum=60)
 # Unir audio: número máximo de archivos por trabajo.
 AUDIO_MAX_FILES = env_int("AUDIO_MAX_FILES", 10, minimum=2, maximum=30)
+
+# Acortador de enlaces. Los enlaces viven en un archivo SQLite: en un hosting con
+# disco efímero (p. ej. Render gratuito) se pierden al reiniciar; hace falta un
+# disco persistente apuntando SHORTLINKS_DB a él.
+SHORTLINKS_DB = env_str("SHORTLINKS_DB") or str(
+    Path(__file__).resolve().parent.parent / "data" / "links.db"
+)
+# Enlaces nuevos por IP y hora. 0 desactiva la creación (los existentes siguen
+# redirigiendo): sirve de interruptor de emergencia ante un abuso.
+SHORTLINKS_PER_HOUR = env_int("SHORTLINKS_PER_HOUR", 20, minimum=0, maximum=1000)
+SHORTLINKS_MAX_LINKS = env_int("SHORTLINKS_MAX_LINKS", 100_000, minimum=1)
+# Reportes de personas distintas necesarios para bloquear un enlace.
+SHORTLINKS_REPORT_THRESHOLD = env_int("SHORTLINKS_REPORT_THRESHOLD", 3, minimum=1, maximum=50)
+# Días sin visitas tras los que un enlace se borra (0 = nunca).
+SHORTLINKS_STALE_DAYS = env_int("SHORTLINKS_STALE_DAYS", 365, minimum=0)
+# Dominios prohibidos (separados por comas): se aplican al crear y al redirigir.
+SHORTLINKS_BLOCKED_HOSTS = env_str("SHORTLINKS_BLOCKED_HOSTS")
+# Sal para anonimizar a quien reporta. Si falta, se genera una en cada arranque.
+SHORTLINKS_SALT = env_str("SHORTLINKS_SALT")
 
 # Tiempo máximo que puede durar un proceso ffmpeg antes de ser matado (0 = sin
 # límite). Evita que una codificación colgada retenga un hilo para siempre.

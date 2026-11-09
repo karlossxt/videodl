@@ -22,6 +22,7 @@ PAGES = (
     "/video-a-gif",
     "/extraer-audio",
     "/unir-audio",
+    "/acortar-enlaces",
     "/comprimir-imagen",
     "/convertir-imagen",
     "/redimensionar-imagen",
@@ -75,6 +76,7 @@ def test_las_claves_js_usadas_existen_en_ambos_locales():
         "gif.js",
         "extraer-audio.js",
         "unir-audio.js",
+        "acortar-enlaces.js",
     )
 
     def resolve(data, key):

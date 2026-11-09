@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, analytics, i18n
+from . import __version__, analytics, i18n, shortener
 from .clips import router as clips_router
 from .compressor import router as compressor_router
 from .config import (
@@ -27,6 +27,7 @@ from .config import (
     FFPROBE_AVAILABLE,
     MAX_UPLOAD_MB,
     RATE_LIMIT_PER_MINUTE,
+    SHORTLINKS_STALE_DAYS,
     SITE_NAME,
     TRANSCRIBE_MAX_MB,
     TRANSCRIBE_MAX_SECONDS,
@@ -56,6 +57,7 @@ def _janitor_loop() -> None:
         time.sleep(600)
         try:
             cleanup_all()
+            shortener.store.purge_stale(SHORTLINKS_STALE_DAYS)
             sweep_temp_dirs(active_tmpdirs(), min_age_seconds=3600)
         except Exception:  # noqa: BLE001 - el limpiador nunca debe caerse
             logger.exception("Fallo en el hilo de limpieza")
@@ -143,6 +145,7 @@ def create_app() -> FastAPI:
             "clips": ffmpeg_ok,
             "gif": ffmpeg_ok,
             "audio": ffmpeg_ok,
+            "shortener": shortener.store.available(),
             "whatsapp": WHATSAPP_QR_AVAILABLE,
             "qr": SEGNO_AVAILABLE,
             "transcribe": TRANSCRIBE_AVAILABLE,
@@ -165,6 +168,7 @@ def create_app() -> FastAPI:
     app.include_router(compressor_router)
     app.include_router(clips_router)
     app.include_router(media_tools_router)
+    app.include_router(shortener.router)
     app.include_router(whatsapp_router)
     app.include_router(qr_router)
     app.include_router(transcribe_router)

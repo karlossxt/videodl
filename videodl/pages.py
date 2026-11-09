@@ -27,6 +27,7 @@ PAGE_ROUTES: dict[str, str] = {
     "/video-a-gif": "video-a-gif",
     "/extraer-audio": "extraer-audio",
     "/unir-audio": "unir-audio",
+    "/acortar-enlaces": "acortar-enlaces",
     "/comprimir-imagen": "comprimir-imagen",
     "/convertir-imagen": "convertir-imagen",
     "/redimensionar-imagen": "redimensionar-imagen",

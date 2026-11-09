@@ -239,6 +239,8 @@ TOOLS: tuple[Tool, ...] = (
         category="productividad",
         icon="✳️",
         keywords=("acortar", "enlace", "url", "link"),
+        route="/acortar-enlaces",
+        status="available",
     ),
 )
 

@@ -14,10 +14,15 @@ from collections import defaultdict, deque
 
 
 class RateLimiter:
-    """Ventana deslizante simple por clave (normalmente la IP del cliente)."""
+    """Ventana deslizante simple por clave (normalmente la IP del cliente).
 
-    def __init__(self, per_minute: int) -> None:
+    ``per_minute`` es el máximo de peticiones por ventana; la ventana dura un
+    minuto salvo que se indique otra con ``window_seconds``.
+    """
+
+    def __init__(self, per_minute: int, window_seconds: float = 60.0) -> None:
         self.per_minute = per_minute
+        self.window_seconds = window_seconds
         self._hits: dict[str, deque] = defaultdict(deque)
         self._lock = threading.Lock()
 
@@ -25,7 +30,7 @@ class RateLimiter:
         if self.per_minute <= 0:
             return True
         now = time.monotonic()
-        window = 60.0
+        window = self.window_seconds
         with self._lock:
             bucket = self._hits[key]
             while bucket and now - bucket[0] > window:

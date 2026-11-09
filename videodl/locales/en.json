@@ -75,6 +75,10 @@
     "unir-audio": {
       "title": "Join or trim audio online (MP3, WAV) — Fastools",
       "description": "Merge several audio tracks into one file or trim audio by seconds. Supports MP3, WAV, M4A and more. Free, no sign-up."
+    },
+    "acortar-enlaces": {
+      "title": "Free link shortener — Fastools",
+      "description": "Turn a long link into a short one to share it. Check where any short link leads before you open it. Free, no sign-up."
     }
   },
   "nav": {
@@ -887,6 +891,20 @@
       "readyToast": "Audio ready!",
       "notReady": "The download is not ready yet",
       "downloading": "Downloading the audio…"
+    },
+    "shortener": {
+      "copy": "Copy",
+      "copied": "Link copied",
+      "copyFailed": "Could not copy. Select it and copy it by hand.",
+      "empty": "Enter the link you want to shorten.",
+      "failed": "The link could not be shortened. Please try again.",
+      "goesTo": "Leads to: {host}",
+      "badCode": "Paste a short link from this site or its code.",
+      "notFound": "That short link does not exist.",
+      "checkMeta": "Site: {host} · Visits: {clicks}",
+      "reportFailed": "The report could not be sent.",
+      "reportBlocked": "Thank you. The link has been blocked.",
+      "reported": "Thank you. We have recorded your report."
     }
   },
   "html": {
@@ -1978,6 +1996,44 @@
     "¿Cuántos archivos puedo unir?": "How many files can I join?",
     "Hasta 10 a la vez, con un límite de peso total que se indica arriba.": "Up to 10 at a time, with a total size limit shown above.",
     "¿Qué pasa con los archivos que subo?": "What happens to the files I upload?",
-    "Se procesan en el servidor y se borran automáticamente en cuanto descargas el resultado, y en todo caso pasada una hora. No se comparten con terceros.": "They are processed on the server and deleted automatically as soon as you download the result, and in any case after one hour. They are not shared with third parties."
+    "Se procesan en el servidor y se borran automáticamente en cuanto descargas el resultado, y en todo caso pasada una hora. No se comparten con terceros.": "They are processed on the server and deleted automatically as soon as you download the result, and in any case after one hour. They are not shared with third parties.",
+    "Acortar enlaces gratis": "Free link shortener",
+    "Convierte una dirección larga en un enlace corto para compartirlo. Gratis, sin registro, y con una herramienta para comprobar a dónde lleva cualquier enlace corto antes de abrirlo.": "Turn a long address into a short link to share. Free, no sign-up, and with a tool to check where any short link leads before you open it.",
+    "Paso 1 · Pega el enlace largo": "Step 1 · Paste the long link",
+    "Solo enlaces http o https de sitios públicos": "Only http or https links to public sites",
+    "https://ejemplo.com/una/direccion/muy/larga": "https://example.com/a/very/long/address",
+    "Enlace largo que quieres acortar": "Long link you want to shorten",
+    "✂️ Acortar enlace": "✂️ Shorten link",
+    "Tu enlace corto": "Your short link",
+    "Enlace corto": "Short link",
+    "✂️ Acortar otro": "✂️ Shorten another",
+    "Tus enlaces recientes": "Your recent links",
+    "Borrar lista": "Clear list",
+    "Esta lista se guarda solo en tu navegador.": "This list is stored only in your browser.",
+    "Enlaces recientes": "Recent links",
+    "Comprueba un enlace corto antes de abrirlo": "Check a short link before opening it",
+    "Ver el destino no cuenta como visita": "Viewing the destination does not count as a visit",
+    "Pega un enlace corto o su código": "Paste a short link or its code",
+    "Enlace corto que quieres comprobar": "Short link you want to check",
+    "🔎 Ver destino": "🔎 View destination",
+    "Este enlace lleva a": "This link leads to",
+    "↗ Abrir el destino": "↗ Open the destination",
+    "🚩 Reportar este enlace": "🚩 Report this link",
+    "¿Cómo acortar un enlace?": "How to shorten a link",
+    "Pega la dirección larga en la caja de arriba.": "Paste the long address into the box above.",
+    "Pulsa «Acortar enlace».": "Press “Shorten link”.",
+    "Copia el enlace corto y compártelo donde quieras.": "Copy the short link and share it wherever you like.",
+    "¿Puedo ver a dónde lleva un enlace corto antes de abrirlo?": "Can I see where a short link leads before opening it?",
+    "Sí. Pega el enlace en «Comprueba un enlace corto antes de abrirlo» y verás la dirección de destino completa sin visitarla. Es una buena costumbre con cualquier enlace corto que no esperabas recibir.": "Yes. Paste the link into “Check a short link before opening it” and you will see the full destination address without visiting it. It is a good habit with any short link you were not expecting to receive.",
+    "¿Qué enlaces no se pueden acortar?": "Which links cannot be shortened?",
+    "Los que no empiezan por http o https, los que llevan usuario y contraseña, las direcciones IP y los nombres de redes internas, los enlaces de otros acortadores y los de este mismo sitio. Son límites pensados para evitar que el servicio se use para engañar a otras personas.": "Those that do not start with http or https, those that include a username and password, IP addresses and internal network names, links from other shorteners and links to this same site. These limits exist to keep the service from being used to deceive other people.",
+    "¿Cómo reporto un enlace malicioso?": "How do I report a malicious link?",
+    "Pégalo en «Comprueba un enlace corto antes de abrirlo» y pulsa «Reportar este enlace». Cuando varias personas distintas lo reportan, el enlace se bloquea automáticamente.": "Paste it into “Check a short link before opening it” and press “Report this link”. When several different people report it, the link is blocked automatically.",
+    "¿Los enlaces caducan?": "Do links expire?",
+    "Los enlaces que nadie visita durante un año se eliminan. Mientras se sigan usando, siguen funcionando.": "Links that nobody visits for a year are deleted. As long as they keep being used, they keep working.",
+    "¿Cuántos enlaces puedo crear?": "How many links can I create?",
+    "Hay un límite de enlaces nuevos por hora para evitar abusos. Si lo alcanzas, vuelve a intentarlo un rato después.": "There is a limit on new links per hour to prevent abuse. If you reach it, try again a little later.",
+    "¿Qué se guarda de mi enlace?": "What is stored about my link?",
+    "La dirección de destino, la fecha de creación y un contador de visitas. No hace falta cuenta y no se guarda tu dirección IP junto al enlace. Cualquiera que tenga el enlace corto puede ver a dónde lleva, así que no lo uses para enlaces privados.": "The destination address, the creation date and a visit counter. No account is needed and your IP address is not stored with the link. Anyone who has the short link can see where it leads, so do not use it for private links."
   }
 }

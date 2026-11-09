@@ -400,10 +400,7 @@ def _run_edit_job(
         if code != 0 or not dest.exists() or dest.stat().st_size == 0:
             raise RuntimeError("No se pudo procesar el audio (ffmpeg falló).")
 
-        if len(sources) > 1:
-            name = "audio-unido"
-        else:
-            name = f"{bases[0]} recortado"
+        name = "audio-unido" if len(sources) > 1 else f"{bases[0]} recortado"
         audios.update(
             job_id,
             status="finished",

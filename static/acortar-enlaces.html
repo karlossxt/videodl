@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Acortar enlaces gratis</h1>
+      <p class="hero-sub">Convierte una dirección larga en un enlace corto para compartirlo. Gratis, sin registro, y con una herramienta para comprobar a dónde lleva cualquier enlace corto antes de abrirlo.</p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <div class="section-head">
+      <h3>Paso 1 · Pega el enlace largo</h3>
+      <span class="muted-small">Solo enlaces http o https de sitios públicos</span>
+    </div>
+
+    <form id="shorten-form" class="link-form" novalidate>
+      <input type="text" id="long-url" class="link-input" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://ejemplo.com/una/direccion/muy/larga" aria-label="Enlace largo que quieres acortar" />
+      <button type="submit" id="shorten-btn" class="primary-btn big">✂️ Acortar enlace</button>
+    </form>
+
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Tu enlace corto</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para compartir</span>
+      </div>
+
+      <div class="compare-card">
+        <div class="link-copy-row">
+          <input type="text" id="short-url" class="link-input mono" readonly aria-label="Enlace corto" />
+          <button type="button" id="copy-btn" class="download-btn">📋 Copiar</button>
+        </div>
+        <p class="muted-small" id="result-dest"></p>
+        <div class="compare-actions">
+          <button type="button" id="again-btn" class="soft-btn">✂️ Acortar otro</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="recent" class="link-recent hidden">
+      <div class="section-head" style="margin-top:26px">
+        <h3>Tus enlaces recientes</h3>
+        <button type="button" id="recent-clear" class="ghost-btn small">Borrar lista</button>
+      </div>
+      <p class="muted-small">Esta lista se guarda solo en tu navegador.</p>
+      <ul id="recent-list" class="link-list" aria-label="Enlaces recientes"></ul>
+    </section>
+
+    <div class="section-head" style="margin-top:34px">
+      <h3>Comprueba un enlace corto antes de abrirlo</h3>
+      <span class="muted-small">Ver el destino no cuenta como visita</span>
+    </div>
+
+    <form id="check-form" class="link-form" novalidate>
+      <input type="text" id="check-input" class="link-input" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pega un enlace corto o su código" aria-label="Enlace corto que quieres comprobar" />
+      <button type="submit" id="check-btn" class="soft-btn big">🔎 Ver destino</button>
+    </form>
+
+    <section id="check-result" class="compare-card link-check hidden" aria-live="polite">
+      <span class="compare-label">Este enlace lleva a</span>
+      <code id="check-url" class="link-dest"></code>
+      <p class="muted-small" id="check-meta"></p>
+      <div class="compare-actions">
+        <a id="check-open" class="download-btn" target="_blank" rel="noopener noreferrer nofollow">↗ Abrir el destino</a>
+        <button type="button" id="report-btn" class="soft-btn">🚩 Reportar este enlace</button>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>¿Cómo acortar un enlace?</h2>
+      <ol class="steps">
+        <li>Pega la dirección larga en la caja de arriba.</li>
+        <li>Pulsa «Acortar enlace».</li>
+        <li>Copia el enlace corto y compártelo donde quieras.</li>
+      </ol>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Puedo ver a dónde lleva un enlace corto antes de abrirlo?</summary>
+        <p>Sí. Pega el enlace en «Comprueba un enlace corto antes de abrirlo» y verás la dirección de destino completa sin visitarla. Es una buena costumbre con cualquier enlace corto que no esperabas recibir.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué enlaces no se pueden acortar?</summary>
+        <p>Los que no empiezan por http o https, los que llevan usuario y contraseña, las direcciones IP y los nombres de redes internas, los enlaces de otros acortadores y los de este mismo sitio. Son límites pensados para evitar que el servicio se use para engañar a otras personas.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cómo reporto un enlace malicioso?</summary>
+        <p>Pégalo en «Comprueba un enlace corto antes de abrirlo» y pulsa «Reportar este enlace». Cuando varias personas distintas lo reportan, el enlace se bloquea automáticamente.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Los enlaces caducan?</summary>
+        <p>Los enlaces que nadie visita durante un año se eliminan. Mientras se sigan usando, siguen funcionando.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cuántos enlaces puedo crear?</summary>
+        <p>Hay un límite de enlaces nuevos por hora para evitar abusos. Si lo alcanzas, vuelve a intentarlo un rato después.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué se guarda de mi enlace?</summary>
+        <p>La dirección de destino, la fecha de creación y un contador de visitas. No hace falta cuenta y no se guarda tu dirección IP junto al enlace. Cualquiera que tenga el enlace corto puede ver a dónde lleva, así que no lo uses para enlaces privados.</p>
+      </details>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="acortar-enlaces.js"></script>
+</body>
+</html>

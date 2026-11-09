@@ -151,6 +151,17 @@ PAGE_META: dict[str, PageMeta] = {
         nav="tools",
         tool_slug="unir-audio",
     ),
+    "acortar-enlaces": PageMeta(
+        key="acortar-enlaces",
+        path="/acortar-enlaces",
+        title="Acortar enlaces gratis — Fastools",
+        description=(
+            "Acorta un enlace largo en uno corto para compartirlo. Comprueba a dónde "
+            "lleva cualquier enlace corto antes de abrirlo. Gratis y sin registro."
+        ),
+        nav="tools",
+        tool_slug="acortar-enlaces",
+    ),
     "comprimir-imagen": PageMeta(
         key="comprimir-imagen",
         path="/comprimir-imagen",
@@ -298,6 +309,7 @@ PAGE_FILES = {
     "video-a-gif": "gif.html",
     "extraer-audio": "extraer-audio.html",
     "unir-audio": "unir-audio.html",
+    "acortar-enlaces": "acortar-enlaces.html",
     "privacy": "privacidad.html",
 }
 
@@ -955,6 +967,7 @@ def robots_txt() -> str:
         "User-agent: *\n"
         "Allow: /\n"
         "Disallow: /api/\n"
+        "Disallow: /l/\n"
         "Disallow: /health\n"
         f"Sitemap: {site_url()}/sitemap.xml\n"
     )

@@ -23,6 +23,7 @@ convierte imágenes, une o divide PDF y crea códigos QR o enlaces de WhatsApp c
 | `/video-a-gif` | **Convertir vídeo a GIF** a partir de un fragmento (hasta 15 s), con ancho y fluidez ajustables y paleta propia para un GIF nítido y ligero. |
 | `/extraer-audio` | **Extraer el audio de un vídeo** (o convertir un audio) a MP3, M4A o WAV. |
 | `/unir-audio` | **Unir o cortar audio**: junta hasta 10 pistas en el orden elegido y recorta por segundos. |
+| `/acortar-enlaces` | **Acortar enlaces** (`/l/<código>`) y **comprobar a dónde lleva** un enlace corto sin visitarlo, con reporte de enlaces maliciosos. |
 | `/generador-qr` | **Generar códigos QR** de enlaces, texto, WiFi, email, teléfono o SMS, con tamaño, colores y descarga en PNG o SVG. |
 | `/comprimir-imagen` | **Comprimir imágenes** JPG, PNG o WebP con calidad ajustable, vista previa antes/después y descarga directa, sin subirlas al servidor. |
 | `/convertir-imagen` | **Convertir imágenes** entre JPG, PNG y WebP, con aviso y color de fondo cuando el destino no admite transparencia. |
@@ -197,6 +198,10 @@ contenedores, monta un volumen sobre esa ruta.
 | `GET` | `/api/audio/{id}` | Estado y progreso del trabajo de audio. |
 | `GET` | `/api/audio/{id}/file` | Descarga el audio y libera el trabajo. |
 | `POST` | `/api/audio/{id}/cancel` | Cancela un trabajo de audio en curso. |
+| `POST` | `/api/links` | Crea (o reutiliza) un enlace corto: `{"url": "…"}`. |
+| `GET` | `/api/links/{código}` | Destino de un enlace corto **sin visitarlo** ni contar la visita. |
+| `POST` | `/api/links/{código}/report` | Reporta un enlace; varias personas distintas lo bloquean. |
+| `GET` | `/l/{código}` | Redirige (302) al destino y cuenta la visita. `410` si está bloqueado. |
 | `GET` | `/api/transcribe/options` | Capacidades, modelo y límites de la transcripción. |
 | `POST` | `/api/transcribe` | Sube un audio o vídeo y crea un trabajo de transcripción. |
 | `GET` | `/api/transcribe/{id}` | Estado, progreso, idioma detectado y texto. |
@@ -253,6 +258,15 @@ el valor por defecto.
 | `COMPRESS_MAX_TARGET_MB` | `200` | Tope del tamaño objetivo del compresor. |
 | `X264_PRESET` | `veryfast` | Preset de x264 (`ultrafast`…`placebo`). |
 | `CLIP_MAX_SECONDS` | `300` | Duración máxima de un clip. |
+| `GIF_MAX_SECONDS` | `15` | Duración máxima del fragmento de un GIF. |
+| `AUDIO_MAX_FILES` | `10` | Archivos máximos al unir audio. |
+| `SHORTLINKS_DB` | `data/links.db` | Archivo SQLite de los enlaces cortos (en Docker, `/app/data/links.db`). |
+| `SHORTLINKS_PER_HOUR` | `20` | Enlaces nuevos por IP y hora. `0` desactiva la creación (interruptor de emergencia; los existentes siguen redirigiendo). |
+| `SHORTLINKS_REPORT_THRESHOLD` | `3` | Reportes de personas distintas para bloquear un enlace. |
+| `SHORTLINKS_STALE_DAYS` | `365` | Días sin visitas tras los que se borra un enlace (`0` = nunca). |
+| `SHORTLINKS_MAX_LINKS` | `100000` | Máximo de enlaces guardados. |
+| `SHORTLINKS_BLOCKED_HOSTS` | — | Dominios prohibidos, separados por comas (incluye subdominios). Se aplican al crear **y** al redirigir. |
+| `SHORTLINKS_SALT` | — | Sal para anonimizar a quien reporta; si falta, se genera una en cada arranque. |
 | `FFMPEG_TIMEOUT_SECONDS` | `3600` | Tiempo máximo de un proceso ffmpeg (`0` = sin límite). |
 | `TRANSCRIBE_MODEL` | `base` | Modelo de faster-whisper (`tiny`, `base`, `small`, `medium`, `large-v3`). |
 | `TRANSCRIBE_DEVICE` | `cpu` | `cpu`, `cuda` o `auto`. |
@@ -322,6 +336,8 @@ videodl/
   qr.py          # generador de QR genérico (PNG/SVG)
   transcribe.py  # transcripción opcional con faster-whisper
   media_tools.py # vídeo a GIF, extraer audio y unir o cortar audio (ffmpeg)
+  links.py       # acortador: validación estricta de URLs y almacén SQLite
+  shortener.py   # rutas del acortador (crear, vista previa, reportar, redirigir)
   media.py       # ffmpeg/ffprobe
   tasks.py       # lanzador de trabajos en segundo plano
   jobs.py        # almacén de trabajos en memoria con TTL
@@ -338,6 +354,7 @@ static/          # HTML de herramientas, CSS y JS sin frameworks
   gif.js           # interfaz de vídeo a GIF
   extraer-audio.js # interfaz de extracción de audio
   unir-audio.js    # interfaz de unir o cortar audio (lista ordenable)
+  acortar-enlaces.js # interfaz del acortador y del comprobador de enlaces
   vendor/pdf/      # pdf-lib 1.17.1, PDF.js 6.4.299 y recursos, con manifest.json
   imagenes.js      # interfaz compartida de las tres herramientas de imagen
 tests/           # pruebas unitarias, de API, de sitio y e2e con ffmpeg
@@ -370,3 +387,22 @@ Sube solo contenido que te pertenezca o que puedas utilizar libremente. Consulta
 ## Licencia
 
 MIT.
+
+## Acortador de enlaces: despliegue
+
+Los enlaces se guardan en un archivo SQLite (`SHORTLINKS_DB`). Dos cosas a tener en cuenta:
+
+- **Persistencia.** En un hosting con disco efímero (por ejemplo, el plan gratuito de
+  Render) el archivo se pierde en cada reinicio o redeploy y los enlaces ya compartidos
+  dejarían de funcionar. Para que duren hay que montar un disco persistente en `/app/data`.
+- **IP del visitante.** El límite por hora y el conteo de reportes usan la IP del cliente.
+  Detrás de un proxy, uvicorn solo confía en `X-Forwarded-For` desde las IPs de
+  `FORWARDED_ALLOW_IPS` (por defecto, `127.0.0.1`). Si no se ajusta, todos los visitantes
+  comparten una única IP: el cupo de enlaces nuevos se agota para todos a la vez y los
+  reportes nunca suman personas distintas. Configúralo con la IP de tu proxy.
+
+Protecciones contra el abuso: solo `http`/`https` hacia dominios públicos (sin IP,
+`localhost` ni redes internas), sin usuario ni contraseña en la URL, sin encadenar otros
+acortadores ni apuntar al propio sitio, rechazo de dominios que mezclan alfabetos
+(homógrafos), lista de dominios bloqueados, bloqueo tras varios reportes, cupo por IP y
+`Disallow: /l/` en `robots.txt`.

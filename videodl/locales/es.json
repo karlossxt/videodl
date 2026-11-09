@@ -75,6 +75,10 @@
     "unir-audio": {
       "title": "Unir o cortar audio online (MP3, WAV) — Fastools",
       "description": "Une varias pistas de audio en un solo archivo o recorta un audio por segundos. Acepta MP3, WAV, M4A y más. Gratis y sin registro."
+    },
+    "acortar-enlaces": {
+      "title": "Acortar enlaces gratis — Fastools",
+      "description": "Acorta un enlace largo en uno corto para compartirlo. Comprueba a dónde lleva cualquier enlace corto antes de abrirlo. Gratis y sin registro."
     }
   },
   "nav": {
@@ -888,6 +892,20 @@
       "readyToast": "¡Audio listo!",
       "notReady": "La descarga aún no está lista",
       "downloading": "Descargando el audio…"
+    },
+    "shortener": {
+      "copy": "Copiar",
+      "copied": "Enlace copiado",
+      "copyFailed": "No se pudo copiar. Selecciónalo y cópialo a mano.",
+      "empty": "Escribe el enlace que quieres acortar.",
+      "failed": "No se pudo acortar el enlace. Inténtalo de nuevo.",
+      "goesTo": "Lleva a: {host}",
+      "badCode": "Pega un enlace corto de este sitio o su código.",
+      "notFound": "Ese enlace corto no existe.",
+      "checkMeta": "Sitio: {host} · Visitas: {clicks}",
+      "reportFailed": "No se pudo enviar el reporte.",
+      "reportBlocked": "Gracias. El enlace quedó bloqueado.",
+      "reported": "Gracias. Hemos registrado tu reporte."
     }
   },
   "html": {}

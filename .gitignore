@@ -12,6 +12,7 @@ venv/
 
 # Archivos temporales de procesado
 downloads/
+data/
 *.part
 
 # Pruebas y calidad de código

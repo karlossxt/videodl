@@ -21,3 +21,9 @@ class QrRequest(BaseModel):
     dark: str = "#000000"
     light: str = "#ffffff"
     format: str = "png"
+
+
+class ShortLinkRequest(BaseModel):
+    """Enlace largo que hay que acortar (la validación detallada vive en ``links``)."""
+
+    url: str = Field(..., min_length=1, max_length=4096)
