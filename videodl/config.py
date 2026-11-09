@@ -128,6 +128,15 @@ SHORTLINKS_BLOCKED_HOSTS = env_str("SHORTLINKS_BLOCKED_HOSTS")
 # Sal para anonimizar a quien reporta. Si falta, se genera una en cada arranque.
 SHORTLINKS_SALT = env_str("SHORTLINKS_SALT")
 
+# Cabecera con la IP real del visitante cuando hay un proxy delante (p. ej.
+# ``cf-connecting-ip``). Vacía = se usa la IP de la conexión. Actívala solo si el
+# proxy sobrescribe esa cabecera y no se puede llegar al servicio sin pasar por él.
+_raw_ip_header = env_str("CLIENT_IP_HEADER").lower()
+if _raw_ip_header and not re.fullmatch(r"[a-z0-9-]{1,64}", _raw_ip_header):
+    logger.warning("CLIENT_IP_HEADER no es un nombre de cabecera válido; se ignora.")
+    _raw_ip_header = ""
+CLIENT_IP_HEADER = _raw_ip_header
+
 # Tiempo máximo que puede durar un proceso ffmpeg antes de ser matado (0 = sin
 # límite). Evita que una codificación colgada retenga un hilo para siempre.
 FFMPEG_TIMEOUT_SECONDS = env_int("FFMPEG_TIMEOUT_SECONDS", 3600, minimum=0)

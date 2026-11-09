@@ -19,6 +19,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from . import views
 from .config import (
+    CLIENT_IP_HEADER,
     SHORTLINKS_BLOCKED_HOSTS,
     SHORTLINKS_DB,
     SHORTLINKS_MAX_LINKS,
@@ -38,7 +39,7 @@ from .links import (
 )
 from .models import ShortLinkRequest
 from .pages import _add_script_nonces
-from .security import RateLimiter
+from .security import RateLimiter, client_ip
 
 logger = logging.getLogger("videodl.shortener")
 
@@ -58,7 +59,7 @@ _UNAVAILABLE = "El acortador no está disponible ahora mismo. Inténtalo más ta
 
 
 def _client(request: Request) -> str:
-    return request.client.host if request.client else "desconocido"
+    return client_ip(request, CLIENT_IP_HEADER)
 
 
 def _own_hosts(request: Request) -> set[str]:

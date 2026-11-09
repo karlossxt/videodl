@@ -8,6 +8,7 @@ los dos limitadores que protegen la CPU y el disco del servidor.
 from __future__ import annotations
 
 import contextlib
+import ipaddress
 import threading
 import time
 from collections import defaultdict, deque
@@ -58,3 +59,24 @@ class ConcurrencyLimiter:
     def release(self) -> None:
         with contextlib.suppress(ValueError):  # ya liberado
             self._sem.release()
+
+
+def client_ip(request, header: str = "") -> str:
+    """IP del cliente para los límites y los reportes.
+
+    Por defecto es la IP de la conexión. Detrás de un proxy esa IP es la del proxy y
+    todos los visitantes parecerían uno solo, así que ``header`` permite indicar la
+    cabecera que el proxy rellena con la IP real (p. ej. ``cf-connecting-ip``).
+
+    Solo debe usarse con una cabecera que el proxy **sobrescriba** y a la que el
+    cliente no pueda llegar directamente: si no, cualquiera podría falsificarla y
+    saltarse los límites. Un valor que no sea una IP válida se ignora.
+    """
+    if header:
+        raw = (request.headers.get(header) or "").split(",")[0].strip()
+        if raw:
+            try:
+                return str(ipaddress.ip_address(raw))
+            except ValueError:
+                pass
+    return request.client.host if request.client else "desconocido"

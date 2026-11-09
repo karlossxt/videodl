@@ -6,6 +6,10 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [Unreleased]
 
 ### Añadido
+- **`CLIENT_IP_HEADER`** (opcional): permite indicar la cabecera con la IP real del
+  visitante detrás de un proxy, para que los límites y los reportes distingan a cada
+  persona. Por defecto no cambia nada: se sigue usando la IP de la conexión.
+- **Privacidad**: sección sobre los enlaces cortos (qué se guarda y durante cuánto).
 - **Acortar enlaces** (`/acortar-enlaces`, redirección en `/l/<código>`): almacén SQLite,
   validación estricta del destino (solo http/https públicos; sin IPs, redes internas,
   credenciales, otros acortadores, el propio sitio ni dominios con alfabetos mezclados),

@@ -266,6 +266,7 @@ el valor por defecto.
 | `SHORTLINKS_STALE_DAYS` | `365` | Días sin visitas tras los que se borra un enlace (`0` = nunca). |
 | `SHORTLINKS_MAX_LINKS` | `100000` | Máximo de enlaces guardados. |
 | `SHORTLINKS_BLOCKED_HOSTS` | — | Dominios prohibidos, separados por comas (incluye subdominios). Se aplican al crear **y** al redirigir. |
+| `CLIENT_IP_HEADER` | — | Cabecera con la IP real del visitante detrás de un proxy (p. ej. `cf-connecting-ip`). Vacía = IP de la conexión. Ver «Acortador de enlaces: despliegue». |
 | `SHORTLINKS_SALT` | — | Sal para anonimizar a quien reporta; si falta, se genera una en cada arranque. |
 | `FFMPEG_TIMEOUT_SECONDS` | `3600` | Tiempo máximo de un proceso ffmpeg (`0` = sin límite). |
 | `TRANSCRIBE_MODEL` | `base` | Modelo de faster-whisper (`tiny`, `base`, `small`, `medium`, `large-v3`). |
@@ -395,11 +396,17 @@ Los enlaces se guardan en un archivo SQLite (`SHORTLINKS_DB`). Dos cosas a tener
 - **Persistencia.** En un hosting con disco efímero (por ejemplo, el plan gratuito de
   Render) el archivo se pierde en cada reinicio o redeploy y los enlaces ya compartidos
   dejarían de funcionar. Para que duren hay que montar un disco persistente en `/app/data`.
-- **IP del visitante.** El límite por hora y el conteo de reportes usan la IP del cliente.
-  Detrás de un proxy, uvicorn solo confía en `X-Forwarded-For` desde las IPs de
-  `FORWARDED_ALLOW_IPS` (por defecto, `127.0.0.1`). Si no se ajusta, todos los visitantes
-  comparten una única IP: el cupo de enlaces nuevos se agota para todos a la vez y los
-  reportes nunca suman personas distintas. Configúralo con la IP de tu proxy.
+- **IP del visitante.** El límite por hora, el límite general de la API y el conteo de
+  reportes usan la IP del cliente. Detrás de un proxy, esa IP es la del proxy y todos los
+  visitantes parecerían uno solo: el cupo de enlaces nuevos se agotaría para todos a la
+  vez y los reportes nunca sumarían personas distintas. Si ocurre, define
+  `CLIENT_IP_HEADER` con la cabecera en la que tu proxy pone la IP real (por ejemplo
+  `cf-connecting-ip`). Vacía (por defecto) se usa la IP de la conexión.
+  **Úsala solo si el proxy sobrescribe esa cabecera** y no se puede llegar al servicio sin
+  pasar por él: si no, cualquiera podría falsificarla y saltarse los límites. Por la misma
+  razón, `FORWARDED_ALLOW_IPS=*` no es una solución segura: Render, según lo que se
+  conoce, no elimina el `X-Forwarded-For` que envía el cliente. Confirma con la
+  documentación o el soporte de tu plataforma qué cabecera usar antes de activarla.
 
 Protecciones contra el abuso: solo `http`/`https` hacia dominios públicos (sin IP,
 `localhost` ni redes internas), sin usuario ni contraseña en la URL, sin encadenar otros

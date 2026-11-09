@@ -19,6 +19,7 @@ from . import __version__, analytics, i18n, shortener
 from .clips import router as clips_router
 from .compressor import router as compressor_router
 from .config import (
+    CLIENT_IP_HEADER,
     CLIP_MAX_SECONDS,
     COMPRESS_MAX_TARGET_MB,
     CONTENT_SECURITY_POLICY,
@@ -41,6 +42,7 @@ from .paths import BASE_DIR, STATIC_DIR
 from .qr import SEGNO_AVAILABLE
 from .qr import router as qr_router
 from .runtime import rate_limiter
+from .security import client_ip
 from .stores import active_tmpdirs, cleanup_all
 from .transcribe import TRANSCRIBE_AVAILABLE
 from .transcribe import router as transcribe_router
@@ -101,7 +103,7 @@ def create_app() -> FastAPI:
 
         # Rate limiting solo para la API (los estáticos y las páginas no cuentan).
         if RATE_LIMIT_PER_MINUTE > 0 and request.url.path.startswith("/api/"):
-            client = request.client.host if request.client else "desconocido"
+            client = client_ip(request, CLIENT_IP_HEADER)
             if not rate_limiter.allow(client):
                 return JSONResponse(
                     status_code=429,
