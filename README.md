@@ -20,6 +20,9 @@ convierte imágenes, une o divide PDF y crea códigos QR o enlaces de WhatsApp c
 | `/comprimir-video-whatsapp` | **Comprimir vídeo** para que entre en los límites de WhatsApp (16 MB), Discord (10 MB), Telegram, el correo o un tamaño que tú elijas. |
 | `/recortar-clip-vertical` | **Recortar clips verticales** (9:16) a partir de un archivo propio, con recorte centrado o fondo desenfocado, listos para TikTok, Reels y Shorts. |
 | `/transcribir-audio` | **Transcribir audio o vídeo a texto** con marcas de tiempo y descarga en TXT, SRT o VTT. Requiere la dependencia opcional `faster-whisper`. |
+| `/video-a-gif` | **Convertir vídeo a GIF** a partir de un fragmento (hasta 15 s), con ancho y fluidez ajustables y paleta propia para un GIF nítido y ligero. |
+| `/extraer-audio` | **Extraer el audio de un vídeo** (o convertir un audio) a MP3, M4A o WAV. |
+| `/unir-audio` | **Unir o cortar audio**: junta hasta 10 pistas en el orden elegido y recorta por segundos. |
 | `/generador-qr` | **Generar códigos QR** de enlaces, texto, WiFi, email, teléfono o SMS, con tamaño, colores y descarga en PNG o SVG. |
 | `/comprimir-imagen` | **Comprimir imágenes** JPG, PNG o WebP con calidad ajustable, vista previa antes/después y descarga directa, sin subirlas al servidor. |
 | `/convertir-imagen` | **Convertir imágenes** entre JPG, PNG y WebP, con aviso y color de fondo cuando el destino no admite transparencia. |
@@ -183,6 +186,17 @@ contenedores, monta un volumen sobre esa ruta.
 | `POST` | `/api/clips/{id}/cancel` | Cancela un clip en curso. |
 | `POST` | `/api/whatsapp/qr` | Devuelve un PNG con el QR de un enlace `wa.me`. |
 | `POST` | `/api/qr` | Devuelve un QR PNG o SVG de un contenido y estilo validados. |
+| `GET` | `/api/gif/options` | Anchos, fluidez y duración máxima del GIF. |
+| `POST` | `/api/gif/upload` | Sube un vídeo y crea un GIF (`start`, `end`, `width`, `fps`). |
+| `GET` | `/api/gif/{id}` | Estado y progreso del GIF. |
+| `GET` | `/api/gif/{id}/file` | Descarga el GIF y libera el trabajo. |
+| `POST` | `/api/gif/{id}/cancel` | Cancela un GIF en curso. |
+| `GET` | `/api/audio/options` | Formatos, calidades y número máximo de archivos a unir. |
+| `POST` | `/api/audio/extract` | Sube un vídeo o audio y extrae la pista (`format`, `bitrate`). |
+| `POST` | `/api/audio/edit` | Sube uno o varios audios (`files`) y los une o recorta (`start`, `end`). |
+| `GET` | `/api/audio/{id}` | Estado y progreso del trabajo de audio. |
+| `GET` | `/api/audio/{id}/file` | Descarga el audio y libera el trabajo. |
+| `POST` | `/api/audio/{id}/cancel` | Cancela un trabajo de audio en curso. |
 | `GET` | `/api/transcribe/options` | Capacidades, modelo y límites de la transcripción. |
 | `POST` | `/api/transcribe` | Sube un audio o vídeo y crea un trabajo de transcripción. |
 | `GET` | `/api/transcribe/{id}` | Estado, progreso, idioma detectado y texto. |
@@ -307,6 +321,7 @@ videodl/
   whatsapp.py    # validación de enlaces y QR
   qr.py          # generador de QR genérico (PNG/SVG)
   transcribe.py  # transcripción opcional con faster-whisper
+  media_tools.py # vídeo a GIF, extraer audio y unir o cortar audio (ffmpeg)
   media.py       # ffmpeg/ffprobe
   tasks.py       # lanzador de trabajos en segundo plano
   jobs.py        # almacén de trabajos en memoria con TTL
@@ -320,6 +335,9 @@ static/          # HTML de herramientas, CSS y JS sin frameworks
   qr-core.js       # payloads de QR, validación y contraste (también para Node)
   qr.js            # interfaz del generador de QR
   transcribe.js    # interfaz de transcripción (subida, progreso, descargas)
+  gif.js           # interfaz de vídeo a GIF
+  extraer-audio.js # interfaz de extracción de audio
+  unir-audio.js    # interfaz de unir o cortar audio (lista ordenable)
   vendor/pdf/      # pdf-lib 1.17.1, PDF.js 6.4.299 y recursos, con manifest.json
   imagenes.js      # interfaz compartida de las tres herramientas de imagen
 tests/           # pruebas unitarias, de API, de sitio y e2e con ffmpeg

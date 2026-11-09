@@ -34,6 +34,7 @@ from .config import (
     configure_logging,
 )
 from .legacy import router as legacy_router
+from .media_tools import router as media_tools_router
 from .pages import router as pages_router
 from .paths import BASE_DIR, STATIC_DIR
 from .qr import SEGNO_AVAILABLE
@@ -140,6 +141,8 @@ def create_app() -> FastAPI:
             # El compresor y los clips necesitan ambos binarios.
             "compressor": ffmpeg_ok,
             "clips": ffmpeg_ok,
+            "gif": ffmpeg_ok,
+            "audio": ffmpeg_ok,
             "whatsapp": WHATSAPP_QR_AVAILABLE,
             "qr": SEGNO_AVAILABLE,
             "transcribe": TRANSCRIBE_AVAILABLE,
@@ -161,6 +164,7 @@ def create_app() -> FastAPI:
 
     app.include_router(compressor_router)
     app.include_router(clips_router)
+    app.include_router(media_tools_router)
     app.include_router(whatsapp_router)
     app.include_router(qr_router)
     app.include_router(transcribe_router)

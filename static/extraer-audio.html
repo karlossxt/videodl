@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Extraer el audio de un vídeo en MP3</h1>
+      <p class="hero-sub">Separa la pista de sonido de cualquier vídeo y descárgala en MP3, M4A o WAV. Gratis, sin marca de agua y sin registro.</p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <div class="section-head">
+      <h3>Paso 1 · Elige el vídeo o el audio</h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un archivo">
+      <input type="file" id="file-input" accept="video/*,audio/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.wma,.amr,.aiff,.aif" hidden />
+      <div class="dropzone-icon" aria-hidden="true">🎵</div>
+      <p class="dropzone-title">Arrastra el archivo aquí o <span class="accent">búscalo en tu equipo</span></p>
+      <p class="dropzone-sub">Vídeo o audio · hasta <span id="limit-hint-2">200 MB</span></p>
+    </div>
+
+    <div id="file-card" class="file-card hidden">
+      <div class="file-icon" aria-hidden="true">🎵</div>
+      <div class="file-info">
+        <div class="file-name" id="file-name"></div>
+        <div class="file-meta" id="file-meta"></div>
+      </div>
+      <button type="button" id="file-clear" class="ghost-btn small">✕ Quitar</button>
+    </div>
+
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 2 · Elige el formato</h3>
+      <span class="muted-small">MP3 funciona en cualquier dispositivo</span>
+    </div>
+
+    <div class="compress-options">
+      <label class="option-field">
+        <span>Formato de salida</span>
+        <select id="audio-format">
+          <option value="mp3" selected>MP3 (el más compatible)</option>
+          <option value="m4a">M4A (AAC, mejor calidad por peso)</option>
+          <option value="wav">WAV (sin compresión, pesa mucho)</option>
+        </select>
+      </label>
+
+      <label class="option-field" id="bitrate-field">
+        <span>Calidad</span>
+        <select id="audio-bitrate">
+          <option value="128">128 kbps (ligero)</option>
+          <option value="192" selected>192 kbps (equilibrado)</option>
+          <option value="256">256 kbps (alta)</option>
+          <option value="320">320 kbps (máxima)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="compress-action">
+      <button type="button" id="audio-btn" class="primary-btn big" disabled>🎵 Extraer audio</button>
+      <span class="muted-small" id="action-hint">Elige primero un archivo.</span>
+    </div>
+
+    <div id="progress" class="progress-notice hidden">
+      <div class="progress-head">
+        <span id="pr-status" role="status" aria-live="polite">Subiendo el archivo…</span>
+        <span id="pr-percent" class="mono">0%</span>
+      </div>
+      <div class="progress-track" id="pr-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la extracción">
+        <div id="pr-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="pr-detail">—</span>
+        <button type="button" id="pr-cancel" class="ghost-btn small">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Tu audio</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para descargar</span>
+      </div>
+
+      <div class="compare-card">
+        <audio id="out-preview" class="compare-preview" controls></audio>
+
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Peso</span>
+            <span class="compare-value accent" id="out-size">—</span>
+          </div>
+          <div class="compare-stat">
+            <span class="compare-label">Duración</span>
+            <span class="compare-value" id="out-duration">—</span>
+          </div>
+        </div>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big">⬇ Descargar audio</button>
+          <button type="button" id="again-btn" class="soft-btn">🎵 Extraer otro</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>¿Cómo extraer el audio de un vídeo?</h2>
+      <ol class="steps">
+        <li>Elige el vídeo desde tu equipo o arrástralo a la caja de arriba.</li>
+        <li>Selecciona el formato: MP3, M4A o WAV.</li>
+        <li>Pulsa «Extraer audio» y espera unos segundos.</li>
+        <li>Escucha el resultado y descárgalo.</li>
+      </ol>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Qué formato me conviene?</summary>
+        <p>MP3 es el más compatible y sirve para casi todo. M4A ofrece algo más de calidad con el mismo peso. WAV no comprime nada: úsalo solo si vas a seguir editando el audio.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Puedo convertir también un audio a MP3?</summary>
+        <p>Sí. Si subes un audio en WAV, M4A, OGG, FLAC u otro formato, se convierte al que elijas.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa si el vídeo no tiene sonido?</summary>
+        <p>Se avisa con un mensaje claro: sin pista de audio no hay nada que extraer.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con el archivo que subo?</summary>
+        <p>Se procesa en el servidor y se borra automáticamente en cuanto lo descargas, y en todo caso pasada una hora. No se comparte con terceros.</p>
+      </details>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="extraer-audio.js"></script>
+</body>
+</html>

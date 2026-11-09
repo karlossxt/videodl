@@ -81,6 +81,8 @@ TOOLS: tuple[Tool, ...] = (
         category="video",
         icon="🎞️",
         keywords=("gif", "convertir", "animación"),
+        route="/video-a-gif",
+        status="available",
     ),
     # --- Audio -------------------------------------------------------------
     Tool(
@@ -104,6 +106,8 @@ TOOLS: tuple[Tool, ...] = (
         category="audio",
         icon="🎵",
         keywords=("mp3", "audio", "extraer", "música", "voz"),
+        route="/extraer-audio",
+        status="available",
     ),
     Tool(
         slug="unir-audio",
@@ -112,6 +116,8 @@ TOOLS: tuple[Tool, ...] = (
         category="audio",
         icon="🎚️",
         keywords=("unir", "cortar", "audio", "mp3", "wav"),
+        route="/unir-audio",
+        status="available",
     ),
     # --- Imágenes ----------------------------------------------------------
     Tool(

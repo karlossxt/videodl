@@ -261,6 +261,55 @@
   }
 
   // -------------------------------------------------------------------------
+  // Subida con progreso (devuelve el JSON del servidor, p. ej. {id})
+  // -------------------------------------------------------------------------
+
+  function uploadWithProgress(path, form, { onProgress, timeoutMs = 10 * 60 * 1000 } = {}) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", path);
+      // Tiempo máximo para subir + empezar a procesar. Evita un cuelgue silencioso.
+      xhr.timeout = timeoutMs;
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total);
+      };
+      xhr.onload = () => {
+        let data = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          /* respuesta sin JSON */
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && data && data.id) {
+          resolve(data);
+          return;
+        }
+        reject(
+          new Error(
+            (data && data.detail) ||
+              t("common.uploadStatus", `No se pudo procesar el archivo (error ${xhr.status || "de red"}).`, {
+                status: xhr.status || "red",
+              })
+          )
+        );
+      };
+      xhr.onerror = () =>
+        reject(
+          new Error(
+            t("common.uploadFailed", "No se pudo enviar el archivo al servidor. Revisa tu conexión.")
+          )
+        );
+      xhr.ontimeout = () =>
+        reject(
+          new Error(
+            t("common.uploadTimeout", "La subida tardó demasiado. Prueba con un archivo más pequeño.")
+          )
+        );
+      xhr.send(form);
+    });
+  }
+
+  // -------------------------------------------------------------------------
   // Zona de arrastre para archivos (accesible con teclado)
   // -------------------------------------------------------------------------
 
@@ -305,6 +354,20 @@
     });
   }
 
+  const ALLOWED_AUDIO = [
+    ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".oga", ".opus", ".flac",
+    ".wma", ".amr", ".aiff", ".aif",
+  ];
+
+  /** Audio o vídeo: de un vídeo también se puede sacar la pista de audio. */
+  function isAllowedAudio(name) {
+    const lower = (name || "").toLowerCase();
+    return (
+      ALLOWED_AUDIO.some((ext) => lower.endsWith(ext)) ||
+      ALLOWED_VIDEO.some((ext) => lower.endsWith(ext))
+    );
+  }
+
   function isAllowedVideo(name) {
     const lower = (name || "").toLowerCase();
     return ALLOWED_VIDEO.some((ext) => lower.endsWith(ext));
@@ -325,10 +388,12 @@
     errorFromResponse,
     api,
     pollJob,
+    uploadWithProgress,
     triggerDownload,
     saveResponseAsFile,
     linkDropzone,
     isAllowedVideo,
+    isAllowedAudio,
     ALLOWED_VIDEO,
   };
 })();

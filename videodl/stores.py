@@ -9,8 +9,12 @@ downloads = JobStore(session="downloads")
 compressions = JobStore(session="compressions")
 clips = JobStore(session="clips")
 transcriptions = JobStore(session="transcriptions")
+gifs = JobStore(session="gifs")
+audios = JobStore(session="audios")
 
-ALL_STORES: tuple[JobStore, ...] = (downloads, compressions, clips, transcriptions)
+ALL_STORES: tuple[JobStore, ...] = (
+    downloads, compressions, clips, transcriptions, gifs, audios,
+)
 
 
 def cleanup_all() -> int:

@@ -63,6 +63,18 @@
     "privacy": {
       "title": "Privacidad — Fastools",
       "description": "Qué ocurre con los archivos y los datos que usas en Fastools."
+    },
+    "video-a-gif": {
+      "title": "Convertir vídeo a GIF online — Fastools",
+      "description": "Convierte un fragmento de tu vídeo en un GIF animado ligero y nítido. Elige el ancho y la fluidez. Gratis, sin marca de agua y sin registro."
+    },
+    "extraer-audio": {
+      "title": "Extraer audio de un vídeo a MP3 — Fastools",
+      "description": "Separa la pista de sonido de un vídeo y descárgala en MP3, M4A o WAV. También convierte audios entre formatos. Gratis y sin registro."
+    },
+    "unir-audio": {
+      "title": "Unir o cortar audio online (MP3, WAV) — Fastools",
+      "description": "Une varias pistas de audio en un solo archivo o recorta un audio por segundos. Acepta MP3, WAV, M4A y más. Gratis y sin registro."
     }
   },
   "nav": {
@@ -403,7 +415,10 @@
       "serverTimeout": "El servidor tardó demasiado en responder. Inténtalo de nuevo.",
       "connection": "No se pudo conectar con el servidor. Revisa tu conexión.",
       "unexpected": "Error inesperado",
-      "jobTimeout": "El trabajo tardó demasiado. Inténtalo de nuevo."
+      "jobTimeout": "El trabajo tardó demasiado. Inténtalo de nuevo.",
+      "uploadStatus": "No se pudo procesar el archivo (error {status}).",
+      "uploadFailed": "No se pudo enviar el archivo al servidor. Revisa tu conexión.",
+      "uploadTimeout": "La subida tardó demasiado. Prueba con un archivo más pequeño."
     },
     "image": {
       "browserLoad": "Este navegador no puede cargar imágenes.",
@@ -806,6 +821,73 @@
         "hi": "Hindi"
       },
       "downloadName": "transcripcion"
+    },
+    "gif": {
+      "defaultName": "animacion.gif",
+      "limitHint": "Máximo {mb} MB por archivo",
+      "unsupported": "Formato no compatible. Sube un vídeo MP4, MOV, MKV, WEBM, AVI…",
+      "tooHeavy": "El archivo pesa {size} y el máximo es {max} MB.",
+      "ready": "Ajusta el fragmento y pulsa «Crear GIF».",
+      "chooseFirst": "Elige primero un vídeo.",
+      "rangeHint": "Duración del GIF: {seconds} s (máximo {max} s)",
+      "badRange": "El final debe ser posterior al inicio.",
+      "tooLong": "El GIF no puede durar más de {max} segundos.",
+      "uploading": "Subiendo el vídeo…",
+      "creating": "Creando el GIF…",
+      "preparing": "Preparando la conversión",
+      "failed": "No se pudo crear el GIF.",
+      "cancelled": "Conversión cancelada",
+      "progress": "Creando el GIF…",
+      "cancelling": "Cancelando…",
+      "downloadStarted": "Descarga iniciada",
+      "readyToast": "¡GIF listo!",
+      "notReady": "La descarga aún no está lista",
+      "downloading": "Descargando el GIF…"
+    },
+    "audioExtract": {
+      "defaultName": "audio.mp3",
+      "limitHint": "Máximo {mb} MB por archivo",
+      "unsupported": "Formato no compatible. Sube un vídeo o un audio (MP4, MOV, MP3, WAV, M4A…).",
+      "tooHeavy": "El archivo pesa {size} y el máximo es {max} MB.",
+      "ready": "Elige el formato y pulsa «Extraer audio».",
+      "chooseFirst": "Elige primero un archivo.",
+      "uploading": "Subiendo el archivo…",
+      "extracting": "Extrayendo el audio…",
+      "preparing": "Preparando la conversión",
+      "failed": "No se pudo extraer el audio.",
+      "cancelled": "Extracción cancelada",
+      "progress": "Extrayendo el audio…",
+      "cancelling": "Cancelando…",
+      "downloadStarted": "Descarga iniciada",
+      "readyToast": "¡Audio listo!",
+      "notReady": "La descarga aún no está lista",
+      "downloading": "Descargando el audio…"
+    },
+    "audioEdit": {
+      "defaultName": "audio-unido.mp3",
+      "limitHint": "Máximo {mb} MB en total",
+      "unsupported": "Formato no compatible. Sube archivos de audio (MP3, WAV, M4A, OGG, FLAC…).",
+      "tooMany": "Puedes unir hasta {max} archivos a la vez.",
+      "tooHeavy": "Los archivos superan el límite de {max} MB en total.",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "remove": "Quitar",
+      "chooseFirst": "Elige al menos dos audios, o uno y un recorte.",
+      "readyJoin": "Se unirán {count} audios en el orden de la lista.",
+      "readyTrim": "Se recortará el audio.",
+      "needMore": "Añade otro audio o indica un inicio o un final para recortar.",
+      "badRange": "El final debe ser posterior al inicio.",
+      "uploading": "Subiendo los archivos…",
+      "processing": "Procesando el audio…",
+      "preparing": "Preparando el proceso",
+      "failed": "No se pudo procesar el audio.",
+      "cancelled": "Proceso cancelado",
+      "progress": "Procesando el audio…",
+      "cancelling": "Cancelando…",
+      "downloadStarted": "Descarga iniciada",
+      "readyToast": "¡Audio listo!",
+      "notReady": "La descarga aún no está lista",
+      "downloading": "Descargando el audio…"
     }
   },
   "html": {}

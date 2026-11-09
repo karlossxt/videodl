@@ -6,6 +6,15 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [Unreleased]
 
 ### Añadido
+- **Convertir vídeo a GIF** (`/video-a-gif`): fragmento de hasta 15 s (`GIF_MAX_SECONDS`),
+  ancho de 320, 480 o 640 px y 8–15 imágenes por segundo, con paleta propia de ffmpeg.
+- **Extraer audio** (`/extraer-audio`): saca la pista de un vídeo, o convierte un audio,
+  a MP3, M4A o WAV; avisa si el archivo no tiene audio.
+- **Unir o cortar audio** (`/unir-audio`): hasta 10 pistas (`AUDIO_MAX_FILES`) en el orden
+  de la lista, mezclando formatos, con recorte opcional y salida en MP3, M4A o WAV.
+- **Analítica con Google Tag Manager**: eventos `tool_start`, `tool_complete` y
+  `file_download` en el `dataLayer`, solo con el nombre de la herramienta, el idioma y
+  la extensión del archivo; nunca el nombre ni el contenido.
 - **Generador de códigos QR** (`/generador-qr`): enlaces o texto, WiFi (WPA/WEP/abierta
   y oculta), email, teléfono y SMS. Tamaño, margen, corrección de errores, colores con
   validación de contraste y descarga en PNG o SVG. El contenido se envía solo para

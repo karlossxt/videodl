@@ -118,6 +118,39 @@ PAGE_META: dict[str, PageMeta] = {
         nav="tools",
         tool_slug="transcribir-audio",
     ),
+    "video-a-gif": PageMeta(
+        key="video-a-gif",
+        path="/video-a-gif",
+        title="Convertir vídeo a GIF online — Fastools",
+        description=(
+            "Convierte un fragmento de tu vídeo en un GIF animado ligero y nítido. "
+            "Elige el ancho y la fluidez. Gratis, sin marca de agua y sin registro."
+        ),
+        nav="tools",
+        tool_slug="video-a-gif",
+    ),
+    "extraer-audio": PageMeta(
+        key="extraer-audio",
+        path="/extraer-audio",
+        title="Extraer audio de un vídeo a MP3 — Fastools",
+        description=(
+            "Separa la pista de sonido de un vídeo y descárgala en MP3, M4A o WAV. "
+            "También convierte audios entre formatos. Gratis y sin registro."
+        ),
+        nav="tools",
+        tool_slug="extraer-audio",
+    ),
+    "unir-audio": PageMeta(
+        key="unir-audio",
+        path="/unir-audio",
+        title="Unir o cortar audio online (MP3, WAV) — Fastools",
+        description=(
+            "Une varias pistas de audio en un solo archivo o recorta un audio por "
+            "segundos. Acepta MP3, WAV, M4A y más. Gratis y sin registro."
+        ),
+        nav="tools",
+        tool_slug="unir-audio",
+    ),
     "comprimir-imagen": PageMeta(
         key="comprimir-imagen",
         path="/comprimir-imagen",
@@ -262,6 +295,9 @@ PAGE_FILES = {
     "whatsapp": "whatsapp.html",
     "generador-qr": "qr.html",
     "transcribir-audio": "transcribe.html",
+    "video-a-gif": "gif.html",
+    "extraer-audio": "extraer-audio.html",
+    "unir-audio": "unir-audio.html",
     "privacy": "privacidad.html",
 }
 

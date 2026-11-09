@@ -1761,6 +1761,7 @@ body {
 }
 
 .custom-mb-row input:focus-visible { border-color: var(--cyan); }
+.custom-mb-row.wide-inputs input { width: 132px; }
 
 /* Aviso de error en el toast (antes todo salía con el mismo estilo). */
 .toast-error { border-color: rgba(251, 113, 133, 0.65); }
@@ -3719,3 +3720,67 @@ html[data-theme="light"] .qr-tab:hover {
 html[data-theme="light"] .qr-preview-box {
   border: 1px solid var(--border);
 }
+
+/* Lista ordenable de audios (Unir o cortar audio) */
+.audio-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audio-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.audio-index {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--cyan);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.audio-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.audio-size {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+.audio-actions .ghost-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 520px) {
+  .audio-size { display: none; }
+}
+
+html[data-theme="light"] .audio-item { background: #fff; }

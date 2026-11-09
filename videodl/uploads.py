@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import logging
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 
 from .config import MAX_UPLOAD_MB
-from .constants import ALLOWED_SUFFIXES, UPLOAD_CHUNK
+from .constants import ALLOWED_AUDIO_SUFFIXES, ALLOWED_SUFFIXES, UPLOAD_CHUNK
 from .utils import rmtree_robust, sanitize_filename
 
 logger = logging.getLogger("videodl.uploads")
@@ -83,3 +83,66 @@ async def save_video_upload(file: UploadFile, *, dir_prefix: str) -> tuple[Path,
         format_label="de vídeo (MP4, MOV, MKV, WEBM…)",
         base_name="entrada",
     )
+
+
+async def save_audio_uploads(
+    files: Sequence[UploadFile],
+    *,
+    dir_prefix: str,
+    max_mb: int,
+) -> tuple[list[Path], int]:
+    """Guarda varios audios (o vídeos) subidos en UNA misma carpeta temporal.
+
+    El límite de ``max_mb`` es acumulado entre todos los archivos. Devuelve las
+    rutas en el mismo orden en que llegaron. Ante cualquier error limpia la
+    carpeta y lanza ``HTTPException``.
+    """
+    suffixes = set(ALLOWED_AUDIO_SUFFIXES)
+    names = []
+    for file in files:
+        name = sanitize_filename(file.filename or "audio")
+        if Path(name).suffix.lower() not in suffixes:
+            for pending in files:
+                await pending.close()
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no compatible. Sube archivos de audio (MP3, WAV, M4A, OGG, FLAC…).",
+            )
+        names.append(name)
+
+    tmpdir = Path(tempfile.mkdtemp(prefix=dir_prefix))
+    limit = max_mb * 1024 * 1024
+    total = 0
+    paths: list[Path] = []
+    try:
+        for index, (file, name) in enumerate(zip(files, names, strict=True)):
+            dest = tmpdir / f"entrada{index:02d}{Path(name).suffix.lower()}"
+            written = 0
+            with dest.open("wb") as fh:
+                while True:
+                    chunk = await file.read(UPLOAD_CHUNK)
+                    if not chunk:
+                        break
+                    written += len(chunk)
+                    total += len(chunk)
+                    if total > limit:
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"Los archivos superan el límite de {max_mb} MB en total.",
+                        )
+                    fh.write(chunk)
+            if written == 0:
+                raise HTTPException(status_code=400, detail="Uno de los archivos está vacío.")
+            paths.append(dest)
+    except HTTPException:
+        rmtree_robust(tmpdir)
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("No se pudieron guardar las subidas de audio")
+        rmtree_robust(tmpdir)
+        raise HTTPException(status_code=500, detail="No se pudieron guardar los archivos subidos.") from exc
+    finally:
+        for file in files:
+            await file.close()
+
+    return paths, total

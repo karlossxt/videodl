@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Unir o cortar audio online</h1>
+      <p class="hero-sub">Junta varias pistas en un solo archivo o recorta un audio por segundos. Gratis, sin marca de agua y sin registro.</p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <div class="section-head">
+      <h3>Paso 1 · Elige los audios</h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar audios">
+      <input type="file" id="file-input" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.wma,.amr,.aiff,.aif,.mp4,.mov,.mkv,.webm" multiple hidden />
+      <div class="dropzone-icon" aria-hidden="true">🎚️</div>
+      <p class="dropzone-title">Arrastra los audios aquí o <span class="accent">búscalos en tu equipo</span></p>
+      <p class="dropzone-sub">MP3, WAV, M4A, OGG, FLAC… · hasta <span id="max-files">10</span> archivos</p>
+    </div>
+
+    <ol id="audio-list" class="audio-list hidden" aria-label="Audios elegidos"></ol>
+
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 2 · Recorte opcional</h3>
+      <span class="muted-small">Déjalo en blanco para conservar todo el audio</span>
+    </div>
+
+    <div class="custom-mb-row wide-inputs">
+      <label for="trim-start">Inicio (segundos)</label>
+      <input type="number" id="trim-start" min="0" step="0.1" value="" placeholder="0" inputmode="decimal" />
+      <label for="trim-end">Final (segundos)</label>
+      <input type="number" id="trim-end" min="0" step="0.1" value="" placeholder="hasta el final" inputmode="decimal" />
+    </div>
+
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 3 · Formato de salida</h3>
+    </div>
+
+    <div class="compress-options">
+      <label class="option-field">
+        <span>Formato de salida</span>
+        <select id="audio-format">
+          <option value="mp3" selected>MP3 (el más compatible)</option>
+          <option value="m4a">M4A (AAC, mejor calidad por peso)</option>
+          <option value="wav">WAV (sin compresión, pesa mucho)</option>
+        </select>
+      </label>
+
+      <label class="option-field" id="bitrate-field">
+        <span>Calidad</span>
+        <select id="audio-bitrate">
+          <option value="128">128 kbps (ligero)</option>
+          <option value="192" selected>192 kbps (equilibrado)</option>
+          <option value="256">256 kbps (alta)</option>
+          <option value="320">320 kbps (máxima)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="compress-action">
+      <button type="button" id="audio-btn" class="primary-btn big" disabled>🎚️ Crear audio</button>
+      <span class="muted-small" id="action-hint">Elige al menos dos audios, o uno y un recorte.</span>
+    </div>
+
+    <div id="progress" class="progress-notice hidden">
+      <div class="progress-head">
+        <span id="pr-status" role="status" aria-live="polite">Subiendo los archivos…</span>
+        <span id="pr-percent" class="mono">0%</span>
+      </div>
+      <div class="progress-track" id="pr-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso del proceso">
+        <div id="pr-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="pr-detail">—</span>
+        <button type="button" id="pr-cancel" class="ghost-btn small">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Tu audio</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para descargar</span>
+      </div>
+
+      <div class="compare-card">
+        <audio id="out-preview" class="compare-preview" controls></audio>
+
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Peso</span>
+            <span class="compare-value accent" id="out-size">—</span>
+          </div>
+          <div class="compare-stat">
+            <span class="compare-label">Duración</span>
+            <span class="compare-value" id="out-duration">—</span>
+          </div>
+        </div>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big">⬇ Descargar audio</button>
+          <button type="button" id="again-btn" class="soft-btn">🎚️ Empezar de nuevo</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>¿Cómo unir o cortar audio?</h2>
+      <ol class="steps">
+        <li>Sube dos o más audios para unirlos, o uno solo si quieres recortarlo.</li>
+        <li>Ordénalos con las flechas: se unirán en el orden de la lista.</li>
+        <li>Si quieres, indica el segundo de inicio y el de final del recorte.</li>
+        <li>Elige el formato, pulsa «Crear audio» y descarga el resultado.</li>
+      </ol>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Puedo unir audios de formatos distintos?</summary>
+        <p>Sí. Puedes mezclar MP3, WAV, M4A, OGG y otros formatos: todos se convierten al formato de salida que elijas.</p>
+      </details>
+      <details class="faq">
+        <summary>¿El recorte se aplica a cada audio o al resultado?</summary>
+        <p>Al resultado final. Primero se unen todos los audios y después se recorta desde el segundo de inicio hasta el de final.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cuántos archivos puedo unir?</summary>
+        <p>Hasta 10 a la vez, con un límite de peso total que se indica arriba.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con los archivos que subo?</summary>
+        <p>Se procesan en el servidor y se borran automáticamente en cuanto descargas el resultado, y en todo caso pasada una hora. No se comparten con terceros.</p>
+      </details>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="unir-audio.js"></script>
+</body>
+</html>

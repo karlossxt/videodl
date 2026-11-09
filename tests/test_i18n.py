@@ -19,6 +19,9 @@ PAGES = (
     "/comprimir-video-whatsapp",
     "/recortar-clip-vertical",
     "/transcribir-audio",
+    "/video-a-gif",
+    "/extraer-audio",
+    "/unir-audio",
     "/comprimir-imagen",
     "/convertir-imagen",
     "/redimensionar-imagen",
@@ -69,6 +72,9 @@ def test_las_claves_js_usadas_existen_en_ambos_locales():
         "qr.js",
         "whatsapp.js",
         "transcribe.js",
+        "gif.js",
+        "extraer-audio.js",
+        "unir-audio.js",
     )
 
     def resolve(data, key):

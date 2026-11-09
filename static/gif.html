@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- HEAD -->
+</head>
+<body>
+
+  <!-- NAV -->
+
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-inner">
+      <h1 class="hero-title">Convertir un vídeo a GIF animado</h1>
+      <p class="hero-sub">Sube tu vídeo, elige el fragmento y descarga un GIF ligero y nítido. Gratis, sin marca de agua y sin registro.</p>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+
+    <div id="error-box" class="error-box hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-close" title="Cerrar" aria-label="Cerrar el mensaje">✕</button>
+    </div>
+
+    <div class="section-head">
+      <h3>Paso 1 · Elige el vídeo</h3>
+      <span id="limit-hint" class="muted-small"></span>
+    </div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Elegir o arrastrar un vídeo">
+      <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v,.mpg,.mpeg,.flv,.ts,.3gp,.wmv" hidden />
+      <div class="dropzone-icon" aria-hidden="true">🎞️</div>
+      <p class="dropzone-title">Arrastra el vídeo aquí o <span class="accent">búscalo en tu equipo</span></p>
+      <p class="dropzone-sub">MP4, MOV, MKV, WEBM, AVI… · hasta <span id="limit-hint-2">200 MB</span></p>
+    </div>
+
+    <div id="file-card" class="file-card hidden">
+      <div class="file-icon" aria-hidden="true">🎞️</div>
+      <div class="file-info">
+        <div class="file-name" id="file-name"></div>
+        <div class="file-meta" id="file-meta"></div>
+      </div>
+      <video id="file-preview" class="file-preview" muted playsinline></video>
+      <button type="button" id="file-clear" class="ghost-btn small">✕ Quitar</button>
+    </div>
+
+    <div class="section-head" style="margin-top:26px">
+      <h3>Paso 2 · Elige el fragmento y la calidad</h3>
+      <span id="gif-hint" class="muted-small"></span>
+    </div>
+
+    <div class="custom-mb-row">
+      <label for="gif-start">Inicio (segundos)</label>
+      <input type="number" id="gif-start" min="0" step="0.1" value="0" inputmode="decimal" />
+      <label for="gif-end">Final (segundos)</label>
+      <input type="number" id="gif-end" min="0" step="0.1" value="5" inputmode="decimal" />
+    </div>
+
+    <div class="compress-options">
+      <label class="option-field">
+        <span>Ancho del GIF</span>
+        <select id="gif-width">
+          <option value="320">320 px (ligero)</option>
+          <option value="480" selected>480 px (equilibrado)</option>
+          <option value="640">640 px (más nítido)</option>
+        </select>
+      </label>
+
+      <label class="option-field">
+        <span>Fluidez</span>
+        <select id="gif-fps">
+          <option value="8">8 imágenes por segundo (el más ligero)</option>
+          <option value="10">10 imágenes por segundo</option>
+          <option value="12" selected>12 imágenes por segundo</option>
+          <option value="15">15 imágenes por segundo (más fluido)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="compress-action">
+      <button type="button" id="gif-btn" class="primary-btn big" disabled>🎞️ Crear GIF</button>
+      <span class="muted-small" id="action-hint">Elige primero un vídeo.</span>
+    </div>
+
+    <div id="progress" class="progress-notice hidden">
+      <div class="progress-head">
+        <span id="pr-status" role="status" aria-live="polite">Subiendo el vídeo…</span>
+        <span id="pr-percent" class="mono">0%</span>
+      </div>
+      <div class="progress-track" id="pr-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la conversión">
+        <div id="pr-fill" class="progress-fill"></div>
+      </div>
+      <div class="progress-foot">
+        <span id="pr-detail">—</span>
+        <button type="button" id="pr-cancel" class="ghost-btn small">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <section id="result" class="result hidden">
+      <div class="section-head">
+        <h3>Tu GIF</h3>
+        <span class="status-live"><i aria-hidden="true"></i> Listo para compartir</span>
+      </div>
+
+      <div class="compare-card">
+        <img id="out-preview" class="compare-preview" alt="Vista previa del GIF" />
+
+        <div class="compare-stats">
+          <div class="compare-stat">
+            <span class="compare-label">Peso</span>
+            <span class="compare-value accent" id="out-size">—</span>
+          </div>
+          <div class="compare-stat">
+            <span class="compare-label">Duración</span>
+            <span class="compare-value" id="out-duration">—</span>
+          </div>
+        </div>
+
+        <div class="compare-actions">
+          <button type="button" id="download-btn" class="download-btn big">⬇ Descargar GIF</button>
+          <button type="button" id="again-btn" class="soft-btn">🎞️ Crear otro</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="seo-block">
+      <h2>¿Cómo convertir un vídeo a GIF?</h2>
+      <ol class="steps">
+        <li>Elige el vídeo desde tu equipo o arrástralo a la caja de arriba.</li>
+        <li>Indica el segundo de inicio y el de final del fragmento que quieres.</li>
+        <li>Escoge el ancho y la fluidez según el peso que busques.</li>
+        <li>Pulsa «Crear GIF» y descarga el resultado cuando termine.</li>
+      </ol>
+
+      <h2>Preguntas frecuentes</h2>
+      <details class="faq">
+        <summary>¿Cuánto puede durar el GIF?</summary>
+        <p>Hasta 15 segundos. Un GIF pesa mucho más que un vídeo, así que el fragmento se limita para que el archivo siga siendo manejable.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Cómo hago que el GIF pese menos?</summary>
+        <p>Acorta el fragmento, baja el ancho a 320 px o reduce las imágenes por segundo. Cualquiera de las tres opciones recorta el peso de forma notable.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Hay marca de agua o límite de uso?</summary>
+        <p>No. Ninguna marca de agua, sin registro y sin límite de conversiones.</p>
+      </details>
+      <details class="faq">
+        <summary>¿Qué pasa con el vídeo que subo?</summary>
+        <p>Se procesa en el servidor y se borra automáticamente en cuanto descargas el GIF, y en todo caso pasada una hora. No se comparte con terceros.</p>
+      </details>
+    </section>
+
+    <!-- RELATED -->
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- FOOTER -->
+
+  <script src="common.js"></script>
+  <script src="gif.js"></script>
+</body>
+</html>

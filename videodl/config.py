@@ -103,6 +103,10 @@ MAX_UPLOAD_MB = env_int("MAX_UPLOAD_MB", 200, minimum=1)
 COMPRESS_MAX_TARGET_MB = env_int("COMPRESS_MAX_TARGET_MB", 200, minimum=1)
 # Duración máxima de un clip.
 CLIP_MAX_SECONDS = env_int("CLIP_MAX_SECONDS", 300, minimum=1)
+# Convertidor de vídeo a GIF: un GIF pesa muchísimo, así que el fragmento se acota.
+GIF_MAX_SECONDS = env_int("GIF_MAX_SECONDS", 15, minimum=1, maximum=60)
+# Unir audio: número máximo de archivos por trabajo.
+AUDIO_MAX_FILES = env_int("AUDIO_MAX_FILES", 10, minimum=2, maximum=30)
 
 # Tiempo máximo que puede durar un proceso ffmpeg antes de ser matado (0 = sin
 # límite). Evita que una codificación colgada retenga un hilo para siempre.
