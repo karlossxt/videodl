@@ -408,12 +408,14 @@ def test_privacidad_es_noindex(client):
 
 def test_adsense_y_gtm_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
     adsense_src = (
-        "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js"
+        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
         "?client=ca-pub-6317177060588245"
     )
     for path in PAGES:
         text = client.get(path).text
         assert adsense_src in text, path
+        # Cargarlo dos veces provoca errores de Auto Ads: debe haber exactamente uno.
+        assert text.count("adsbygoogle.js") == 1, path
         assert 'crossorigin="anonymous"' in text, path
         assert "GTM-THCKMRK3" in text, path  # Google Tag Manager en todas las páginas
         assert "googletagmanager.com/ns.html?id=GTM-THCKMRK3" in text, path  # <noscript>
@@ -445,7 +447,7 @@ def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
     assert "https:" in connect_src
 
     ad_script = re.search(
-        r'<script\b(?P<attrs>[^>]*)src="https://pagead\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=ca-pub-6317177060588245"',
+        r'<script\b(?P<attrs>[^>]*)src="https://pagead2\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=ca-pub-6317177060588245"',
         response.text,
         flags=re.IGNORECASE,
     )
@@ -453,3 +455,24 @@ def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
     nonce = re.search(r'\bnonce="([^"]+)"', ad_script.group("attrs"))
     assert nonce
     assert f"'nonce-{nonce.group(1)}'" in script_src
+
+
+def test_ensure_adsense_script_no_duplica_el_cargador():
+    from videodl.pages import _ensure_adsense_script
+
+    nuevo = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245"
+    antiguo = "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245"
+
+    # Ya está (con cualquiera de los dos dominios): el HTML no cambia.
+    for src in (nuevo, antiguo):
+        html = f'<html><head><script async src="{src}"></script></head><body></body></html>'
+        assert _ensure_adsense_script(html, "abc") == html
+
+    # No está: se inserta una sola vez, justo tras <head>, con el dominio actual.
+    sin = "<html><head><title>x</title></head><body></body></html>"
+    out = _ensure_adsense_script(sin, "abc")
+    assert out.count("adsbygoogle.js") == 1
+    assert nuevo in out and 'nonce="abc"' in out
+    assert out.index("<script") < out.index("<title>")
+    # Es idempotente.
+    assert _ensure_adsense_script(out, "abc") == out

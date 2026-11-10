@@ -24,7 +24,7 @@ const test = base.extend({
   blockAdSense: [
     async ({ context }, use) => {
       await context.route(
-        /^https:\/\/pagead\.googlesyndication\.com\//,
+        /^https:\/\/pagead2?\.googlesyndication\.com\//,
         (route) =>
           route.fulfill({
             status: 200,
@@ -66,7 +66,7 @@ function expectLocalOnly(requests, baseURL) {
     const allowedAdSenseLoader =
       request.method === "GET" &&
       request.url ===
-        "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245";
+        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245";
     const local =
       request.url.startsWith(baseURL) ||
       request.url.startsWith("blob:") ||
