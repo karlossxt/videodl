@@ -6,6 +6,11 @@ Todas las novedades relevantes de este proyecto. Formato basado en
 ## [Unreleased]
 
 ### Añadido
+- **Publicidad con Adcash y consentimiento**: aviso de cookies propio (ES/EN) y
+  `aclib.js` se carga solo tras aceptar; `ACLIB_ZONE_ID` activa o desactiva la zona
+  y `ACLIB_MODE` elige entre autotag y pop-under. Se retira el cargador de AdSense
+  mientras la cuenta no esté aprobada. La CSP basada en nonce sigue cubriendo los
+  scripts externos.
 - **`CLIENT_IP_HEADER`** (opcional): permite indicar la cabecera con la IP real del
   visitante detrás de un proxy, para que los límites y los reportes distingan a cada
   persona. Por defecto no cambia nada: se sigue usando la IP de la conexión.

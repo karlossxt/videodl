@@ -237,6 +237,18 @@ if GTM_ID and not re.fullmatch(r"GTM-[A-Z0-9]{4,12}", GTM_ID):
     logger.warning("GTM_ID=%r no es válido; Google Tag Manager desactivado", GTM_ID)
     GTM_ID = ""
 
+# Adcash: cargador ``aclib.js`` y activación de una zona contratada.
+# El zoneId del proyecto va por defecto; ACLIB_ZONE_ID= (vacío) lo desactiva.
+ACLIB_ZONE_ID = env_str("ACLIB_ZONE_ID", "ux5v6mxcml")
+if ACLIB_ZONE_ID and not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", ACLIB_ZONE_ID):
+    logger.warning("ACLIB_ZONE_ID=%r no es válido; Adcash desactivado", ACLIB_ZONE_ID)
+    ACLIB_ZONE_ID = ""
+# Formato de la zona: autotag (anuncios dentro de la página) o pop (pop-under).
+ACLIB_MODE = env_str("ACLIB_MODE", "autotag").lower() or "autotag"
+if ACLIB_MODE not in {"autotag", "pop"}:
+    logger.warning("ACLIB_MODE=%r no es válido (autotag o pop); se usa autotag", ACLIB_MODE)
+    ACLIB_MODE = "autotag"
+
 # CSP por defecto. Se puede sustituir con CONTENT_SECURITY_POLICY; dejarla
 # vacía desactiva la cabecera.
 DEFAULT_CONTENT_SECURITY_POLICY = (

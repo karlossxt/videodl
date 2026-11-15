@@ -97,7 +97,8 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def security_and_limits(request: Request, call_next):
-        # Nonce aleatorio por respuesta: necesario para la CSP estricta de AdSense.
+        # Nonce aleatorio por respuesta: lo exige la CSP estricta de los
+        # scripts externos (GTM y Adcash).
         nonce = base64.b64encode(secrets.token_bytes(18)).decode("ascii")
         request.state.csp_nonce = nonce
 
@@ -159,7 +160,7 @@ def create_app() -> FastAPI:
             "max_target_mb": COMPRESS_MAX_TARGET_MB,
         }
 
-    # Ruta de validación para Google AdSense
+    # Ruta de validación de anunciantes (ads.txt).
     @app.get("/ads.txt", include_in_schema=False)
     async def get_ads_txt():
         ads_txt_path = BASE_DIR / "ads.txt"

@@ -19,17 +19,25 @@ const PDF_PAGES = [
 ];
 
 const test = base.extend({
-  // No descargar anuncios reales en CI: el HTML sí incluye AdSense, pero las
-  // pruebas E2E se centran en el procesamiento local y deben ser deterministas.
-  blockAdSense: [
+  // Sin anuncios reales en CI: se sustituye la librería de Adcash por un stub
+  // para que las pruebas E2E sean deterministas y no salgan a la red.
+  blockAds: [
     async ({ context }, use) => {
+      // Rechazar el aviso evita el banner y la carga de publicidad en las pruebas.
+      await context.addInitScript(() => {
+        try {
+          localStorage.setItem("ads-consent", "denied");
+        } catch (_) {
+          /* Sin almacenamiento: no pasa nada en las pruebas. */
+        }
+      });
       await context.route(
-        /^https:\/\/pagead2?\.googlesyndication\.com\//,
+        /acscdn\.com/,
         (route) =>
           route.fulfill({
             status: 200,
             contentType: "application/javascript",
-            body: "/* AdSense desactivado en las pruebas E2E */",
+            body: "window.aclib={runAutoTag:function(){},runPop:function(){}};",
           })
       );
       await use();
@@ -58,21 +66,19 @@ function expectLocalOnly(requests, baseURL) {
   for (const request of requests) {
     expect(request.method, `${request.method} ${request.url}`).not.toBe("POST");
     expect(request.url, `Petición externa: ${request.url}`).not.toContain("/api/");
-    // El cargador oficial de GTM es la única petición de terceros permitida.
-    // Se limita al script del contenedor esperado; cualquier otro host sigue bloqueado.
+    // El cargador de GTM y el de Adcash son las únicas peticiones externas
+    // permitidas; cualquier otro host sigue bloqueado.
     const allowedGtm =
       request.method === "GET" &&
       request.url === "https://www.googletagmanager.com/gtm.js?id=GTM-THCKMRK3";
-    const allowedAdSenseLoader =
-      request.method === "GET" &&
-      request.url ===
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245";
+    const allowedAcLib =
+      request.method === "GET" && new URL(request.url).hostname === "acscdn.com";
     const local =
       request.url.startsWith(baseURL) ||
       request.url.startsWith("blob:") ||
       request.url.startsWith("data:") ||
       allowedGtm ||
-      allowedAdSenseLoader;
+      allowedAcLib;
     expect(local, `Petición externa: ${request.url}`).toBe(true);
   }
 }

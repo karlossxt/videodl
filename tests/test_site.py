@@ -360,6 +360,10 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
         "/comprimir-video-whatsapp",
         "/recortar-clip-vertical",
         "/transcribir-audio",
+        "/video-a-gif",
+        "/extraer-audio",
+        "/unir-audio",
+        "/acortar-enlaces",
         "/comprimir-imagen",
         "/convertir-imagen",
         "/redimensionar-imagen",
@@ -402,21 +406,20 @@ def test_privacidad_es_noindex(client):
 
 
 # ---------------------------------------------------------------------------
-# AdSense y scripts de terceros
+# GTM, Adcash y scripts de terceros
 # ---------------------------------------------------------------------------
 
 
-def test_adsense_y_gtm_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
-    adsense_src = (
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-        "?client=ca-pub-6317177060588245"
-    )
+def test_gtm_y_aclib_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
     for path in PAGES:
         text = client.get(path).text
-        assert adsense_src in text, path
-        # Cargarlo dos veces provoca errores de Auto Ads: debe haber exactamente uno.
-        assert text.count("adsbygoogle.js") == 1, path
-        assert 'crossorigin="anonymous"' in text, path
+        # La publicidad se configura aquí, pero consent.js la carga solo al aceptar.
+        assert 'window.__aclib = { zoneId: "ux5v6mxcml", call: "runAutoTag" };' in text, path
+        assert 'src="/consent.js"' in text, path
+        assert "//acscdn.com/script/aclib.js" not in text, path
+        # AdSense todavía no está aprobado: no debe cargarse nada de Google Ads.
+        assert "adsbygoogle.js" not in text, path
+        assert "googlesyndication.com" not in text, path
         assert "GTM-THCKMRK3" in text, path  # Google Tag Manager en todas las páginas
         assert "googletagmanager.com/ns.html?id=GTM-THCKMRK3" in text, path  # <noscript>
         script_tags = re.findall(r"<script\b[^>]*>", text, flags=re.IGNORECASE)
@@ -431,7 +434,20 @@ def test_adsense_y_gtm_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
         assert 'data-ad-slot="catalog-inline" aria-hidden="true" hidden' in text
 
 
-def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
+def test_el_aviso_de_consentimiento_se_sirve(client):
+    response = client.get("/consent.js")
+    assert response.status_code == 200
+    assert "ads-consent" in response.text
+    assert "//acscdn.com/script/aclib.js" in response.text
+
+
+def test_la_pagina_404_no_carga_publicidad(client):
+    text = client.get("/l/no-existe").text
+    assert "window.__aclib" not in text
+    assert "consent.js" not in text
+
+
+def test_csp_permite_google_tag_manager_y_aclib_con_nonce(client):
     response = client.get("/")
     csp = response.headers["content-security-policy"]
     script_src = next(p for p in csp.split(";") if p.strip().startswith("script-src"))
@@ -445,9 +461,12 @@ def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
     assert "frame-src 'self' https://www.googletagmanager.com https:" in csp
     connect_src = next(p for p in csp.split(";") if p.strip().startswith("connect-src"))
     assert "https:" in connect_src
+    worker_src = next(p for p in csp.split(";") if p.strip().startswith("worker-src"))
+    # aclib.js crea un worker desde blob:.
+    assert "blob:" in worker_src
 
     ad_script = re.search(
-        r'<script\b(?P<attrs>[^>]*)src="https://pagead2\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=ca-pub-6317177060588245"',
+        r'<script\b(?P<attrs>[^>]*)src="/consent\.js"',
         response.text,
         flags=re.IGNORECASE,
     )
@@ -457,22 +476,23 @@ def test_csp_permite_google_tag_manager_y_adsense_con_nonce(client):
     assert f"'nonce-{nonce.group(1)}'" in script_src
 
 
-def test_ensure_adsense_script_no_duplica_el_cargador():
-    from videodl.pages import _ensure_adsense_script
+def test_aclib_solo_se_inyecta_con_zone_id():
+    from videodl import analytics
 
-    nuevo = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245"
-    antiguo = "https://pagead.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6317177060588245"
+    # El cargador de Adcash no muestra nada sin zoneId: no debe aparecer solo.
+    assert analytics.aclib_head_html("", "autotag") == ""
+    assert analytics.aclib_head_html("", "pop") == ""
 
-    # Ya está (con cualquiera de los dos dominios): el HTML no cambia.
-    for src in (nuevo, antiguo):
-        html = f'<html><head><script async src="{src}"></script></head><body></body></html>'
-        assert _ensure_adsense_script(html, "abc") == html
+    html = analytics.aclib_head_html("abc123", "autotag")
+    assert 'window.__aclib = { zoneId: "abc123", call: "runAutoTag" };' in html
+    assert 'src="/consent.js"' in html
+    # La librería no viaja en el HTML: la carga consent.js tras aceptar.
+    assert "acscdn.com" not in html
 
-    # No está: se inserta una sola vez, justo tras <head>, con el dominio actual.
-    sin = "<html><head><title>x</title></head><body></body></html>"
-    out = _ensure_adsense_script(sin, "abc")
-    assert out.count("adsbygoogle.js") == 1
-    assert nuevo in out and 'nonce="abc"' in out
-    assert out.index("<script") < out.index("<title>")
-    # Es idempotente.
-    assert _ensure_adsense_script(out, "abc") == out
+    pop = analytics.aclib_head_html("abc123", "pop")
+    assert 'call: "runPop"' in pop
+
+    # La zona del proyecto queda activa por defecto (como GTM).
+    assert 'window.__aclib = { zoneId: "ux5v6mxcml", call: "runAutoTag" };' in (
+        analytics.aclib_head_html()
+    )

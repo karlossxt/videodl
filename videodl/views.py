@@ -431,12 +431,9 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
     ld = f"\n{ld_tag}" if ld_tag else ""
     gtm_tag = analytics.gtm_head_html()
     gtm = f"\n{gtm_tag}" if gtm_tag else ""
-    # Fragmento de Auto Ads que entrega AdSense. Se incluye directamente en el
-    # <head> compartido para garantizar que se publica en todas las páginas.
-    adsense = (
-        '  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
-        '?client=ca-pub-6317177060588245" crossorigin="anonymous"></script>\n'
-    )
+    # Una página de error no lleva anuncios (política habitual de las redes).
+    aclib_tag = "" if meta.key == "404" else analytics.aclib_head_html()
+    aclib = f"{aclib_tag}\n" if aclib_tag else ""
     return f"""  <base href="/" />
   <title>{e(meta.title)}</title>
   <meta name="description" content="{e(meta.description)}" />
@@ -460,7 +457,7 @@ def head_html(meta: PageMeta, lang: str = i18n.DEFAULT_LANG) -> str:
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
-{adsense}  <script>{inline}</script>
+{aclib}  <script>{inline}</script>
   <script src="/site.js"></script>{ld}{gtm}"""
 
 

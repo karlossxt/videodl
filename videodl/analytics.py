@@ -1,7 +1,7 @@
-"""Google Tag Manager: snippet para el <head> y ampliación de la CSP.
+"""Terceros que se cargan en el <head>: Google Tag Manager y Adcash.
 
-El contenedor se configura con la variable de entorno ``GTM_ID``; si está
-vacía, no se inyecta nada y la CSP no cambia.
+GTM se activa con ``GTM_ID``; Adcash con ``ACLIB_ZONE_ID`` y ``ACLIB_MODE``. Si
+la variable está vacía no se inyecta nada y la CSP no cambia.
 """
 
 from __future__ import annotations
@@ -9,11 +9,9 @@ from __future__ import annotations
 import base64
 import hashlib
 
-from .config import GTM_ID
+from .config import ACLIB_MODE, ACLIB_ZONE_ID, GTM_ID
 
 _GTM_HOST = "https://www.googletagmanager.com"
-_ADSENSE_HOST = "https://pagead2.googlesyndication.com"
-_ADSENSE_CLIENT_ID = "ca-pub-6317177060588245"
 
 
 def gtm_inline_script(gtm_id: str = GTM_ID) -> str:
@@ -34,13 +32,21 @@ def gtm_head_html(gtm_id: str = GTM_ID) -> str:
     return f"  <script>{script}</script>" if script else ""
 
 
-def adsense_head_html(client_id: str = _ADSENSE_CLIENT_ID) -> str:
-    """Código de Auto Ads del editor, compartido por todas las páginas."""
-    if not client_id:
+def aclib_head_html(zone_id: str = ACLIB_ZONE_ID, mode: str = ACLIB_MODE) -> str:
+    """Config de Adcash y aviso de consentimiento (``consent.js``).
+
+    La librería no se emite en el HTML: ``consent.js`` la inyecta solo cuando la
+    persona acepta, para no cargar publicidad antes del consentimiento. El
+    cargador por sí solo tampoco muestra nada: necesita ``runAutoTag`` (anuncios
+    dentro de la página) o ``runPop`` (pop-under) con el ``zoneId`` del panel.
+    """
+    if not zone_id:
         return ""
+    call = "runPop" if mode == "pop" else "runAutoTag"
+    payload = f'{{ zoneId: "{zone_id}", call: "{call}" }}'
     return (
-        f'<script async src="{_ADSENSE_HOST}/pagead/js/adsbygoogle.js?client={client_id}" '
-        'crossorigin="anonymous"></script>'
+        f"  <script>window.__aclib = {payload};</script>\n"
+        '  <script src="/consent.js"></script>'
     )
 
 
@@ -88,11 +94,11 @@ def csp_with_gtm(csp: str, gtm_id: str = GTM_ID) -> str:
     return f"{csp.rstrip().rstrip(';')}; frame-src 'self' {_GTM_HOST}"
 
 def csp_with_nonce(csp: str, nonce: str) -> str:
-    """Adapta la CSP por respuesta para AdSense y etiqueta todos los scripts con nonce.
+    """Adapta la CSP por respuesta a los scripts de terceros y les pone nonce.
 
-    Google AdSense requiere una CSP basada en nonce porque los dominios publicitarios
-    pueden cambiar. El nonce autoriza los scripts presentes en el HTML; strict-dynamic
-    permite que esos scripts carguen de forma segura sus dependencias.
+    Las redes publicitarias cambian de dominios con frecuencia, así que se usa
+    una CSP basada en nonce: el nonce autoriza los scripts presentes en el HTML y
+    strict-dynamic permite que esos scripts carguen sus dependencias de confianza.
     """
     if not csp or not nonce:
         return csp
@@ -109,6 +115,8 @@ def csp_with_nonce(csp: str, nonce: str) -> str:
         ],
     )
     csp = _add_sources(csp, "connect-src", ["https:"])
+    # Las librerías publicitarias crean workers desde blob: (aclib.js lo hace).
+    csp = _add_sources(csp, "worker-src", ["blob:"])
     if "frame-src" in csp:
         return _add_sources(csp, "frame-src", ["https:"])
     return f"{csp.rstrip().rstrip(';')}; frame-src 'self' https:"

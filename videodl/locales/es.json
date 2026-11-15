@@ -415,6 +415,13 @@
     }
   },
   "js": {
+    "consent": {
+      "label": "Consentimiento de cookies",
+      "message": "Usamos cookies de nuestros socios publicitarios para mostrar anuncios. Puedes aceptar o rechazar; el sitio funciona igual.",
+      "more": "Más información",
+      "accept": "Aceptar",
+      "reject": "Rechazar"
+    },
     "common": {
       "serverTimeout": "El servidor tardó demasiado en responder. Inténtalo de nuevo.",
       "connection": "No se pudo conectar con el servidor. Revisa tu conexión.",

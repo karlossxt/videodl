@@ -70,36 +70,6 @@ def _render_page(
     raise HTTPException(status_code=404, detail="Página no encontrada")
 
 
-# El mismo cargador se sirve desde pagead2 (el fragmento actual de AdSense) y desde
-# pagead (el antiguo): se detecta por la ruta y el ID, no por el dominio, para no
-# insertarlo dos veces en la misma página.
-_ADSENSE_LOADER_RE = re.compile(r"adsbygoogle\.js\?client=ca-pub-6317177060588245")
-
-
-def _ensure_adsense_script(page_html: str, nonce: str) -> str:
-    """Garantiza que el HTML final incluya Auto Ads en el head, sin duplicarlo."""
-    if _ADSENSE_LOADER_RE.search(page_html):
-        return page_html
-
-    src = (
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-        "?client=ca-pub-6317177060588245"
-    )
-
-    nonce_attr = f' nonce="{nonce}"' if nonce else ""
-    script = (
-        f'<script{nonce_attr} async src="{src}" '
-        'crossorigin="anonymous"></script>'
-    )
-    return re.sub(
-        r"<head\b[^>]*>",
-        lambda match: f"{match.group(0)}\n  {script}",
-        page_html,
-        count=1,
-        flags=re.IGNORECASE,
-    )
-
-
 def _add_script_nonces(page_html: str, nonce: str) -> str:
     """Añade el nonce de esta respuesta a todas las etiquetas script del HTML."""
     escaped_nonce = nonce.replace("&", "&amp;").replace('"', "&quot;")
@@ -125,7 +95,6 @@ def _page_endpoint(key: str, lang: str):
     ) -> HTMLResponse:
         page_html = _render_page(key, lang, q, categoria)
         nonce = getattr(request.state, "csp_nonce", "")
-        page_html = _ensure_adsense_script(page_html, nonce)
         if nonce:
             page_html = _add_script_nonces(page_html, nonce)
         return HTMLResponse(page_html)
