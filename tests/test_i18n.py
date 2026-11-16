@@ -18,7 +18,8 @@ PAGES = (
     "/herramientas",
     "/comprimir-video-whatsapp",
     "/recortar-clip-vertical",
-    "/transcribir-audio",
+    # «/transcribir-audio» está «próximamente»: no publica página. Volver a
+    # incluirla aquí cuando se active en el catálogo.
     "/video-a-gif",
     "/extraer-audio",
     "/unir-audio",
@@ -242,7 +243,9 @@ def test_sitemap_incluye_ambas_variantes_y_alternativas(client):
     site = views.site_url()
     assert f"{site}/en/" in res.text
     assert f"{site}/en/herramientas" in res.text
-    assert f"{site}/en/transcribir-audio" in res.text
+    assert f"{site}/en/unir-audio" in res.text
+    # La transcripción está «próximamente»: no entra en el sitemap.
+    assert f"{site}/en/transcribir-audio" not in res.text
     assert 'xmlns:xhtml="http://www.w3.org/1999/xhtml"' in res.text
     assert f'<xhtml:link rel="alternate" hreflang="es" href="{site}/herramientas" />' in res.text
 

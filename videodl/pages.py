@@ -11,7 +11,7 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from . import image_pages, pdf_pages, views
+from . import catalog, image_pages, pdf_pages, views
 
 router = APIRouter(include_in_schema=False)
 
@@ -57,6 +57,14 @@ def _render_page(
     q: str = "",
     categoria: str = "all",
 ) -> str:
+    meta = views.PAGE_META.get(key)
+    if meta is not None and meta.tool_slug:
+        tool = catalog.tool_by_slug(meta.tool_slug)
+        if tool is None or not tool.available:
+            # Una herramienta «próximamente» no publica página: no se puede usar
+            # y su contenido competiría en buscadores con la versión activa.
+            # Al volver a ``available`` en el catálogo, la página reaparece.
+            raise HTTPException(status_code=404, detail="Página no encontrada")
     if key == "home":
         return views.home_page(q, categoria, lang)
     if key == "directory":

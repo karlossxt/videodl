@@ -58,6 +58,10 @@ Todas las novedades relevantes de este proyecto. Formato basado en
   PDF y los núcleos de validación usan las mismas claves en ambos idiomas.
 
 ### Cambiado
+- **Transcripción marcada como «próximamente»**: la página sigue publicada para quien
+  tenga el enlace, pero el catálogo la muestra como próxima (sin enlace), queda
+  `noindex` y sale del sitemap mientras el servidor no tenga `faster-whisper`. El
+  código queda intacto para activarla cuando haya un plan que soporte el modelo.
 - **Marca configurable con `SITE_NAME`**: títulos, cabecera, pie, Open Graph y textos
   de privacidad usan la variable (por defecto `FasTools.app`), así que se puede publicar
   en otro dominio sin editar el código. `SITE_URL` sigue controlando canonical y sitemap.

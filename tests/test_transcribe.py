@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from videodl import transcribe
+from videodl import catalog, transcribe
 from videodl.stores import transcriptions
 
 # ---------------------------------------------------------------------------
@@ -19,6 +19,10 @@ from videodl.stores import transcriptions
 
 def test_transcribe_page_ok(client):
     res = client.get("/transcribir-audio")
+    if not catalog.tool_by_slug("transcribir-audio").available:
+        # «Próximamente»: la página no se publica (ver tests/test_site.py).
+        assert res.status_code == 404
+        return
     assert res.status_code == 200
     assert "Transcribir audio a texto" in res.text
     assert "transcribe.js" in res.text

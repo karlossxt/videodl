@@ -15,7 +15,8 @@ PAGES = (
     "/herramientas",
     "/comprimir-video-whatsapp",
     "/recortar-clip-vertical",
-    "/transcribir-audio",
+    # «/transcribir-audio» está «próximamente»: no publica página. Volver a
+    # incluirla aquí cuando se active en el catálogo.
     "/comprimir-imagen",
     "/convertir-imagen",
     "/redimensionar-imagen",
@@ -111,6 +112,16 @@ def test_herramientas_disponibles_tienen_pagina_real(client):
         res = client.get(tool.route)
         assert res.status_code == 200, tool.route
         assert f'<link rel="canonical" href="{views.canonical(tool.route)}"' in res.text
+
+
+def test_transcripcion_figura_como_proximamente(client):
+    directory = client.get("/herramientas").text
+    assert "is-soon" in directory
+    assert 'href="/transcribir-audio"' not in directory
+
+    # Mientras esté «próximamente» no publica página ni en español ni en inglés.
+    assert client.get("/transcribir-audio").status_code == 404
+    assert client.get("/en/transcribir-audio").status_code == 404
 
 
 def test_footer_incluye_credito_oncenueve(client):
@@ -359,7 +370,6 @@ def test_sitemap_solo_incluye_paginas_publicadas(client):
         "/herramientas",
         "/comprimir-video-whatsapp",
         "/recortar-clip-vertical",
-        "/transcribir-audio",
         "/video-a-gif",
         "/extraer-audio",
         "/unir-audio",

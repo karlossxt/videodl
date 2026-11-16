@@ -85,6 +85,11 @@ TOOLS: tuple[Tool, ...] = (
         status="available",
     ),
     # --- Audio -------------------------------------------------------------
+    # Transcripción: el modelo de voz no cabe en el plan actual de Render, así
+    # que se anuncia como «próximamente». La página sigue publicada para quien
+    # tenga el enlace, pero no se enlaza, queda ``noindex`` y sale del sitemap.
+    # Para activarla: ``status="available"``, ``route="/transcribir-audio"`` e
+    # instalar faster-whisper en la imagen (ver README y Dockerfile).
     Tool(
         slug="transcribir-audio",
         name="Transcribir audio a texto",
@@ -95,8 +100,8 @@ TOOLS: tuple[Tool, ...] = (
             "transcribir", "transcripción", "audio", "texto", "voz", "subtítulos",
             "srt", "vtt", "whisper", "dictado",
         ),
-        route="/transcribir-audio",
-        status="available",
+        route=None,
+        status="soon",
         featured=True,
     ),
     Tool(
