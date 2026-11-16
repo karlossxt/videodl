@@ -115,6 +115,9 @@ def csp_with_nonce(csp: str, nonce: str) -> str:
         ],
     )
     csp = _add_sources(csp, "connect-src", ["https:"])
+    # Algunas unidades de Adcash se pintan dentro de la página (shadow DOM) y
+    # piden creatividades de vídeo desde su CDN; si no, el navegador las bloquea.
+    csp = _add_sources(csp, "media-src", ["https:"])
     # Las librerías publicitarias crean workers desde blob: (aclib.js lo hace).
     csp = _add_sources(csp, "worker-src", ["blob:"])
     if "frame-src" in csp:

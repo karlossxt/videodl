@@ -471,6 +471,9 @@ def test_csp_permite_google_tag_manager_y_aclib_con_nonce(client):
     assert "frame-src 'self' https://www.googletagmanager.com https:" in csp
     connect_src = next(p for p in csp.split(";") if p.strip().startswith("connect-src"))
     assert "https:" in connect_src
+    media_src = next(p for p in csp.split(";") if p.strip().startswith("media-src"))
+    # Los anuncios en página de Adcash piden vídeo desde su CDN.
+    assert "https:" in media_src
     worker_src = next(p for p in csp.split(";") if p.strip().startswith("worker-src"))
     # aclib.js crea un worker desde blob:.
     assert "blob:" in worker_src
