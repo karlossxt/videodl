@@ -425,7 +425,7 @@ def test_gtm_y_aclib_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
         text = client.get(path).text
         # La publicidad se configura aquí, pero consent.js la carga solo al aceptar.
         assert 'window.__aclib = { zoneId: "ux5v6mxcml", call: "runAutoTag" };' in text, path
-        assert 'src="/consent.js" defer' in text, path
+        assert re.search(r'src="/consent\.js(?:\?v=[0-9a-f]+)?" defer', text), path
         assert "//acscdn.com/script/aclib.js" not in text, path
         # AdSense todavía no está aprobado: no debe cargarse nada de Google Ads.
         assert "adsbygoogle.js" not in text, path
@@ -479,7 +479,7 @@ def test_csp_permite_google_tag_manager_y_aclib_con_nonce(client):
     assert "blob:" in worker_src
 
     ad_script = re.search(
-        r'<script\b(?P<attrs>[^>]*)src="/consent\.js"',
+        r'<script\b(?P<attrs>[^>]*)src="/consent\.js(?:\?v=[0-9a-f]+)?"',
         response.text,
         flags=re.IGNORECASE,
     )
@@ -487,6 +487,35 @@ def test_csp_permite_google_tag_manager_y_aclib_con_nonce(client):
     nonce = re.search(r'\bnonce="([^"]+)"', ad_script.group("attrs"))
     assert nonce
     assert f"'nonce-{nonce.group(1)}'" in script_src
+
+
+def test_assets_llevan_version_y_solo_esa_version_se_cachea(client):
+    home = client.get("/")
+    match = re.search(r'href="(/style\.css)\?v=([0-9a-f]{12})"', home.text)
+    assert match, "style.css debería llevar ?v=<hash>"
+    versioned = client.get(f"{match.group(1)}?v={match.group(2)}")
+    assert versioned.status_code == 200
+    assert versioned.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+    # Sin versión, con una versión vieja o en el HTML: siempre se revalida.
+    assert client.get("/style.css").headers["cache-control"] == "no-cache"
+    assert client.get("/style.css?v=0").headers["cache-control"] == "no-cache"
+    assert home.headers["cache-control"] == "no-cache"
+
+    # Las páginas inglesas también versionan sus scripts relativos.
+    english = client.get("/en/unir-pdf").text
+    assert re.search(r'src="common\.js\?v=[0-9a-f]{12}"', english)
+
+
+def test_version_de_assets_no_toca_urls_externas():
+    from videodl import assets
+
+    html = (
+        '<script src="https://cdn.example.com/a.js"></script>'
+        '<script src="//cdn.example.com/b.js"></script>'
+        '<img src="data:image/png;base64,AAAA" />'
+    )
+    assert assets.version_html(html) == html
 
 
 def test_aclib_solo_se_inyecta_con_zone_id():

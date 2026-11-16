@@ -62,8 +62,8 @@ def test_paginas_pdf_tienen_estructura_comun_y_modo_correcto(client, path, mode)
     assert 'href="#main"' in text
     assert 'id="main"' in text
     for script in ("common.js", "image-tools.js", "pdf-core.js", "pdf-suite.js"):
-        assert f'src="{script}"' in text
-    assert 'type="module" src="pdf-suite.js"' in text
+        assert f'src="{script}' in text
+    assert 'type="module" src="pdf-suite.js' in text
 
     # Contrato de la interfaz.
     assert 'id="file-input"' in text

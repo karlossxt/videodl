@@ -137,6 +137,17 @@ if _raw_ip_header and not re.fullmatch(r"[a-z0-9-]{1,64}", _raw_ip_header):
     _raw_ip_header = ""
 CLIENT_IP_HEADER = _raw_ip_header
 
+# Un proxy que AÑADE la IP del cliente al final de ``X-Forwarded-For`` (como hace
+# el de Render) permite tomar la última entrada: las anteriores las puede escribir
+# el visitante. Desactivado por defecto porque un proxy que solo reenvíe la
+# cabecera haría falsificable la IP.
+CLIENT_IP_FROM_XFF = env_str("CLIENT_IP_FROM_XFF").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 # Tiempo máximo que puede durar un proceso ffmpeg antes de ser matado (0 = sin
 # límite). Evita que una codificación colgada retenga un hilo para siempre.
 FFMPEG_TIMEOUT_SECONDS = env_int("FFMPEG_TIMEOUT_SECONDS", 3600, minimum=0)

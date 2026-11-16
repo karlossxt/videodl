@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
+import os
 import secrets
 import threading
 import time
@@ -15,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, analytics, i18n, shortener
+from . import __version__, analytics, assets, i18n, shortener
 from .clips import router as clips_router
 from .compressor import router as compressor_router
 from .config import (
@@ -73,6 +74,13 @@ async def lifespan(_app: FastAPI):
     # Al arrancar no hay trabajos activos: se pueden borrar los restos de más de 5 min.
     await asyncio.to_thread(sweep_temp_dirs, [], 300)
     threading.Thread(target=_janitor_loop, daemon=True).start()
+    # En Render el plan gratuito no tiene disco persistente: los enlaces cortos
+    # (SQLite) se pierden en cada despliegue. Se avisa una vez al arrancar.
+    if os.environ.get("RENDER") and not os.environ.get("SHORTLINKS_DB"):
+        logger.warning(
+            "Disco efímero: los enlaces cortos se pierden en cada despliegue. "
+            "Monta un disco y define SHORTLINKS_DB (ver README)."
+        )
     logger.info("%s %s iniciado (ffmpeg=%s)", SITE_NAME, __version__, FFMPEG_AVAILABLE)
     yield
     logger.info("%s detenido", SITE_NAME)
@@ -123,12 +131,17 @@ def create_app() -> FastAPI:
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
         if csp:
             response.headers["Content-Security-Policy"] = analytics.csp_with_nonce(csp, nonce)
-        # Sin huellas en los nombres de los assets, obligamos a revalidar para
-        # que un despliegue no deje JavaScript o traducciones antiguas en caché.
+        # Sin huellas en los nombres de los assets, solo se cachean para siempre
+        # las URLs que llevan la versión vigente (``?v=<hash>``); el resto
+        # revalida para que un despliegue no deje JavaScript antiguo en caché.
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         elif request.method in {"GET", "HEAD"}:
-            response.headers["Cache-Control"] = "no-cache"
+            version = request.query_params.get("v")
+            if version and assets.version_for(request.url.path) == version:
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            else:
+                response.headers["Cache-Control"] = "no-cache"
 
         elapsed = time.perf_counter() - started
         if elapsed > 5:

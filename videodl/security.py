@@ -13,6 +13,8 @@ import threading
 import time
 from collections import defaultdict, deque
 
+from .config import CLIENT_IP_FROM_XFF
+
 
 class RateLimiter:
     """Ventana deslizante simple por clave (normalmente la IP del cliente).
@@ -61,6 +63,32 @@ class ConcurrencyLimiter:
             self._sem.release()
 
 
+def _is_private(host: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_private or ip.is_loopback or ip.is_link_local
+
+
+def forwarded_ip(value: str) -> str:
+    """Última IP de un ``X-Forwarded-For`` al que el proxy añade al final.
+
+    El proxy añade la IP del cliente al final, así que la última entrada es la
+    única en la que se puede confiar: las anteriores las puede escribir el
+    visitante. Devuelve cadena vacía si no hay ninguna válida.
+    """
+    for part in reversed((value or "").split(",")):
+        raw = part.strip()
+        if not raw:
+            continue
+        try:
+            return str(ipaddress.ip_address(raw))
+        except ValueError:
+            continue
+    return ""
+
+
 def client_ip(request, header: str = "") -> str:
     """IP del cliente para los límites y los reportes.
 
@@ -71,6 +99,10 @@ def client_ip(request, header: str = "") -> str:
     Solo debe usarse con una cabecera que el proxy **sobrescriba** y a la que el
     cliente no pueda llegar directamente: si no, cualquiera podría falsificarla y
     saltarse los límites. Un valor que no sea una IP válida se ignora.
+
+    Si el proxy **añade** la IP al final de ``X-Forwarded-For`` (Render lo hace) y
+    ``CLIENT_IP_FROM_XFF`` está activo, se usa la última IP cuando la conexión
+    llega desde una IP privada.
     """
     if header:
         raw = (request.headers.get(header) or "").split(",")[0].strip()
@@ -79,4 +111,9 @@ def client_ip(request, header: str = "") -> str:
                 return str(ipaddress.ip_address(raw))
             except ValueError:
                 pass
-    return request.client.host if request.client else "desconocido"
+    host = request.client.host if request.client else "desconocido"
+    if CLIENT_IP_FROM_XFF and _is_private(host):
+        forwarded = forwarded_ip(request.headers.get("x-forwarded-for") or "")
+        if forwarded:
+            return forwarded
+    return host

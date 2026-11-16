@@ -28,7 +28,22 @@ services:
         value: "2"
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
+      # Render añade la IP del cliente al final de X-Forwarded-For (no sobrescribe
+      # la cabecera). Con esto los límites y los reportes distinguen visitantes en
+      # vez de contar solo la IP interna del proxy.
+      - key: CLIENT_IP_FROM_XFF
+        value: "1"
       # Marca visible. El dominio canónico se configura por separado en SITE_URL.
       # La marca pública predeterminada es Fastools.
       - key: SITE_NAME
         sync: false
+    # El plan gratuito usa disco efímero: los enlaces cortos viven en SQLite y se
+    # pierden en cada despliegue. Con un plan de pago, descomenta el disco y la
+    # variable para conservarlos.
+    # disk:
+    #   name: datos
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # Y en envVars:
+    #   - key: SHORTLINKS_DB
+    #     value: /var/data/links.db

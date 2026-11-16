@@ -11,7 +11,7 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from . import catalog, image_pages, pdf_pages, views
+from . import assets, catalog, image_pages, pdf_pages, views
 
 router = APIRouter(include_in_schema=False)
 
@@ -105,6 +105,8 @@ def _page_endpoint(key: str, lang: str):
         nonce = getattr(request.state, "csp_nonce", "")
         if nonce:
             page_html = _add_script_nonces(page_html, nonce)
+        # Las URLs de los assets llevan su hash para poder cachearlas sin riesgo.
+        page_html = assets.version_html(page_html)
         return HTMLResponse(page_html)
 
     endpoint.__name__ = f"page_{key}_{lang}"

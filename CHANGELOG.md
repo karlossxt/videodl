@@ -59,6 +59,16 @@ Todas las novedades relevantes de este proyecto. Formato basado en
   PDF y los núcleos de validación usan las mismas claves en ambos idiomas.
 
 ### Cambiado
+- **Assets con versión para poder cachearlos**: las páginas añaden `?v=<hash>` a las
+  referencias locales de CSS, JS e imágenes y esas URLs se sirven con
+  `Cache-Control: public, max-age=1 año, immutable`; el HTML y las URLs sin versión (o
+  con una versión vieja) siguen revalidando, así que un despliegue no deja código
+  antiguo en el navegador.
+- **IP real detrás del proxy de Render** (`CLIENT_IP_FROM_XFF`): cuando la conexión
+  llega de una IP privada se toma la última entrada de `X-Forwarded-For`, que es la
+  que añade el proxy; lo que escriba el visitante al principio se ignora. Así los
+  límites por IP y el contador del acortador distinguen visitantes. Activado en
+  `render.yaml`.
 - **HSTS**: se envía `Strict-Transport-Security: max-age=31536000` para que el navegador
   no repita la primera petición en claro.
 - **`consent.js` con `defer`**: el aviso de cookies ya no bloquea el parseo del HTML.

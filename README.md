@@ -251,7 +251,8 @@ el valor por defecto.
 | `LOG_LEVEL` | `INFO` | Nivel de logging. |
 | `SITE_URL` | `https://fastools.org` | URL pública sin barra final para canonical, Open Graph, sitemap, robots y datos estructurados. Cámbiala solo en local o staging. |
 | `SITE_NAME` | `Fastools` | Marca visible en títulos, cabecera, pie y Open Graph. El dominio público se configura por separado en `SITE_URL`. |
-| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies de confianza para `X-Forwarded-For`. |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies de confianza para `X-Forwarded-For` (uvicorn). |
+| `CLIENT_IP_FROM_XFF` | `0` | Si el proxy **añade** la IP del cliente al final de `X-Forwarded-For` (Render lo hace), usa la última IP cuando la conexión llega de una IP privada. Actívalo solo si tu proxy funciona así. |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Peticiones por minuto y por IP (`0` = sin límite). |
 | `MAX_CONCURRENT_JOBS` | `4` | Compresiones/clips simultáneos. |
 | `MAX_UPLOAD_MB` | `200` | Tamaño máximo de archivo subido. |
@@ -399,14 +400,14 @@ Los enlaces se guardan en un archivo SQLite (`SHORTLINKS_DB`). Dos cosas a tener
 - **IP del visitante.** El límite por hora, el límite general de la API y el conteo de
   reportes usan la IP del cliente. Detrás de un proxy, esa IP es la del proxy y todos los
   visitantes parecerían uno solo: el cupo de enlaces nuevos se agotaría para todos a la
-  vez y los reportes nunca sumarían personas distintas. Si ocurre, define
-  `CLIENT_IP_HEADER` con la cabecera en la que tu proxy pone la IP real (por ejemplo
-  `cf-connecting-ip`). Vacía (por defecto) se usa la IP de la conexión.
-  **Úsala solo si el proxy sobrescribe esa cabecera** y no se puede llegar al servicio sin
-  pasar por él: si no, cualquiera podría falsificarla y saltarse los límites. Por la misma
-  razón, `FORWARDED_ALLOW_IPS=*` no es una solución segura: Render, según lo que se
-  conoce, no elimina el `X-Forwarded-For` que envía el cliente. Confirma con la
-  documentación o el soporte de tu plataforma qué cabecera usar antes de activarla.
+  vez y los reportes nunca sumarían personas distintas. Hay dos ajustes:
+  - `CLIENT_IP_HEADER` con la cabecera en la que tu proxy pone la IP real (por ejemplo
+    `cf-connecting-ip`). **Úsala solo si el proxy sobrescribe esa cabecera**.
+  - `CLIENT_IP_FROM_XFF=1` si el proxy **añade** la IP al final de
+    `X-Forwarded-For` (así funciona el de Render). Se toma la última entrada, de
+    modo que lo que escriba el visitante al principio se ignora. No uses
+    `FORWARDED_ALLOW_IPS=*`: uvicorn se quedaría con el primer valor, que sí es
+    falsificable.
 
 Protecciones contra el abuso: solo `http`/`https` hacia dominios públicos (sin IP,
 `localhost` ni redes internas), sin usuario ni contraseña en la URL, sin encadenar otros

@@ -79,3 +79,40 @@ def test_client_ip_sin_cabecera_ni_conexion():
     from videodl.security import client_ip
 
     assert client_ip(_FakeRequest(peer=None), "cf-connecting-ip") == "desconocido"
+
+
+def test_forwarded_ip_toma_la_ultima_publica():
+    from videodl.security import forwarded_ip
+
+    assert forwarded_ip("9.9.9.9, 8.8.8.8") == "8.8.8.8"
+    # La última entrada es la que añade el proxy, aunque sea privada (CGNAT).
+    assert forwarded_ip("8.8.8.8, 10.0.0.9") == "10.0.0.9"
+    assert forwarded_ip("2606:4700:4700::1111") == "2606:4700:4700::1111"
+    assert forwarded_ip("") == ""
+    assert forwarded_ip("no-es-ip, 10.0.0.1") == "10.0.0.1"
+
+
+def test_client_ip_con_proxy_que_anade_la_ip(monkeypatch):
+    from videodl import security
+
+    monkeypatch.setattr(security, "CLIENT_IP_FROM_XFF", True)
+    req = _FakeRequest({"x-forwarded-for": "9.9.9.9, 8.8.8.8"})
+    assert security.client_ip(req) == "8.8.8.8"
+
+    # Lo que escriba el visitante al principio no cuenta.
+    req = _FakeRequest({"x-forwarded-for": "8.8.8.8, 10.0.0.9"})
+    assert security.client_ip(req) == "10.0.0.9"
+
+    # Si la conexión no es privada, la cabecera no se mira.
+    req = _FakeRequest({"x-forwarded-for": "9.9.9.9"}, peer="8.8.8.8")
+    assert security.client_ip(req) == "8.8.8.8"
+
+    # Sin cabecera, la IP del proxy.
+    assert security.client_ip(_FakeRequest()) == "10.0.0.1"
+
+
+def test_client_ip_no_usa_x_forwarded_for_por_defecto():
+    from videodl.security import client_ip
+
+    req = _FakeRequest({"x-forwarded-for": "9.9.9.9, 8.8.8.8"})
+    assert client_ip(req) == "10.0.0.1"

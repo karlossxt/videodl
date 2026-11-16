@@ -45,7 +45,7 @@ def test_paginas_de_imagen_tienen_estructura_comun_y_modo_correcto(client, path,
 
     # Mismo motor y misma interfaz para las tres.
     for script in ("common.js", "image-tools.js", "imagenes.js"):
-        assert f'src="{script}"' in text
+        assert f'src="{script}' in text
     assert 'id="file-input"' in text
     assert 'id="dropzone"' in text
     assert 'id="input-preview"' in text
