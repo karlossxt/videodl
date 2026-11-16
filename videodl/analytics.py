@@ -46,7 +46,7 @@ def aclib_head_html(zone_id: str = ACLIB_ZONE_ID, mode: str = ACLIB_MODE) -> str
     payload = f'{{ zoneId: "{zone_id}", call: "{call}" }}'
     return (
         f"  <script>window.__aclib = {payload};</script>\n"
-        '  <script src="/consent.js"></script>'
+        '  <script src="/consent.js" defer></script>'
     )
 
 

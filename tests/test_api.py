@@ -199,6 +199,8 @@ def test_security_headers_present(client):
     res = client.get("/")
     assert res.headers["x-content-type-options"] == "nosniff"
     assert "content-security-policy" in res.headers
+    # HSTS: el sitio es solo HTTPS.
+    assert res.headers["strict-transport-security"] == "max-age=31536000"
 
 
 def test_unknown_job_returns_404(client):

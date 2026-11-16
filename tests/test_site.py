@@ -425,7 +425,7 @@ def test_gtm_y_aclib_estan_presentes_y_todos_los_scripts_tienen_nonce(client):
         text = client.get(path).text
         # La publicidad se configura aquí, pero consent.js la carga solo al aceptar.
         assert 'window.__aclib = { zoneId: "ux5v6mxcml", call: "runAutoTag" };' in text, path
-        assert 'src="/consent.js"' in text, path
+        assert 'src="/consent.js" defer' in text, path
         assert "//acscdn.com/script/aclib.js" not in text, path
         # AdSense todavía no está aprobado: no debe cargarse nada de Google Ads.
         assert "adsbygoogle.js" not in text, path

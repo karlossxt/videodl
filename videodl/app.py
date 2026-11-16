@@ -119,6 +119,8 @@ def create_app() -> FastAPI:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # El sitio solo se publica por HTTPS; HSTS evita el primer salto en claro.
+        response.headers["Strict-Transport-Security"] = "max-age=31536000"
         if csp:
             response.headers["Content-Security-Policy"] = analytics.csp_with_nonce(csp, nonce)
         # Sin huellas en los nombres de los assets, obligamos a revalidar para

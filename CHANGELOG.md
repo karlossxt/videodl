@@ -59,6 +59,12 @@ Todas las novedades relevantes de este proyecto. Formato basado en
   PDF y los núcleos de validación usan las mismas claves en ambos idiomas.
 
 ### Cambiado
+- **HSTS**: se envía `Strict-Transport-Security: max-age=31536000` para que el navegador
+  no repita la primera petición en claro.
+- **`consent.js` con `defer`**: el aviso de cookies ya no bloquea el parseo del HTML.
+- **Eliminada `static/legal.html`**: era una plantilla antigua que aún decía «No usamos
+  cookies de publicidad» y se servía en `/legal.html`, aunque `/legal` redirige a
+  `/privacidad`.
 - **Transcripción marcada como «próximamente»**: la página sigue publicada para quien
   tenga el enlace, pero el catálogo la muestra como próxima (sin enlace), queda
   `noindex` y sale del sitemap mientras el servidor no tenga `faster-whisper`. El
